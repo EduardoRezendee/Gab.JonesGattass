@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4"></div>
+    <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded shadow-sm mb-4" style="border-left: 5px solid #bea066;">
+        <div>
+            <h3 class="fw-bold mb-1" style="color: #083464; font-size: 1.2rem;">
+                <i class="bi bi-folder-fill me-2"></i> Processo: {{ processo.numero_processo }}
+            </h3>
+            <p class="mb-0" style="font-size: 0.85rem; color: #000000;">
+                <i class="bi bi-calendar3 me-2"></i> Última alteração: {{ processo.dt_atualizacao|date:"d/m/Y H:i" }}
+            </p>
+        </div>
+        <div>
+            {% if processo.concluido %}
+                <i class="bi bi-check-circle-fill fs-4" style="color: #8c5411;" title="Processo Concluído" data-bs-toggle="tooltip"></i>
+            {% else %}
+                <i class="bi bi-hourglass-split" style="color: #bea066; font-size: 1.5rem;" title="Processo em Andamento" data-bs-toggle="tooltip"></i>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Kanban de Fases -->
+    <div class="container mt-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            {% for item in andamentos_por_fase %}
+            <div class="col">
+                <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; overflow: hidden;">
+                    <!-- Cabeçalho da Fase -->
+                    <div class="card-header text-center" style="background-color: #083464; color: #ffffff; padding: 15px;">
+                        <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
+                    </div>
+                    <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
+                        <div class="accordion" id="accordionFase{{ item.fase.id }}">
+                            <!-- Não Iniciado + Em Andamento -->
+                            <div class="accordion-item border-0 mb-3" style="border-radius: 8px; overflow: hidden;">
+                                <h2 class="accordion-header" id="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNaoIniciadoEmAndamento{{ item.fase.id }}" aria-expanded="true" aria-controls="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" style="background-color: #e9ecef; font-size: 0.9rem; color: #002855; font-weight: bold;">
+                                        Não Iniciado e Em Andamento
+                                    </button>
+                                </h2>
+                                <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" class="accordion-collapse collapse show" aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                    <div class="accordion-body" style="padding: 15px;">
+                                        {% for andamento in item.nao_iniciado_em_andamento %}
+                                        <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
+                                            <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #bea066; padding: 15px;">
+                                                <h6 class="card-title" style="font-size: 1rem; font-weight: bold; color: #083464;">{{ andamento.andamento }}</h6>
+                                                <p class="card-text mb-2">
+                                                    <strong>Status:</strong>
+                                                    <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                        {{ andamento.status }}
+                                                    </span>
+                                                </p>
+                                                <p class="card-text mb-2">
+                                                    <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                                </p>
+                                                {% if andamento.link_doc %}
+                                                <a href="{{ andamento.link_doc }}" target="_blank" class="btn btn-outline-info btn-sm" style="color: #002855;">
+                                                    <i class="bi bi-link-45deg"></i> Abrir Documento
+                                                </a>
+                                                {% endif %}
+                                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                                    {% if not andamento.dt_inicio %}
+                                                    <form id="startAndamentoForm-{{ andamento.pk }}" method="post" action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="button" class="btn btn-sm btn-success" onclick="startAndamento('{{ andamento.pk }}')" title="Iniciar">
+                                                            <i class="bi bi-play-fill"></i>
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                    <a href="{% url 'andamento_update' andamento.pk %}" class="btn btn-warning btn-sm" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ andamento.pk }}" data-name="{{ andamento.andamento }}" title="Excluir">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownActions{{ andamento.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            Ações
+                                                        </button>
+                                                        <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
+                                                            {% if andamento.fase.fase != "Revisão" %}
+                                                            <li>
+                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
+                                                                </form>
+                                                            </li>
+                                                            {% endif %}
+                                                            
+                                                            {% if andamento.fase.fase != "Correção" %}
+                                                            <li>
+                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="nova_fase" value="Correção">
+                                                                    <button class="dropdown-item" type="submit">Enviar para Correção</button>
+                                                                </form>
+                                                            </li>
+                                                            {% endif %}
+                                                            
+                                                            {% if andamento.fase.fase != "L. PJE" %}
+                                                            <li>
+                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="nova_fase" value="L. PJE">
+                                                                    <button class="dropdown-item" type="submit">Enviar para L. PJE</button>
+                                                                </form>
+                                                            </li>
+                                                            {% endif %}
+                                                            
+                                                            {% if andamento.fase.fase == "L. PJE" %}
+                                                            <li>
+                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="dropdown-item text-success">
+                                                                        <i class="bi bi-check-circle"></i> Concluir Processo
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            {% endif %}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Concluídos -->
+                            <div class="accordion-item border-0">
+                                <h2 class="accordion-header" id="headingConcluidos{{ item.fase.id }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConcluidos{{ item.fase.id }}" aria-expanded="false" aria-controls="collapseConcluidos{{ item.fase.id }}" style="background-color: #e9f5e9; font-size: 0.9rem; color: #198754; font-weight: bold;">
+                                        Concluídos
+                                    </button>
+                                </h2>
+                                <div id="collapseConcluidos{{ item.fase.id }}" class="accordion-collapse collapse" aria-labelledby="headingConcluidos{{ item.fase.id }}">
+                                    <div class="accordion-body" style="padding: 15px;">
+                                        {% for andamento in item.concluidos %}
+                                        <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
+                                            <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #198754; padding: 15px;">
+                                                <h6 class="card-title text-success" style="font-size: 1rem; font-weight: bold;">{{ andamento.andamento }}</h6>
+                                                <p class="card-text mb-2">
+                                                    <strong>Status:</strong>
+                                                    <span class="badge bg-success">Concluído</span>
+                                                </p>
+                                                <p class="card-text mb-2">
+                                                    <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <p class="text-muted text-center">Nenhum andamento concluído.</p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mt-5"> <!-- Adiciona margem superior -->
+        <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para Processos
+        </a>
+    </div>
+</div>
+<!-- Botão para abrir/fechar comentários -->
+<button id="toggle-comments" class="btn btn-light d-flex align-items-center gap-2 position-fixed"
+    style="right: 20px; bottom: 20px; z-index: 1050; border-radius: 20px; padding: 8px 12px;">
+    <i class="bi bi-chat-dots"></i> Comentários 
+    <span id="comment-notification" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
+</button>
+
+<!-- Caixa de Comentários (Maior e mais ajustada) -->
+<div id="comment-box" class="position-fixed end-0 bottom-0 bg-white shadow-lg p-3 rounded-start d-none"
+    style="width: 450px; height: 80vh; max-height: 80vh; z-index: 1050; overflow: hidden; display: flex; flex-direction: column;">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold m-0"><i class="bi bi-chat-dots"></i> Comentários</h6>
+        <button id="close-comments" class="btn btn-sm btn-outline-secondary">Fechar</button>
+    </div>
+
+    <!-- Histórico de Comentários -->
+    <div id="comentarios-{{ processo.id }}" class="chat-container flex-grow-1 overflow-auto border rounded p-3"
+        style="max-width: 100%; min-height: 65vh;">
+        {% for comentario in processo.comentarios.all %}
+            <div class="d-flex align-items-start border-bottom pb-2 mb-2">
+                <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                <div class="w-100">
+                    <strong>{{ comentario.usuario.get_full_name }}</strong>
+                    <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                    <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Formulário de Novo Comentário -->
+    <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
+        {% csrf_token %}
+        <textarea name="texto" class="form-control me-2 border rounded small" rows="1" placeholder="Escreva seu comentário..."></textarea>
+        <button type="submit" class="btn btn-outline-primary">Enviar</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let commentBox = document.getElementById("comment-box");
+    let toggleButton = document.getElementById("toggle-comments");
+    let closeButton = document.getElementById("close-comments");
+    let notification = document.getElementById("comment-notification");
+    let chatContainer = document.getElementById("comentarios-{{ processo.id }}");
+
+    // Exibe ou oculta a caixa de comentários ao clicar no botão
+    toggleButton.addEventListener("click", function () {
+        commentBox.classList.toggle("d-none");
+        setTimeout(() => chatContainer.scrollTop = chatContainer.scrollHeight, 100); // Rola para o último comentário
+    });
+
+    // Fecha a caixa de comentários
+    closeButton.addEventListener("click", function () {
+        commentBox.classList.add("d-none");
+    });
+
+    // Atualiza o número de novos comentários
+    function atualizarNotificacao(novosComentarios) {
+        if (novosComentarios > 0) {
+            notification.textContent = novosComentarios;
+            notification.style.display = "inline-block";
+        } else {
+            notification.style.display = "none";
+        }
+    }
+
+    // Simulação: Verifica se há novos comentários (pode ser substituído por AJAX real)
+    let novosComentarios = {{ processo.comentarios.count }};
+    atualizarNotificacao(novosComentarios);
+});
+</script>
+
+
+
+
+<!-- Modal de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza de que deseja excluir o andamento <strong id="andamentoName"></strong>?</p>
+                <p>Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+
+        // Atualiza o nome do andamento no modal
+        document.getElementById('andamentoName').textContent = name;
+
+        // Atualiza a URL do formulário de exclusão
+        const form = document.getElementById('deleteForm');
+        form.action = `/andamentos/${id}/deletar/`;
+    });
+</script>
+
+<!-- Script para iniciar andamento via AJAX -->
+<script>
+    function startAndamento(andamentoId) {
+        const form = document.getElementById(`startAndamentoForm-${andamentoId}`);
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (response.ok) {
+                // Atualizar a área do card após o sucesso
+                location.reload(); // Aqui recarrega a página, mas pode ser adaptado para atualizar somente o card
+            } else {
+                alert('Erro ao iniciar o andamento.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao processar a solicitação.');
+        });
+    }
+</script>
+<script>
+    function toggleButton(textarea) {
+        let botao = textarea.closest("form").querySelector("button");
+        botao.disabled = !textarea.value.trim();
+    }
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".comentario-form").forEach(form => {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            let processoId = form.getAttribute("data-processo-id");
+
+            if (!processoId || processoId.trim() === "") {
+                console.error("❌ Erro: processo_id não encontrado.");
+                alert("Erro: Não foi possível identificar o processo.");
+                return;
+            }
+
+            let comentarioInput = form.querySelector("textarea");
+            let comentariosDiv = document.getElementById("comentarios-" + processoId);
+
+            fetch(`/adicionar-comentario/${processoId}/`, {
+                method: "POST",
+                body: new FormData(form),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.texto) {
+                    let novoComentario = document.createElement("div");
+                    novoComentario.classList.add("chat-message");
+                    novoComentario.innerHTML = `
+                        <div class="chat-header">
+                            <strong>${data.usuario}</strong>
+                            <span class="text-muted">${data.data_criacao}</span>
+                        </div>
+                        <p class="chat-text">${data.texto}</p>
+                    `;
+                    comentariosDiv.appendChild(novoComentario);
+
+                    comentarioInput.value = "";
+                    comentariosDiv.scrollTop = comentariosDiv.scrollHeight;
+                } else {
+                    console.error("❌ Erro no envio do comentário.");
+                }
+            })
+            .catch(error => console.error("❌ Erro:", error));
+        });
+    });
+});
+</script>
+    
+<style>
+.chat-container {
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.chat-message {
+    background: #ffffff;
+    border-left: 5px solid #083464;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #083464;
+    margin-bottom: 5px;
+}
+
+.chat-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chat-text {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.chat-input {
+    resize: none;
+    font-size: 0.95rem;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.input-group button {
+    border-radius: 0 6px 6px 0;
+    padding: 10px 15px;
+}
+
+/* Efeito de Fade-In para novos comentários */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+    
+{% endblock %}

@@ -1,0 +1,182 @@
+<!-- Botão fixo para abrir e fechar a sidebar -->
+<button id="toggleSidebar" class="btn btn-glow">
+    <i id="toggleIcon" class="bi bi-list fs-4"></i>
+  </button>
+  
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar border-end">
+    <div class="sidebar-header">
+      <!-- Deixe um espaço reservado abaixo do botão -->
+      <div style="height: 70px;"></div>
+    </div>
+    <ul class="sidebar-nav">
+      <li class="nav-item">
+        <a href="{% url 'home' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
+          <i class="bi bi-house-door fs-4"></i> <span class="nav-text">Home</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url 'processo_list' %}" class="nav-link {% if '/processos/' in request.path %}active{% endif %}">
+          <i class="bi bi-arrow-repeat fs-4"></i> Distribuição de Processos
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url 'process_metrics' %}" class="nav-link">
+          <i class="bi bi-bar-chart fs-4"></i> Painel de Processos
+        </a>
+      </li>      
+      <!-- Perfil e Configurações -->
+    <li class="nav-item mt-auto">
+      <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        {% if request.user.profile.photo %}
+        <img src="{{ request.user.profile.photo.url }}" alt="Perfil" class="rounded-circle" style="width: 30px; height: 30px;">
+        {% else %}
+        <i class="bi bi-person-circle fs-4"></i>
+        {% endif %}
+        <span class="nav-text">{{ request.user.first_name }}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" href="{% url 'password_change' %}">Trocar Senha</a></li>
+        <li>
+          <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link text-decoration-none w-100 text-start">Sair</button>
+          </form>
+        </li>
+      </ul>
+    </li>
+    </ul>
+  </div>
+  
+  <style>
+    /* Estilo Geral */
+  body {
+    margin: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Botão de abrir/fechar com linhas verdes fluorescentes */
+  #toggleSidebar {
+    position: fixed;
+    top: 6px;
+    left: 12px;
+    z-index: 1100;
+    background-color: rgb(255, 255, 255); /* Fundo branco */
+    color: #8494a4; /* Verde fluorescente para o ícone */
+    border: none; /* Sem borda */
+    border-radius: 5px;
+    transition: box-shadow 0.3s ease-in-out;
+  }
+  
+  #toggleSidebar i {
+    color: #808000; /* Ícones verdes fluorescentes */
+    text-shadow: 0 0 10px #808000, 0 0 20px #808000, 0 0 30px #808000; /* Efeito fluorescente para as linhas */
+  }
+  
+  #toggleSidebar:hover {
+    box-shadow: 0 0 20px #808000, 0 0 40px #808000, 0 0 60px #808000; /* Efeito fluorescente ao passar o mouse */
+  }
+  
+  /* Sidebar */
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    background-color: #ffffff;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-100%);
+    z-index: 1050;
+  }
+  
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-header {
+    background-color: transparent; /* Fundo transparente */
+    color: #808000; /* Texto em azul escuro */
+    text-align: center;
+    padding: 20px 0;
+    border-bottom: 2px solid #64fa3f00; /* Linha verde sólida */
+  }
+  
+  
+  /* Itens do menu */
+  .sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    color: #19443C;
+    padding: 10px 10px; /* Ajustado para espaçamento lateral menor */
+    font-size: 18px; /* Aumenta o texto */
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+    border-radius: 5px;
+  }
+  
+  .sidebar .nav-link:hover {
+    background-color: #f8f9fa;
+    box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar .nav-link.active {
+    background-color: #d1e7ff;
+    font-weight: bold;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Dropdown Menu */
+  .nav-group-items {
+    display: none;
+    list-style: none;
+    padding-left: 20px;
+  }
+  
+  .nav-group.show .nav-group-items {
+    display: block;
+  }
+  
+  /* Seta para subitens */
+  .nav-group-toggle .bi-chevron-down {
+    margin-left: auto;
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .nav-group-toggle.show .bi-chevron-down {
+    transform: rotate(180deg); /* Rotaciona a seta ao abrir */
+  }
+
+  .sidebar-nav {
+  list-style-type: none; /* Remove os marcadores */
+  padding: 0; /* Remove o espaçamento padrão */
+  margin: 0; /* Remove margens */
+}
+
+.sidebar-nav .nav-item {
+  list-style: none; /* Garante que marcadores não sejam exibidos */
+}
+  
+  </style>
+  
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarButton = document.getElementById('toggleSidebar');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const navGroupToggles = document.querySelectorAll('.nav-group-toggle');
+  
+    // Abrir e fechar a sidebar
+    toggleSidebarButton.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      toggleIcon.classList.toggle('bi-list');
+      toggleIcon.classList.toggle('bi-x');
+    });
+  
+    // Dropdown Menu
+    navGroupToggles.forEach(toggle => {
+      toggle.addEventListener('click', function () {
+        this.parentElement.classList.toggle('show');
+      });
+    });
+  </script>
+  

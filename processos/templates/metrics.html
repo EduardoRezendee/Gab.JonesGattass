@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Botão de Voltar (Pequeno e Alinhado à Esquerda) -->
+    <div class="mb-2">
+        <a href="{% url 'processo_list' %}" class="btn btn-sm btn-outline-primary" style="color: #083464; border-color: #bea066;">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Título do Painel -->
+    <h2 class="text-center fw-bold mb-4" style="color: #083464; font-size: 2.5rem;">📊 Painel de Processos</h2>
+    <hr class="mb-4" style="border-top: 3px solid #bea066;">
+
+    <!-- Filtros -->
+    <div class="card shadow-sm p-4 mb-4" style="background-color: #ffffff; border-left: 5px solid #bea066; border-radius: 8px;">
+        <h5 class="fw-bold mb-3" style="color: #083464;"><i class="bi bi-filter me-2"></i> Filtrar Dados</h5>
+        <form method="get">
+            <div class="row g-3">
+                <!-- Filtro por Assessor -->
+                <div class="col-md-4">
+                    <label class="fw-bold" style="color: #083464;">Filtrar por Assessor:</label>
+                    <select name="assessor" class="form-control shadow-sm">
+                        <option value="">Todos os Assessores</option>
+                        {% for assessor in assessores %}
+                            <option value="{{ assessor.usuario__id }}" {% if request.GET.assessor == assessor.usuario__id|stringformat:"s" %}selected{% endif %}>
+                                {{ assessor.usuario__first_name }} {{ assessor.usuario__last_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por Mês -->
+                <div class="col-md-4">
+                    <label class="fw-bold" style="color: #083464;">Filtrar por Mês:</label>
+                    <select name="mes_distribuicao" class="form-control shadow-sm">
+                        <option value="">Todos os Meses</option>
+                        {% for i, nome_mes in months %}
+                            <option value="{{ i }}" {% if request.GET.mes_distribuicao == i|stringformat:"s" %}selected{% endif %}>
+                                {{ nome_mes }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botão de Filtrar -->
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn w-100 shadow-sm" style="background-color: #bea066; color: #ffffff;">
+                        <i class="bi bi-funnel"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+<!-- Cards de Métricas -->
+<div class="row justify-content-center g-4">
+    <!-- Total de Processos -->
+    <div class="col-md-4">
+        <div class="card shadow-sm p-4 text-center" style="border-left: 4px solid #083464; border-radius: 8px; background-color: #ffffff;">
+            <h5 class="fw-bold" style="color: #083464;">
+                <i class="bi bi-bar-chart-fill me-2"></i> Total de Processos
+            </h5>
+            <span class="badge rounded-pill text-white px-4 py-3" style="background-color: #083464; font-size: 1.2rem;">
+                {{ total_processos }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Processos Concluídos -->
+    <div class="col-md-4">
+        <div class="card shadow-sm p-4 text-center" style="border-left: 4px solid #bea066; border-radius: 8px; background-color: #ffffff;">
+            <h5 class="fw-bold" style="color: #083464;">
+                <i class="bi bi-check-circle-fill me-2"></i> Processos Concluídos
+            </h5>
+            <span class="badge rounded-pill text-white px-4 py-3" style="background-color: #bea066; font-size: 1.2rem;">
+                {{ total_concluidos }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Processos Pendentes -->
+    <div class="col-md-4">
+        <div class="card shadow-sm p-4 text-center" style="border-left: 4px solid #bea066; border-radius: 8px; background-color: #ffffff;">
+            <h5 class="fw-bold" style="color: #083464;">
+                <i class="bi bi-exclamation-circle-fill me-2"></i> Processos Pendentes
+            </h5>
+            <span class="badge rounded-pill text-white px-4 py-3" style="background-color: #bea066; font-size: 1.2rem;">
+                {{ total_pendentes }}
+            </span>
+        </div>
+    </div>
+</div>
+
+    <!-- Linha com dois cards lado a lado -->
+    <div class="row justify-content-center g-4 mt-2">
+        <!-- Tempo Médio por Tipo de Andamento -->
+        <div class="col-md-6 d-flex align-items-stretch">
+            <div class="card shadow-sm w-100 p-4" 
+                style="border-left: 5px solid #bea066; border-radius: 8px; background-color: #ffffff;">
+                <h3 class="text-center fw-bold mb-2" style="color: #083464;">Tempo Médio por Tipo de Andamento</h3>
+                <div class="row row-cols-2 g-3">
+                    {% for tipo, duration in andamento_durations.items %}
+                    <div class="col">
+                        <div class="card border-0 shadow-sm h-100 p-3 d-flex align-items-center justify-content-center" 
+                            style="border-radius: 8px; background-color: #f9f9f9;">
+                            <div class="text-center">
+                                <h5 class="fw-bold" style="color: #083464;">{{ tipo }}</h5>
+                                <p class="text-muted">Tempo médio:</p>
+                                <span class="badge rounded-pill text-white px-3 py-2" 
+                                    style="background-color: #bea066; font-size: 1.1rem;">
+                                    {{ duration }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tempo Médio de Processos -->
+        <div class="col-md-6 d-flex align-items-stretch">
+            <div class="card shadow-sm w-100 p-4" 
+                style="border-left: 5px solid #bea066; border-radius: 8px; background-color: #ffffff;">
+                <h3 class="text-center fw-bold mb-3" style="color: #083464;">Tempo Médio de Processos</h3>
+                <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                    <i class="bi bi-clock-history" style="font-size: 3rem; color: #083464;"></i>
+                    <p class="fw-bold mt-3" style="font-size: 1.25rem; color: #343a40;">Tempo médio do início à conclusão:</p>
+                    <span class="badge rounded-pill text-white px-4 py-3" 
+                        style="background-color: #bea066; font-size: 1.2rem;">
+                        {{ average_process_time }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-12">
+        <div class="card shadow-sm p-4" style="border-left: 4px solid #083464; border-radius: 8px; background-color: #f8f9fa;">
+            <h3 class="text-center fw-bold mb-4" style="color: #083464;">
+                <i class="bi bi-hourglass-split me-2"></i> Tempo Médio Aguardando Início dos Andamentos
+            </h3>
+            <div class="row row-cols-1 row-cols-md-4 g-4 justify-content-center">
+                {% for tipo, tempo in andamento_waiting_times.items %}
+                <div class="col">
+                    <div class="card shadow-sm p-3 text-center" style="border-left: 4px solid #bea066; border-radius: 8px; background: #ffffff;">
+                        <h5 class="fw-bold" style="color: #083464;">
+                            <i class="bi bi-clock me-1"></i> {{ tipo }}
+                        </h5>
+                        <p class="text-muted mb-2">Tempo médio aguardado:</p>
+                        <span class="badge text-white px-3 py-2 fs-6" style="background-color: #bea066;">
+                            {{ tempo }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- Gráficos -->
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h3 class="text-center" style="color: #083464;">Status dos Processos</h3>
+            <div id="statusChart" class="chart-container"></div>
+        </div>
+        <div class="col-md-6">
+            <h3 class="text-center" style="color: #083464;">Quantidade de Processos por Andamento</h3>
+            <div id="andamentoChart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- Outros Gráficos -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h3 class="text-center" style="color: #083464;">Processos por Espécies</h3>
+            <div id="speciesChart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h3 class="text-center" style="color: #083464;">Processos por Assessor</h3>
+            <div id="assessorChart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h3 class="text-center" style="color: #083464;">Processos por Resultado</h3>
+            <div id="resultadoChart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h3 class="text-center" style="color: #083464;">Processos por Câmara</h3>
+            <div id="camaraChart" class="chart-container"></div>
+        </div>
+        <div class="col-md-6">
+            <h3 class="text-center" style="color: #083464;">Processos por Tipo</h3>
+            <div id="typeChart" class="chart-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts para os Gráficos -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Gráfico de Status dos Processos (Pizza)
+    if (document.getElementById('statusChart')) {
+        const statusData = {
+            values: [{{ total_concluidos }}, {{ total_pendentes }}],
+            labels: ['Concluídos', 'Pendentes'],
+            type: 'pie',
+            hole: 0.4,
+            textinfo: 'label+percent',
+            marker: { colors: ['#083464', '#bea066'] }
+        };
+
+        Plotly.newPlot('statusChart', [statusData], {
+            title: "Status dos Processos",
+            responsive: true
+        });
+    }
+
+    // Gráfico de Quantidade de Processos por Andamento (Barra)
+    if (document.getElementById('andamentoChart')) {
+        const andamentoData = {
+            x: {{ andamento_data.labels|safe }},
+            y: {{ andamento_data.data|safe }},
+            type: 'bar',
+            text: {{ andamento_data.data|safe }},
+            textposition: 'auto',
+            marker: { color: '#083464' }
+        };
+
+        Plotly.newPlot('andamentoChart', [andamentoData], {
+            responsive: true,
+        });
+    }
+
+    // Gráfico de Processos por Espécies
+    if (document.getElementById('speciesChart')) {
+        const speciesData = {
+            x: {{ species_data.labels|safe }},
+            y: {{ species_data.data|safe }},
+            type: 'bar',
+            marker: { color: '#bea066' }
+        };
+
+        Plotly.newPlot('speciesChart', [speciesData], {
+            responsive: true,
+
+        });
+    }
+
+// Gráfico de Processos por Assessor
+if (document.getElementById('assessorChart')) {
+    const labels = {{ assessor_data.labels|safe }};
+    const valores = {{ assessor_data.data|safe }};
+
+    const total = valores.reduce((acc, val) => acc + val, 0);
+    const porcentagens = valores.map(val => ((val / total) * 100).toFixed(1) + '%');
+
+    const assessorData = {
+        x: labels,
+        y: valores,
+        type: 'scatter',
+        mode: 'lines+markers+text',
+        fill: 'tozeroy',
+        line: { color: '#083464', width: 3 },
+        marker: { color: '#bea066', size: 8 },
+        text: valores.map((val, i) => `${val} (${porcentagens[i]})`),
+        textposition: 'top center',
+        hoverinfo: 'x+y+text'
+    };
+
+    const layout = {
+        responsive: true,
+        title: 'Processos por Assessor',
+        xaxis: { title: 'Assessores' },
+        yaxis: { title: 'Quantidade' },
+        margin: { l: 50, r: 50, t: 50, b: 50 }, // Margens ajustadas para evitar cortes
+        height: 400, // Altura fixa para evitar cortes
+        showlegend: false,
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('assessorChart', [assessorData], layout);
+}
+
+// Gráfico de Processos por Resultado
+if (document.getElementById('resultadoChart')) {
+    const labels = {{ resultado_data.labels|safe }};
+    const valores = {{ resultado_data.data|safe }};
+
+    const total = valores.reduce((acc, val) => acc + val, 0);
+    const porcentagens = valores.map(val => ((val / total) * 100).toFixed(1) + '%');
+
+    const resultadoData = {
+        x: labels,
+        y: valores,
+        type: 'scatter',
+        mode: 'lines+markers+text',
+        fill: 'tozeroy',
+        line: { color: '#083464', width: 3 },
+        marker: { color: '#bea066', size: 8 },
+        text: valores.map((val, i) => `${val} (${porcentagens[i]})`),
+        textposition: 'top center',
+        hoverinfo: 'x+y+text'
+    };
+
+    const layout = {
+        responsive: true,
+        title: 'Processos por Resultado',
+        xaxis: { title: 'Resultado' },
+        yaxis: { title: 'Quantidade' },
+        margin: { l: 50, r: 50, t: 50, b: 50 }, // Ajuste de margens
+        height: 400, // Altura fixa
+        showlegend: false,
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    Plotly.newPlot('resultadoChart', [resultadoData], layout);
+}
+
+
+
+    // Gráfico de Processos por Câmara (Pizza)
+    if (document.getElementById('camaraChart')) {
+        const camaraData = {
+            values: {{ camara_data.data|safe }},
+            labels: {{ camara_data.labels|safe }},
+            type: 'pie',
+            hole: 0.4,
+            textinfo: 'label+percent',
+            marker: { colors: ['#083464', '#bea066', '#2c3e50'] }
+        };
+
+        Plotly.newPlot('camaraChart', [camaraData], {
+            title: "Processos por Câmara",
+            responsive: true
+        });
+    }
+
+    // Gráfico de Processos por Tipo (Pizza)
+    if (document.getElementById('typeChart')) {
+        const typeData = {
+            values: {{ type_data.data|safe }},
+            labels: {{ type_data.labels|safe }},
+            type: 'pie',
+            hole: 0.4,
+            textinfo: 'label+percent',
+            marker: { colors: ['#083464', '#bea066', '#2c3e50'] }
+        };
+
+        Plotly.newPlot('typeChart', [typeData], {
+            title: "Processos por Tipo",
+            responsive: true
+        });
+    }
+});
+</script>
+
+<!-- Estilos -->
+<style>
+.chart-container {
+    max-width: 100%;
+    min-height: 450px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #bea066;
+}
+
+h3 {
+    margin-top: 2rem;
+    color: #083464;
+    font-weight: bold;
+}
+
+.btn {
+    background-color: #bea066;
+    border-color: #bea066;
+    color: #ffffff;
+}
+
+.btn:hover {
+    background-color: #a38652;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #bea066;
+}
+
+.form-control:focus {
+    border-color: #bea066;
+    box-shadow: 0 0 5px rgba(190, 160, 102, 0.5);
+}
+
+hr {
+    border-top: 3px solid #bea066;
+}
+</style>
+<div class="container mt-5">
+    <div class="card shadow-sm p-4" style="border-left: 5px solid #083464; border-radius: 8px; background-color: #f8f9fa;">
+        <h3 class="text-center fw-bold mb-4" style="color: #083464;">
+            📜 Detalhamento dos Processos
+        </h3>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="text-white" style="background-color: #083464;">
+                    <tr>
+                        <th>Nº Processo</th>
+                        <th>Assessor</th>
+                        <th>Espécie</th>
+                        <th>Tipo</th>
+                        <th>Câmara</th>
+                        <th>Data Distribuição</th>
+                        <th>Data Prazo</th>
+                        <th>Data Conclusão</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for processo in detalhes_processos %}
+                    <tr>
+                        <td>{{ processo.numero_processo }}</td>
+                        <td>{{ processo.usuario__first_name }} {{ processo.usuario__last_name }}</td>
+                        <td>{{ processo.especie__sigla }}</td>
+                        <td>{{ processo.tipo__tipo }}</td>
+                        <td>{{ processo.camara__camara }}</td>
+                        <td>{{ processo.data_dist|date:"d/m/Y" }}</td>
+                        <td>{{ processo.dt_prazo|date:"d/m/Y" }}</td>
+                        <td>{{ processo.dt_conclusao|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if processo.concluido %}
+                                <span class="badge bg-success">Concluído</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'andamento_list' %}?processo={{ processo.id }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-list-task"></i> Andamentos
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">Nenhum processo encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

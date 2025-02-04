@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        /* Estilos gerais do body */
+        body {
+            background-color: #f4f4f400;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Estilos da navbar personalizada */
+        .custom-navbar {
+            background-color: #f8f9fa00 !important;
+            border-bottom: 3px solid #bea066;
+        }
+
+        /* Estilos dos links da navbar */
+        .custom-navbar .nav-link {
+            color: #02215a !important;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 0.5rem 1.5rem;
+            position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Efeito de hover (mouse em cima) */
+        .custom-navbar .nav-link:hover {
+            background-color: #08346479;
+            color: #fff !important;
+            border-radius: 5px;
+        }
+
+        /* Efeito de active (clicado) */
+        .custom-navbar .nav-link:active {
+            background-color: #bea066;
+            color: #fff !important;
+        }
+
+        /* Ajuste de responsividade */
+        @media (max-width: 768px) {
+            .agendamento-container {
+                height: 500px;
+            }
+        }
+
+        /* Adiciona uma barra cinza entre os links */
+        .custom-navbar .nav-item:not(:last-child) .nav-link::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 60%;
+            width: 1px;
+            background-color: #ccc;
+        }
+
+        /* Centralização dos itens da navbar */
+        .navbar-collapse {
+            justify-content: center !important;
+        }
+
+
+        /* Estilos para o contêiner do agendamento */
+        .agendamento-container {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        /* Estilos para o iframe */
+        .agendamento-container iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header personalizado -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #083464; padding: 10px; border-bottom: 7px solid #bea066; border-radius: 0 0 40px 40px; position: relative; height: 70px;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <!-- Ícones de Contato -->
+            <div>
+                <a href="#" class="text-white me-3" style="font-size: 1.3rem;">
+                    <i class="fa-brands fa-whatsapp" style="color: white;"></i>
+                </a>
+                <a href="#" class="text-white" style="font-size: 1.3rem;">
+                    <i class="fa-solid fa-envelope" style="color: white;"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Logo -->
+    <div class="logo-container text-center" style="position: absolute; top: 65px; left: 50%; transform: translate(-50%, -50%);">
+        <img src="https://auditoria-mc.tjmt.jus.br/portalauditoria-arquivos-prod/cms/sdasadada_e7058635ff.png" 
+             alt="Logo Sistema de Gestão" 
+             style="height: 120px; width: auto; background-color: white; padding: 5px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); border: 1px solid #ddd;">
+    </div>
+
+    <!-- Menu -->
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar mt-5">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="#">Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Agenda Atendimento</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Notícias</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Painéis</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <div class="container mt-5">
+        <div class="card-group">
+            <div class="card">
+                <img src="https://via.placeholder.com/400x200" class="card-img-top" alt="Seções">
+                <div class="card-body">
+                    <h5 class="card-title">Seções</h5>
+                    <p class="card-text">Confira as principais seções do gabinete.</p>
+                </div>
+                <div class="card-footer">
+                    <a href="#" class="btn btn-primary">Acessar</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <img src="https://via.placeholder.com/400x200" class="card-img-top" alt="Câmara">
+                <div class="card-body">
+                    <h5 class="card-title">Câmara</h5>
+                    <p class="card-text">Informações sobre a câmara da Desa.</p>
+                </div>
+                <div class="card-footer">
+                    <a href="#" class="btn btn-primary">Ver Mais</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <img src="https://via.placeholder.com/400x200" class="card-img-top" alt="Gabinete da Desa">
+                <div class="card-body">
+                    <h5 class="card-title">Gabinete da Desa</h5>
+                    <p class="card-text">Saiba mais sobre o gabinete.</p>
+                </div>
+                <div class="card-footer">
+                    <a href="#" class="btn btn-primary">Detalhes</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notícias -->
+    <section id="noticias" class="container mt-5">
+        <h2>Últimas Notícias</h2>
+        <div id="carouselNoticias" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for noticia in noticias %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <img src="{{ noticia.imagem.url }}" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="{{ noticia.titulo }}">
+                    <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 p-2 rounded">
+                        <h5>{{ noticia.titulo }}</h5>
+                        <p>{{ noticia.conteudo|truncatewords:20 }}</p>
+                        <a href="{{ noticia.link }}" class="btn btn-primary">Leia mais</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselNoticias" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselNoticias" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Seção do Agendamento com altura total -->
+    <div class="agendamento-container">
+        <iframe src='https://outlook.office365.com/owa/calendar/teste6@tjmt.jus.br/bookings/' 
+                width="100%" height="100%" scrolling="yes" style="border:0;">
+        </iframe>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="footer mt-auto py-3 text-center" style="background-color: #f8f9fa; color: #6c757d; border-top: 1px solid #dee2e6; font-size: 0.9rem;">
+        <div class="container">
+            <p class="mb-1">&copy; 2025 Gabinete DESA. Clarice Claudino da Silva</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

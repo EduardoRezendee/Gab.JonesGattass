@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Título e Divisor -->
+    <div class="mb-4">
+        <h1 class="fw-bold" style="color: #083464; font-size: 1.5rem;">
+            <i class="bi bi-info-circle me-2"></i> Detalhes do Processo
+        </h1>
+        <hr style="height: 2px; background-color: #bea066; border: none; width: 50%;">
+    </div>
+
+    <!-- Card com Detalhes do Processo -->
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
+            <h5 class="fw-bold mb-3" style="color: #083464;">Número do Processo: {{ processo.numero_processo }}</h5>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Espécie:</strong> {{ processo.especie }}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Tipo:</strong> {{ processo.tipo }}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Câmara:</strong> {{ processo.camara }}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Usuário:</strong> 
+                {% if processo.usuario %}
+                    {{ processo.usuario.first_name }} {{ processo.usuario.last_name }}
+                {% else %}
+                    <em class="text-muted">Não definido</em>
+                {% endif %}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Data de Julgamento:</strong> 
+                {{ processo.dt_julgamento|date:"d/m/Y H:i" }}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Data de Prazo:</strong> 
+                {{ processo.dt_prazo|date:"d/m/Y H:i" }}
+            </p>
+            <p class="card-text mb-2">
+                <strong class="text-secondary">Fase Atual:</strong> 
+                {{ processo.andamentos.last.fase }}
+            </p>
+            <p class="card-text mb-0">
+                <strong class="text-secondary">Status do Processo:</strong> 
+                {% if processo.concluido %}
+                    <span class="text-success fw-semibold">Concluído</span>
+                {% else %}
+                    <span class="text-danger fw-semibold">Não Concluído</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Botões de Navegação -->
+    <div class="mt-4 d-flex justify-content-end gap-2">
+        <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm">
+            <i class="bi bi-arrow-left-circle me-1"></i> Voltar para a lista
+        </a>
+        <a href="{% url 'processo_update' processo.pk %}" class="btn text-white shadow-sm" style="background-color: #bea066; border-color: #bea066;">
+            <i class="bi bi-pencil-fill me-1"></i> Editar
+        </a>
+    </div>
+</div>
+{% endblock %}

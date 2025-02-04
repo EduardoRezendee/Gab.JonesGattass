@@ -1,0 +1,51 @@
+<h3 class="text-center mt-5" style="display: none;">Processos por Resultado</h3>
+<div id="resultadoChart"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const resultadoData = {{ resultado_data|safe }};
+
+        if (resultadoData.labels.length > 0) {
+            const trace = {
+                x: resultadoData.labels, // Rótulos no eixo X
+                y: resultadoData.data,   // Valores no eixo Y
+                type: 'scatter',         // Gráfico de linha
+                mode: 'lines+markers',   // Linhas e pontos
+                line: {
+                    color: 'rgba(255, 99, 132, 1)', // Cor da linha
+                    width: 2,                       // Largura da linha
+                },
+                marker: {
+                    color: 'rgba(255, 99, 132, 1)', // Cor dos pontos
+                    size: 6,                        // Tamanho dos pontos
+                },
+                text: resultadoData.data.map(String), // Valores exibidos no hover
+                hoverinfo: 'x+y',                     // Exibe rótulo e valor
+            };
+
+            const layout = {
+                xaxis: {
+                    showgrid: false,  // Sem grade
+                    zeroline: false,  // Sem linha zero
+                    showline: false,  // Sem linha do eixo
+                    ticks: '',        // Sem marcas
+                },
+                yaxis: {
+                    showgrid: false,  // Sem grade
+                    zeroline: false,  // Sem linha zero
+                    showline: false,  // Sem linha do eixo
+                    ticks: '',        // Sem marcas
+                },
+                margin: { t: 0, l: 0, r: 0, b: 0 }, // Margens mínimas
+                plot_bgcolor: 'rgba(0,0,0,0)',      // Fundo transparente
+                paper_bgcolor: 'rgba(0,0,0,0)',     // Fundo transparente
+                showlegend: false,                  // Sem legenda
+            };
+
+            Plotly.newPlot('resultadoChart', [trace], layout, { responsive: true });
+        }
+    });
+</script>
+
+<!-- Incluindo a biblioteca Plotly -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>

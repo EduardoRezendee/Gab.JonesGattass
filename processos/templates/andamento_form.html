@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="display-4">Editar Andamento</h3>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="post" class="form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Botões de ações adicionais -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Ações</h5>
+
+            <!-- Botão para Iniciar Andamento -->
+            {% if not andamento.dt_inicio %}
+            <form method="post" action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success mb-2">
+                    <i class="bi bi-play-fill"></i> Iniciar Andamento
+                </button>
+            </form>
+            {% endif %}
+
+            <!-- Dropdown para Enviar para Próxima Fase -->
+            <div class="dropdown d-inline">
+                <button class="btn btn-secondary dropdown-toggle mb-2" type="button" id="sendToPhaseDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    Enviar para Próxima Fase
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="sendToPhaseDropdown">
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Revisão">
+                            <button type="submit" class="dropdown-item">Revisão</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Correção">
+                            <button type="submit" class="dropdown-item">Correção</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="L. PJE">
+                            <button type="submit" class="dropdown-item">L. PJE</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
+            <a href="{% url 'andamento_list' %}?processo={{ andamento.processo.pk }}" class="btn btn-secondary">Cancelar e voltar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

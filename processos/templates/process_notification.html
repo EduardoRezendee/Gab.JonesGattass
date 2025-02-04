@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Notificação de Processo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #004085;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+            font-size: 16px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .content strong {
+            color: #004085;
+        }
+        .button {
+            display: block;
+            width: 250px;
+            margin: 20px auto;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+            padding: 10px;
+            border-top: 1px solid #dddddd;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        Notificação de Processo
+    </div>
+    
+    <div class="content">
+        <p>Olá,</p>
+        <p><strong>{{ message_action }}</strong></p>
+        
+        <p><strong>Número do Processo:</strong> {{ numero_processo }}</p>
+        <p><strong>Data de Distribuição:</strong> {{ data_dist }}</p>
+        <p><strong>Espécie:</strong> {{ especie }}</p>
+        <p><strong>Prazo:</strong> {{ dt_prazo }}</p>
+        
+        <a href="{{ andamento_url }}" class="button">Ver Andamentos do Processo</a>
+        
+        <p>Se você não deveria receber esta mensagem, por favor ignore este e-mail.</p>
+    </div>
+    
+    <div class="footer">
+        &copy; {{ year }} Sistema de Gestão de Processos | TJMT
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="display-4">Editar Andamento</h3>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Botões de ações adicionais -->
+    <div class="mt-3">
+        <!-- Botão para Iniciar Andamento -->
+        {% if not andamento.dt_inicio %}
+        <form method="post" action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-play-fill"></i> Iniciar Andamento
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- Botão para Enviar para Próxima Fase -->
+        <div class="dropdown d-inline">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="sendToPhaseDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                Ações
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="sendToPhaseDropdown">
+                {% if andamento.fase.fase == "L. PJE" %}
+                    <!-- Botão para concluir o processo -->
+                    <li>
+                        <form method="post" action="{% url 'andamento_concluir' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Concluir Processo
+                            </button>
+                        </form>
+                    </li>
+                    <!-- Botão para voltar para Revisão -->
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Revisão">
+                            <button type="submit" class="dropdown-item text-warning">
+                                Voltar para Revisão
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <!-- Botões para as demais fases -->
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Revisão">
+                            <button type="submit" class="dropdown-item">Revisão</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Correção">
+                            <button type="submit" class="dropdown-item">Correção</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="L. PJE">
+                            <button type="submit" class="dropdown-item">L. PJE</button>
+                        </form>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <!-- Botão para Cancelar -->
+        <a href="{% url 'andamento_list' %}?processo={{ andamento.processo.pk }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</div>
+{% endblock %}
