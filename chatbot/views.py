@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Conectar ao banco de dados PostgreSQL
 try:
-    db_uri = f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@localhost:{config('DB_PORT')}/{config('DB_NAME')}"
+    db_uri = f"postgresql+psycopg2://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
     print(f"Tentando conectar ao banco: {db_uri}")  # DEBUG
 
     db = SQLDatabase.from_uri(db_uri)
