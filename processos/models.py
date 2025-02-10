@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 
 class Resultado(models.Model):
@@ -8,7 +9,7 @@ class Resultado(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.resultado
 
 
@@ -17,7 +18,7 @@ class Tipo(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.tipo
 
 
@@ -26,7 +27,7 @@ class Camara(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.camara
 
 
@@ -35,7 +36,7 @@ class Fase(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.fase
 
 
@@ -45,7 +46,7 @@ class Especie(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.especie
 
 
@@ -54,7 +55,7 @@ class Status(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.status
 
 
@@ -76,6 +77,20 @@ class Processo(models.Model):
     dt_conclusao = models.DateTimeField(null=True, blank=True)
     antigo = models.DateTimeField(null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        # Se a espécie for "Liminar", o tipo também será "Liminar"
+        if self.especie and self.especie.especie == "Liminar":
+            tipo_liminar, _ = Tipo.objects.get_or_create(tipo="Liminar")
+            self.tipo = tipo_liminar  # Garante que o tipo seja "Liminar"
+
+        super().save(*args, **kwargs)  # Chama o método save original
+
+    def save(self, *args, **kwargs):
+        # Se a espécie for "Liminar", definir automaticamente o prazo para 24h após a criação
+        if self.especie and self.especie.especie == "Liminar":
+            self.dt_prazo = now() + timedelta(hours=24)  # Define o prazo para 24h depois do momento atual
+
+        super().save(*args, **kwargs)  # Chama o método save original
 
 
 class Andamento(models.Model):
@@ -111,7 +126,7 @@ class Andamento(models.Model):
             status=Status.objects.get(status="Não iniciado")  # Inicia na nova fase como "Não iniciado"
         )
 
-    def __str__(self):
+    def _str_(self):
         return f"{self.processo.numero_processo} - {self.fase.fase}"
 
 
@@ -122,7 +137,7 @@ class HistoricoAndamento(models.Model):
     dt_transicao = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
-    def __str__(self):
+    def _str_(self):
         return f"{self.andamento.processo.numero_processo} - {self.fase_anterior} -> {self.fase_atual}"
 
 
@@ -134,7 +149,7 @@ class TarefaDoDia(models.Model):
     class Meta:
         unique_together = ('usuario', 'processo')  # Impede que o mesmo processo seja duplicado na lista do usuário
 
-    def __str__(self):
+    def _str_(self):
         return f"Tarefa do {self.usuario} - {self.processo.numero_processo}"
     
 
@@ -144,5 +159,5 @@ class ComentarioProcesso(models.Model):  # Renomeei para refletir melhor o prop�
     texto = models.TextField(default="")  # Garante que não terá problemas com valores nulos
     data_criacao = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def _str_(self):
         return f"Comentário de {self.usuario} em {self.processo.numero_processo}"

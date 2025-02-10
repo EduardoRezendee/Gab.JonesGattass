@@ -24,8 +24,9 @@
     <div class="container mt-4">
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
             {% for item in andamentos_por_fase %}
-            <div class="col">
-                <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; overflow: hidden;">
+                {% if item.fase.fase != "Processo Concluído" %}
+                    <div class="col">
+                    <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; overflow: hidden;">
                     <!-- Cabeçalho da Fase -->
                     <div class="card-header text-center" style="background-color: #083464; color: #ffffff; padding: 15px;">
                         <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
@@ -42,15 +43,15 @@
                                 <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" class="accordion-collapse collapse show" aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
                                     <div class="accordion-body" style="padding: 15px;">
                                         {% for andamento in item.nao_iniciado_em_andamento %}
-                                        <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
-                                            <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #bea066; padding: 15px;">
-                                                <h6 class="card-title" style="font-size: 1rem; font-weight: bold; color: #083464;">{{ andamento.andamento }}</h6>
-                                                <p class="card-text mb-2">
-                                                    <strong>Status:</strong>
-                                                    <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                                                        {{ andamento.status }}
-                                                    </span>
-                                                </p>
+                                            <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
+                                                <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #bea066; padding: 15px;">
+                                                    <h6 class="card-title" style="font-size: 1rem; font-weight: bold; color: #083464;">{{ andamento.andamento }}</h6>
+                                                    <p class="card-text mb-2">
+                                                        <strong>Status:</strong>
+                                                        <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                            {{ andamento.status }}
+                                                        </span>
+                                                    </p>
                                                 <p class="card-text mb-2">
                                                     <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
                                                 </p>
@@ -162,6 +163,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>

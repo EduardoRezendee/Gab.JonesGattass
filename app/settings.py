@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'processos',
     'accounts',
     'publico',
+    'chatbot',
 ]
 
 LOGIN_URL = 'login'
@@ -97,6 +98,7 @@ DATABASES = {
 }
 
 
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -149,3 +151,6 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='seu_email@gmail.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='sua_senha')
 
 
+TWILIO_ACCOUNT_SID = "AC85d5d07df7a937bc69b9a32c7a1260b5"
+TWILIO_AUTH_TOKEN = "5ea01afb16f4fca8ee68cd1ba9805743"
+TWILIO_WHATSAPP_NUMBER = "whatsapp:+15203416906"

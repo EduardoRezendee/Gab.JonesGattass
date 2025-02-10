@@ -19,8 +19,8 @@
         <form method="get">
             <div class="row g-3">
                 <!-- Filtro por Assessor -->
-                <div class="col-md-4">
-                    <label class="fw-bold" style="color: #083464;">Filtrar por Assessor:</label>
+                <div class="col-md-3">
+                    <label class="fw-bold" style="color: #083464;">Assessor:</label>
                     <select name="assessor" class="form-control shadow-sm">
                         <option value="">Todos os Assessores</option>
                         {% for assessor in assessores %}
@@ -32,8 +32,8 @@
                 </div>
 
                 <!-- Filtro por Mês -->
-                <div class="col-md-4">
-                    <label class="fw-bold" style="color: #083464;">Filtrar por Mês:</label>
+                <div class="col-md-3">
+                    <label class="fw-bold" style="color: #083464;">Mês de Distribuição:</label>
                     <select name="mes_distribuicao" class="form-control shadow-sm">
                         <option value="">Todos os Meses</option>
                         {% for i, nome_mes in months %}
@@ -44,15 +44,30 @@
                     </select>
                 </div>
 
-                <!-- Botão de Filtrar -->
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn w-100 shadow-sm" style="background-color: #bea066; color: #ffffff;">
+                <!-- Filtro por Data Inicial -->
+                <div class="col-md-3">
+                    <label class="fw-bold" style="color: #083464;">Data Inicial:</label>
+                    <input type="date" name="data_inicio" class="form-control shadow-sm" value="{{ request.GET.data_inicio }}">
+                </div>
+
+                <!-- Filtro por Data Final -->
+                <div class="col-md-3">
+                    <label class="fw-bold" style="color: #083464;">Data Final:</label>
+                    <input type="date" name="data_fim" class="form-control shadow-sm" value="{{ request.GET.data_fim }}">
+                </div>
+            </div>
+
+            <!-- Botão de Filtrar -->
+            <div class="row mt-3">
+                <div class="col-md-12 d-flex justify-content-end">
+                    <button type="submit" class="btn shadow-sm px-4" style="background-color: #bea066; color: #ffffff;">
                         <i class="bi bi-funnel"></i> Aplicar Filtros
                     </button>
                 </div>
             </div>
         </form>
     </div>
+
 
 <!-- Cards de Métricas -->
 <div class="row justify-content-center g-4">

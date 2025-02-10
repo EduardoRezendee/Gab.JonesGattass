@@ -1,31 +1,32 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
-from .models import Processo, Andamento, Fase, Status
-from .forms import ProcessoForm, AndamentoForm
+from .forms import ProcessoForm, AndamentoForm, ComentarioProcessoForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView
-from .models import Processo
 from datetime import datetime, timedelta
-from django.views.generic import ListView
 from datetime import datetime, timedelta
 from calendar import month_name
-from .models import Processo, Fase, Status, Camara, Tipo, Especie
+from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, Andamento, Fase
 import locale
 from calendar import month_name
 from django.contrib.auth.models import User
-from .models import ComentarioProcesso, Andamento
-from .forms import ComentarioProcessoForm
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+import pandas as pd
+from django.contrib import messages
+from .forms import ExcelUploadForm
+from django.utils.timezone import make_aware
+import openpyxl
+from django.http import HttpResponse
+from django.shortcuts import render
+from .metrics import get_advanced_metrics
+from accounts.models import UserProfile
+from django.urls import reverse
+from django.utils.timezone import now
+from django.db.models import Subquery, OuterRef, Exists
 
-# Configura o idioma para português
+
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-
-
-from django.contrib.auth.models import User
-from django.utils.timezone import datetime, timedelta
-from django.utils.translation import gettext_lazy as _
-from calendar import month_name
-from .models import Processo, Status, Fase, Camara, Tipo, Especie, TarefaDoDia
 
 class ProcessoListView(LoginRequiredMixin, ListView):
     model = Processo
@@ -38,96 +39,89 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         Filtra os processos com base nos parâmetros fornecidos na URL.
         """
         queryset = Processo.objects.all()
-        users = User.objects.all().order_by('first_name')  # Ordena pelo primeiro nome
 
         # Captura o parâmetro de ordenação da URL
         order_by = self.request.GET.get('ordenar', 'data_dist')
 
-        # Aplicar a ordenação correta
-        if order_by == "mais_recente":
-            queryset = queryset.order_by("-data_dist")  # Mais recente primeiro
-        elif order_by == "mais_antigo":
-            queryset = queryset.order_by("data_dist")  # Mais antigo primeiro
-        elif order_by == "antigo_recente":
-            queryset = queryset.order_by("-antigo")  # Mais recente primeiro
-        elif order_by == "antigo_antigo":
-            queryset = queryset.order_by("antigo")  # Mais antigo primeiro
+        # 🔹 Garante uma ordenação segura
+        ordering = {
+            "mais_recente": "-data_dist",
+            "mais_antigo": "data_dist",
+            "antigo_recente": "-antigo",
+            "antigo_antigo": "antigo",
+        }.get(order_by, "-data_dist")  # Ordem padrão
 
-        # Filtros por campos específicos
+        queryset = queryset.order_by(ordering)
+
+        # Captura filtros da URL
         status = self.request.GET.get('status')
         fase_atual = self.request.GET.get('fase_atual')
         camara = self.request.GET.get('camara')
         tipo = self.request.GET.get('tipo')
         especie = self.request.GET.get('especie')
         numero_processo = self.request.GET.get('numero_processo')
-
-        # Filtrar por "Meus Processos"
         meus_processos = self.request.GET.get('meus_processos', None)
-
-        # Aplica o filtro se o checkbox estiver marcado
-        if meus_processos == 'on':
-            queryset = queryset.filter(usuario=self.request.user)
-
-        # Filtrar por usuário (user_id)
         user_id = self.request.GET.get('user_id')
-        if user_id:
-            queryset = queryset.filter(usuario__id=user_id)
 
-        # Filtrar por datas
-        data_ano = self.request.GET.get('data_ano')
-        data_mes = self.request.GET.get('data_mes')
-        data_semana = self.request.GET.get('data_semana')
-        data_prazo = self.request.GET.get('data_prazo')
-        data_julgamento = self.request.GET.get('data_julgamento')
-
+        # Filtrar apenas processos NÃO concluídos quando status estiver vazio
         if status:
             status = status.strip().lower()
-            
             if status == "concluído":
                 queryset = queryset.filter(concluido=True)
             elif status == "pendente":
                 queryset = queryset.filter(concluido=False)
+        else:
+            queryset = queryset.filter(concluido=False)  # Padrão: exclui concluídos
 
+        # 🔹 **Filtrar apenas pela fase atual (último andamento do processo)**
+        latest_fase = Subquery(
+            Andamento.objects.filter(
+                processo=OuterRef('id')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+        queryset = queryset.annotate(fase_atual=latest_fase)
 
+        # 🔹 **Filtrar SOMENTE por status "Em andamento" ou "Não iniciado"**
+        andamento_existe = Exists(
+            Andamento.objects.filter(
+                processo=OuterRef('id'),
+                status__status__in=["Em andamento", "Não iniciado"]
+            )
+        )
+        queryset = queryset.filter(andamento_existe)
 
-        if fase_atual:
-            queryset = queryset.filter(andamentos__fase__fase=fase_atual)
-        if camara:
-            queryset = queryset.filter(camara__camara=camara)
-        if tipo:
-            queryset = queryset.filter(tipo__tipo=tipo)
-        if especie:
-            queryset = queryset.filter(especie__especie=especie)  # Se a espécie for filtrada pelo nome
+        # Aplicar filtros específicos
+        filtros = {
+            'fase_atual': fase_atual,  # 🔹 Agora corretamente comparando com nome da fase
+            'camara__camara': camara,
+            'tipo__tipo': tipo,
+            'especie__especie': especie,
+            'numero_processo__icontains': numero_processo,
+        }
 
-        if numero_processo:
-            queryset = queryset.filter(numero_processo__icontains=numero_processo)
-        if meus_processos:
+        for campo, valor in filtros.items():
+            if valor:
+                queryset = queryset.filter(**{campo: valor})
+
+        # Filtrar processos apenas do usuário logado (se opção estiver ativada)
+        if meus_processos == 'on':
             queryset = queryset.filter(usuario=self.request.user)
 
-        # Filtrar por ano
-        if data_ano:
-            queryset = queryset.filter(data_dist__year=data_ano)
+        # Filtrar por usuário específico
+        if user_id:
+            queryset = queryset.filter(usuario__id=user_id)
 
-        # Filtrar por mês
-        if data_mes:
-            queryset = queryset.filter(data_dist__month=data_mes)
+        # 🔹 **Corrigido: Filtragem por datas**
+        data_dist = self.request.GET.get('data_dist')
+        data_prazo = self.request.GET.get('data_prazo')
+        data_julgamento = self.request.GET.get('data_julgamento')
 
-        # Filtrar por semana
-        if data_semana:
-            start_week = datetime.today() - timedelta(days=7)
-            queryset = queryset.filter(data_dist__gte=start_week)
-
-        # Filtro por data de prazo e data de julgamento
+        if data_dist:
+            queryset = queryset.filter(data_dist__date=datetime.strptime(data_dist, '%Y-%m-%d').date())
         if data_prazo:
-            queryset = queryset.filter(dt_prazo__date=data_prazo)
+            queryset = queryset.filter(dt_prazo__date=datetime.strptime(data_prazo, '%Y-%m-%d').date())
         if data_julgamento:
-            queryset = queryset.filter(dt_julgamento__date=data_julgamento)
-
-        # Adiciona fase_atual e status_atual para cada processo
-        for processo in queryset:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
-            processo.fase_atual = ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem Fase"
-            processo.status_atual = "Concluído" if processo.concluido else "Pendente"
+            queryset = queryset.filter(dt_julgamento__date=datetime.strptime(data_julgamento, '%Y-%m-%d').date())
 
         return queryset
 
@@ -137,44 +131,102 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         """
         context = super().get_context_data(**kwargs)
 
+        # Opções de ordenação
         context["ordenacao_opcoes"] = [
             {"valor": "mais_recente", "label": "Mais Recente"},
             {"valor": "mais_antigo", "label": "Mais Antigo"},
+            {"valor": "antigo_recente", "label": "Mais Recente por Antiguidade"},
+            {"valor": "antigo_antigo", "label": "Mais Antigo por Antiguidade"},
         ]
 
-        # Adiciona os usuários ao contexto, ordenados por nome completo
+        # Usuários ordenados
         context['users'] = User.objects.select_related('profile').order_by('first_name', 'last_name')
 
-        # Obtém métricas de processos
-        metrics = get_advanced_metrics()
-
-        # Adiciona meses (número e nome) ao contexto
-        context['meses'] = [(i, month_name[i].capitalize()) for i in range(1, 13)]
-
         # Adiciona filtros para os campos relacionados
-        context['statuses'] = ["Concluído", "Pendente"]  # Apenas os dois status do processo
-        context['fases'] = Fase.objects.values_list('fase', flat=True)
+        context['statuses'] = ["Em andamento", "Não iniciado"]
+        context['fases'] = Fase.objects.exclude(fase="Concluído").values_list('fase', flat=True)
         context['camaras'] = Camara.objects.all()
         context['tipos'] = Tipo.objects.all()
         context['especies'] = Especie.objects.all()
 
-        # Adiciona informações sobre as tarefas do dia do usuário
+        # 🔹 **Adiciona tarefas do dia do usuário**
         tarefas = TarefaDoDia.objects.filter(usuario=self.request.user)
-        context['tarefas_do_dia'] = tarefas  # Lista completa de tarefas
-        context['tarefas_do_dia_ids'] = list(tarefas.values_list('processo__id', flat=True))  # IDs dos processos
+        context['tarefas_do_dia'] = tarefas
+        context['tarefas_do_dia_ids'] = list(tarefas.values_list('processo__id', flat=True))
 
-        # Dicionário para mapear processos por usuário
-        processos_por_usuario = {
-            item['id']: {
-                "total": item["total"], 
-                "concluidos": item['concluidos'], 
-                "pendentes": item['pendentes']
+        return context
+
+class ProcessoCreateView(LoginRequiredMixin, CreateView):
+    model = Processo
+    form_class = ProcessoForm
+    template_name = 'processo_form.html'
+    success_url = reverse_lazy('processo_list')
+
+
+class ProcessoDetailView(LoginRequiredMixin, DetailView):
+    model = Processo
+    template_name = 'processo_detail.html'
+    context_object_name = 'processo'
+
+
+class ProcessoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Processo
+    form_class = ProcessoForm
+    template_name = 'processo_form_update.html'
+    success_url = reverse_lazy('processo_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Adiciona o usuário logado
+        return kwargs
+
+
+class ProcessoDeleteView(LoginRequiredMixin, DeleteView):
+    model = Processo
+    template_name = 'processo_confirm_delete.html'
+    success_url = reverse_lazy('processo_list')
+
+
+class AndamentoListView(LoginRequiredMixin, ListView):
+    template_name = 'andamento_list.html'
+    context_object_name = 'andamentos'
+
+    def get_queryset(self):
+        """
+        Retorna os andamentos relacionados ao processo atual, com validação de ID.
+        """
+        processo_id = self.request.GET.get('processo')
+        if not processo_id or not processo_id.isdigit():
+            raise Http404("Processo inválido ou não encontrado.")
+        
+        return Andamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
+
+    def get_context_data(self, **kwargs):
+        """
+        Adiciona informações adicionais ao contexto, excluindo a fase 'Processo Concluído'.
+        """
+        context = super().get_context_data(**kwargs)
+
+        processo_id = self.request.GET.get('processo')
+        if not processo_id or not processo_id.isdigit():
+            raise Http404("Processo inválido ou não encontrado.")
+
+        processo = get_object_or_404(Processo, pk=processo_id)
+        fases = Fase.objects.exclude(fase="Processo Concluído")
+
+        andamentos_por_fase = [
+            {
+                'fase': fase,
+                'nao_iniciado_em_andamento': self.get_queryset().filter(fase=fase).exclude(status__status="Concluído"),
+                'concluidos': self.get_queryset().filter(fase=fase, status__status="Concluído"),
             }
-            for item in metrics['assessor_process_data']
-        }
+            for fase in fases
+        ]
 
-        context['processos_por_usuario'] = processos_por_usuario
-
+        context.update({
+            'processo': processo,
+            'andamentos_por_fase': andamentos_por_fase,
+        })
         return context
 
 class ProcessoCreateView(LoginRequiredMixin,CreateView):
@@ -209,7 +261,7 @@ class ProcessoDeleteView(LoginRequiredMixin,DeleteView):
 
 from django.http import Http404
 
-class AndamentoListView(LoginRequiredMixin,ListView):
+class AndamentoListView(LoginRequiredMixin, ListView):
     template_name = 'andamento_list.html'
     context_object_name = 'andamentos'
 
@@ -225,7 +277,7 @@ class AndamentoListView(LoginRequiredMixin,ListView):
 
     def get_context_data(self, **kwargs):
         """
-        Adiciona informações adicionais ao contexto.
+        Adiciona informações adicionais ao contexto, excluindo a fase 'Processo Concluído'.
         """
         context = super().get_context_data(**kwargs)
 
@@ -237,8 +289,10 @@ class AndamentoListView(LoginRequiredMixin,ListView):
         # Busca o processo
         processo = get_object_or_404(Processo, pk=processo_id)
 
-        # Obtém as fases e organiza os andamentos
-        fases = Fase.objects.all()
+        # Obtém as fases, excluindo 'Processo Concluído'
+        fases = Fase.objects.exclude(fase="Processo Concluído")  # Filtro aplicado
+
+        # Organiza os andamentos por fase
         andamentos_por_fase = []
         for fase in fases:
             andamentos_por_fase.append({
@@ -253,8 +307,6 @@ class AndamentoListView(LoginRequiredMixin,ListView):
             'andamentos_por_fase': andamentos_por_fase,
         })
         return context
-
-
 
 
 
@@ -316,12 +368,6 @@ class AndamentoDeleteView(LoginRequiredMixin,DeleteView):
         return reverse('andamento_list') + f'?processo={processo_id}'
 
 
-from django.shortcuts import get_object_or_404, redirect
-from django.http import HttpResponseForbidden
-from django.urls import reverse
-from django.utils.timezone import now
-
-from .models import Andamento, Fase
 
 class AndamentoIniciarView(LoginRequiredMixin,UpdateView):
     def post(self, request, pk, *args, **kwargs):
@@ -332,12 +378,6 @@ class AndamentoIniciarView(LoginRequiredMixin,UpdateView):
             andamento.save()
         return redirect(reverse('andamento_update', kwargs={'pk': pk}))
 
-
-from django.shortcuts import get_object_or_404, redirect
-from django.utils.timezone import now
-from django.urls import reverse
-from accounts.models import UserProfile  # Certifique-se de importar o modelo correto
-from processos.models import Andamento, Fase, Status
 
 class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
@@ -370,9 +410,8 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
 
 
 
-class AndamentoConcluirProcessoView(LoginRequiredMixin,UpdateView):
+class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
-        # Obtem o andamento pelo ID
         andamento = get_object_or_404(Andamento, pk=pk)
         
         # Finaliza o andamento atual
@@ -383,29 +422,51 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin,UpdateView):
         # Marca o processo como concluído e define a data de conclusão
         processo = andamento.processo
         processo.concluido = True
-        processo.dt_atualizacao = now()  # Atualiza a última modificação
-        processo.dt_conclusao = now()  # Registra a data de conclusão
+        processo.dt_atualizacao = now()
+        processo.dt_conclusao = now()
         processo.save()
 
-        # Redireciona para a lista de andamentos do processo
+        # **Corrigir a fase do andamento "Processo concluído"**
+        fase_concluido, _ = Fase.objects.get_or_create(fase="Processo Concluído")
+
+        # Criar um novo andamento indicando que o processo foi concluído na fase correta
+        novo_andamento = Andamento.objects.create(
+            processo=processo,
+            andamento="Processo concluído",
+            fase=fase_concluido,  # 🔥 Ajustado para a fase correta
+            usuario=request.user,
+            status=Status.objects.get(status="Concluído"),
+            dt_inicio=now(),
+            dt_conclusao=now()
+        )
+
         return redirect(reverse('andamento_list') + f"?processo={andamento.processo.pk}")
 
 
-from django.shortcuts import render
-from .metrics import get_advanced_metrics
-from calendar import month_name
-from processos.models import Processo
 
 def process_metrics_view(request):
     """
-    View para renderizar métricas avançadas com filtros opcionais.
+    View para renderizar métricas avançadas com filtros opcionais, incluindo data inicial e final.
     """
     # Obtém os filtros da URL
     assessor = request.GET.get('assessor')
     mes_distribuicao = request.GET.get('mes_distribuicao')
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+
+    # Converte strings de data para objetos datetime (se fornecidos)
+    if data_inicio:
+        data_inicio = make_aware(datetime.strptime(data_inicio, "%Y-%m-%d"))
+    if data_fim:
+        data_fim = make_aware(datetime.strptime(data_fim, "%Y-%m-%d"))
 
     # Obtém os dados de métricas
-    metrics_data = get_advanced_metrics(assessor=assessor, mes_distribuicao=mes_distribuicao)
+    metrics_data = get_advanced_metrics(
+        assessor=assessor, 
+        mes_distribuicao=mes_distribuicao, 
+        data_inicio=data_inicio, 
+        data_fim=data_fim
+    )
 
     # Lista de meses disponíveis para filtro
     months = [(i, month_name[i]) for i in range(1, 13)]
@@ -433,18 +494,17 @@ def process_metrics_view(request):
         "andamento_durations": metrics_data["andamento_durations"],   # Tempo médio por tipo de andamento
         "andamento_waiting_times": metrics_data["andamento_waiting_times"],  # Tempo médio aguardando início dos andamentos
 
-        # Filtros disponíveis
-        "months": months,           # Lista de meses
-        "assessores": assessores,    # Lista de assessores
-
         # **Novo**: Lista de processos detalhados
-        "detalhes_processos": metrics_data["detalhes_processos"]
+        "detalhes_processos": metrics_data["detalhes_processos"],
+                "months": months,
+        "assessores": assessores,
+        "filtros": {
+            "data_inicio": request.GET.get('data_inicio', ''),
+            "data_fim": request.GET.get('data_fim', '')
+        }
     })
 
 
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from .models import TarefaDoDia, Processo
 
 @login_required
 def adicionar_tarefa(request, processo_id):
@@ -473,14 +533,6 @@ def remover_tarefa(request, processo_id):
     if query_params:
         return redirect(f"{url}?{query_params.urlencode()}")
     return redirect(url)
-
-import openpyxl
-from django.http import HttpResponse
-from .models import Processo
-
-import openpyxl
-from django.http import HttpResponse
-from .models import Processo
 
 def export_processos_xlsx(request):
     """Exporta os processos para um arquivo Excel (.xlsx)"""
@@ -559,14 +611,6 @@ def adicionar_comentario(request, processo_id):
             return JsonResponse({"error": "Erro ao processar o formulário.", "erros": form.errors}, status=400)
 
     return JsonResponse({"error": "Método não permitido."}, status=405)
-
-import pandas as pd
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import Processo, Especie, Camara
-from .forms import ExcelUploadForm
-from django.contrib.auth.models import User
-from django.utils.timezone import make_aware
 
 def importar_processos(request):
     if request.method == "POST":

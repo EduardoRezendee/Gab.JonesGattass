@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chatbot SQL</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f4f7fc;
+        }
+
+        .chat-container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .chat-box {
+            height: 450px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-bubble {
+            padding: 12px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            display: inline-block;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .user-msg {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .bot-msg {
+            background-color: #e9ecef;
+            color: #333;
+            align-self: flex-start;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            border-radius: 20px;
+            padding: 10px;
+        }
+
+        .send-btn {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Estilo para a animação de digitação */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 5px;
+            background-color: gray;
+            border-radius: 50%;
+            animation: blink 1.5s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <div class="chat-container">
+        <h2 class="text-center"><i class="fa-solid fa-robot"></i> Chatbot SQL</h2>
+        
+        <div class="card shadow">
+            <div class="card-body">
+                <div id="chat-box" class="chat-box d-flex flex-column">
+                    <!-- Mensagens serão adicionadas aqui -->
+                </div>
+
+                <div class="chat-input-container mt-3">
+                    <input type="text" id="chat-input" class="form-control chat-input" placeholder="Digite sua pergunta..." onkeypress="if(event.keyCode==13) sendQuestion()">
+                    <button class="btn btn-primary send-btn" onclick="sendQuestion()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sendQuestion() {
+        let question = document.getElementById("chat-input").value.trim();
+        if (!question) return;
+
+        let chatBox = document.getElementById("chat-box");
+
+        // Adiciona a mensagem do usuário
+        let userMessage = `<div class="chat-bubble user-msg"><strong>Você:</strong> ${question}</div>`;
+        chatBox.innerHTML += userMessage;
+
+        // Adiciona indicador de digitação do bot
+        let typingIndicator = `
+            <div id="typing" class="chat-bubble bot-msg typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        `;
+        chatBox.innerHTML += typingIndicator;
+        chatBox.scrollTop = chatBox.scrollHeight;  // Rola para a última mensagem
+
+        document.getElementById("chat-input").disabled = true;  // Bloqueia a entrada
+
+        fetch(`/chatbot/ask/?question=${encodeURIComponent(question)}`)
+            .then(response => response.json())
+            .then(data => {
+                let botResponse = data.response ? data.response : "Erro ao obter resposta.";
+
+                // Remove indicador de digitação
+                document.getElementById("typing").remove();
+
+                // Adiciona a resposta do chatbot
+                let botMessage = `<div class="chat-bubble bot-msg"><strong>Chatbot:</strong> ${botResponse}</div>`;
+                chatBox.innerHTML += botMessage;
+
+                document.getElementById("chat-input").value = "";  // Limpa a entrada
+                document.getElementById("chat-input").disabled = false;  // Libera a entrada
+                document.getElementById("chat-input").focus();  // Mantém o foco na entrada
+                chatBox.scrollTop = chatBox.scrollHeight;  // Rola para a última mensagem
+            })
+            .catch(error => {
+                console.error("Erro:", error);
+                document.getElementById("typing").remove();  // Remove indicador de digitação
+
+                let errorMessage = `<div class="chat-bubble bot-msg"><strong>Chatbot:</strong> Erro ao obter resposta. Tente novamente.</div>`;
+                chatBox.innerHTML += errorMessage;
+
+                document.getElementById("chat-input").disabled = false;
+            });
+    }
+</script>
+
+</body>
+</html>
+
+{% endblock %}

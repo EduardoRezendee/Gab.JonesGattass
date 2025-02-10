@@ -24,11 +24,11 @@ class ProcessoForm(forms.ModelForm):
             ),
             'especie': forms.Select(attrs={'class': 'form-control'}),
             'usuario': forms.Select(attrs={'class': 'form-control select2'}),
-            'dt_prazo': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'dt_prazo': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
             'tipo': forms.Select(attrs={'class': 'form-control'}),
             'camara': forms.Select(attrs={'class': 'form-control'}),
             'resultado': forms.Select(attrs={'class': 'form-control'}),
-            'dt_julgamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'dt_julgamento': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
         }
         labels = {
             'numero_processo': 'Número do Processo',

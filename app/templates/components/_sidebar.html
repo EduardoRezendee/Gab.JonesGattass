@@ -1,52 +1,62 @@
 <!-- Botão fixo para abrir e fechar a sidebar -->
 <button id="toggleSidebar" class="btn btn-glow">
-    <i id="toggleIcon" class="bi bi-list fs-4"></i>
-  </button>
-  
-  <!-- Sidebar -->
-  <div id="sidebar" class="sidebar border-end">
-    <div class="sidebar-header">
+  <i id="toggleIcon" class="bi bi-list fs-4"></i>
+</button>
+
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar border-end">
+  <div class="sidebar-header">
       <!-- Deixe um espaço reservado abaixo do botão -->
       <div style="height: 70px;"></div>
-    </div>
-    <ul class="sidebar-nav">
-      <li class="nav-item">
-        <a href="{% url 'home' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
-          <i class="bi bi-house-door fs-4"></i> <span class="nav-text">Home</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="{% url 'processo_list' %}" class="nav-link {% if '/processos/' in request.path %}active{% endif %}">
-          <i class="bi bi-arrow-repeat fs-4"></i> Distribuição de Processos
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="{% url 'process_metrics' %}" class="nav-link">
-          <i class="bi bi-bar-chart fs-4"></i> Painel de Processos
-        </a>
-      </li>      
-      <!-- Perfil e Configurações -->
-    <li class="nav-item mt-auto">
-      <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {% if request.user.profile.photo %}
-        <img src="{{ request.user.profile.photo.url }}" alt="Perfil" class="rounded-circle" style="width: 30px; height: 30px;">
-        {% else %}
-        <i class="bi bi-person-circle fs-4"></i>
-        {% endif %}
-        <span class="nav-text">{{ request.user.first_name }}</span>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-        <li><a class="dropdown-item" href="{% url 'password_change' %}">Trocar Senha</a></li>
-        <li>
-          <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-link text-decoration-none w-100 text-start">Sair</button>
-          </form>
-        </li>
-      </ul>
-    </li>
-    </ul>
   </div>
+  <ul class="sidebar-nav">
+      <li class="nav-item">
+          <a href="{% url 'home' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
+              <i class="bi bi-house-door fs-4"></i> <span class="nav-text">Home</span>
+          </a>
+      </li>
+      <li class="nav-item">
+          <a href="{% url 'processo_list' %}" class="nav-link {% if '/processos/' in request.path %}active{% endif %}">
+              <i class="bi bi-arrow-repeat fs-4"></i> Distribuição de Processos
+          </a>
+      </li>
+      <li class="nav-item">
+          <a href="{% url 'process_metrics' %}" class="nav-link">
+              <i class="bi bi-bar-chart fs-4"></i> Painel de Processos
+          </a>
+      </li>  
+
+      <!-- 🔹 Novo item: Chatbot SQL -->
+      <li class="nav-item">
+          <a href="{% url 'chatbot' %}" class="nav-link {% if request.path == '/chatbot/' %}active{% endif %}">
+              <i class="bi bi-chat-dots fs-4"></i> Chatbot SQL
+          </a>
+      </li>  
+
+      <!-- Perfil e Configurações -->
+      <li class="nav-item mt-auto">
+          <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              {% if request.user.profile.photo %}
+              <img src="{{ request.user.profile.photo.url }}" alt="Perfil" class="rounded-circle" style="width: 30px; height: 30px;">
+              {% else %}
+              <i class="bi bi-person-circle fs-4"></i>
+              {% endif %}
+              <span class="nav-text">{{ request.user.first_name }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="{% url 'password_change' %}">Trocar Senha</a></li>
+              <li>
+                  <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-link text-decoration-none w-100 text-start">Sair</button>
+                  </form>
+              </li>
+          </ul>
+      </li>
+  </ul>
+</div>
+
+
   
   <style>
     /* Estilo Geral */

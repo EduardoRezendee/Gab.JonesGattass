@@ -1,17 +1,25 @@
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Subquery, OuterRef,Q
 from processos.models import Processo, Andamento
 
-def get_advanced_metrics(assessor=None, mes_distribuicao=None):
+def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None, data_fim=None):
     """
     Calcula métricas avançadas sobre processos e andamentos.
     """
     queryset = Processo.objects.all()
+
+
 
     # Aplica filtros opcionais
     if assessor:
         queryset = queryset.filter(usuario_id=assessor)
     if mes_distribuicao:
         queryset = queryset.filter(data_dist__month=mes_distribuicao)
+
+        # Filtro por data inicial e final
+    if data_inicio:
+        queryset = queryset.filter(data_dist__gte=data_inicio)
+    if data_fim:
+        queryset = queryset.filter(data_dist__lte=data_fim)
 
     # 🔹 Calcula o total de processos para o cálculo da porcentagem
     total_processos = queryset.count()
