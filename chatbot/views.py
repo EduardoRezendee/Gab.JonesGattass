@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 
 # Conectar ao banco de dados PostgreSQL
 try:
-    db = SQLDatabase.from_uri("postgresql://postgres:03010315SSp@@#@127.0.0.1:5432/gabinete")
+    db_uri = f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+    db = SQLDatabase.from_uri(db_uri)
     logger.info("Conexão ao banco de dados PostgreSQL bem-sucedida!")
 except Exception as e:
     logger.error(f"Erro ao conectar ao banco de dados PostgreSQL: {e}")
     db = None  # Garante que a variável 'db' existe, mesmo que a conexão falhe
-
 
 # Verifica se o banco foi conectado antes de criar o agente SQL
 if db:
