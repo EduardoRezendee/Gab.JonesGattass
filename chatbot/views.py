@@ -17,10 +17,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 try:
-    # Conectar ao banco de dados SQLite
-    db = SQLDatabase.from_uri("sqlite:///db.sqlite3")
+    # Conectar ao banco de dados PostgreSQL
+    db = SQLDatabase.from_uri(
+        f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+    )
 except Exception as e:
-    logger.error(f"Erro ao conectar ao banco de dados: {e}")
+    logger.error(f"Erro ao conectar ao banco de dados PostgreSQL: {e}")
 
 # Utilizando GPT-4o Mini (mais barato e eficiente)
 llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)

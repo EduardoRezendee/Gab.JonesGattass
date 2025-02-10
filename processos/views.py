@@ -154,7 +154,16 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context['tarefas_do_dia'] = tarefas
         context['tarefas_do_dia_ids'] = list(tarefas.values_list('processo__id', flat=True))
 
+        # 🔹 **Adiciona métricas de processos por usuário**
+        metrics_data = get_advanced_metrics()
+        context["assessor_process_data"] = {
+            item["id"]: item for item in metrics_data["assessor_process_data"]
+        }
+        print("Dados de assessor_process_data:")
+        print(context["assessor_process_data"])
+
         return context
+
 
 class ProcessoCreateView(LoginRequiredMixin, CreateView):
     model = Processo
@@ -477,11 +486,11 @@ def process_metrics_view(request):
     # Passa os dados ao template
     return render(request, 'metrics.html', {
         # Dados de gráficos com quantidade e porcentagem
-        "species_data": metrics_data["species_data"],    # Processos por Espécie
-        "type_data": metrics_data["type_data"],          # Processos por Tipo
-        "camara_data": metrics_data["camara_data"],      # Processos por Câmara
-        "resultado_data": metrics_data["resultado_data"],# Processos por Resultado
-        "assessor_data": metrics_data["assessor_data"],  # Processos por Assessor
+        "species_data": metrics_data["species_data"],    
+        "type_data": metrics_data["type_data"],          
+        "camara_data": metrics_data["camara_data"],      
+        "resultado_data": metrics_data["resultado_data"],
+        "assessor_data": metrics_data["assessor_data"],  
         "total_processos": metrics_data["total_processos"],
         "total_concluidos": metrics_data["total_concluidos"],
         "total_pendentes": metrics_data["total_pendentes"],
@@ -490,19 +499,24 @@ def process_metrics_view(request):
         "porcentagem_pendentes": metrics_data["porcentagem_pendentes"],
 
         # Métricas adicionais
-        "average_process_time": metrics_data["average_process_time"], # Tempo médio dos processos
-        "andamento_durations": metrics_data["andamento_durations"],   # Tempo médio por tipo de andamento
-        "andamento_waiting_times": metrics_data["andamento_waiting_times"],  # Tempo médio aguardando início dos andamentos
+        "average_process_time": metrics_data["average_process_time"], 
+        "andamento_durations": metrics_data["andamento_durations"],  
+        "andamento_waiting_times": metrics_data["andamento_waiting_times"], 
 
         # **Novo**: Lista de processos detalhados
         "detalhes_processos": metrics_data["detalhes_processos"],
-                "months": months,
+
+        # 🔹 **Corrigido**: Passando os dados dos assessores corretamente
+        "assessor_process_data": metrics_data["assessor_process_data"],  
+
+        "months": months,
         "assessores": assessores,
         "filtros": {
             "data_inicio": request.GET.get('data_inicio', ''),
             "data_fim": request.GET.get('data_fim', '')
         }
     })
+
 
 
 

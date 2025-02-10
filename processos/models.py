@@ -9,7 +9,7 @@ class Resultado(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.resultado
 
 
@@ -18,7 +18,7 @@ class Tipo(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.tipo
 
 
@@ -27,7 +27,7 @@ class Camara(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.camara
 
 
@@ -36,7 +36,7 @@ class Fase(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.fase
 
 
@@ -46,7 +46,7 @@ class Especie(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.especie
 
 
@@ -55,7 +55,7 @@ class Status(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.status
 
 
@@ -126,7 +126,7 @@ class Andamento(models.Model):
             status=Status.objects.get(status="Não iniciado")  # Inicia na nova fase como "Não iniciado"
         )
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.processo.numero_processo} - {self.fase.fase}"
 
 
@@ -137,7 +137,7 @@ class HistoricoAndamento(models.Model):
     dt_transicao = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.andamento.processo.numero_processo} - {self.fase_anterior} -> {self.fase_atual}"
 
 
@@ -149,7 +149,7 @@ class TarefaDoDia(models.Model):
     class Meta:
         unique_together = ('usuario', 'processo')  # Impede que o mesmo processo seja duplicado na lista do usuário
 
-    def _str_(self):
+    def __str__(self):
         return f"Tarefa do {self.usuario} - {self.processo.numero_processo}"
     
 
@@ -159,5 +159,5 @@ class ComentarioProcesso(models.Model):  # Renomeei para refletir melhor o prop�
     texto = models.TextField(default="")  # Garante que não terá problemas com valores nulos
     data_criacao = models.DateTimeField(auto_now_add=True)
 
-    def _str_(self):
+    def __str__(self):
         return f"Comentário de {self.usuario} em {self.processo.numero_processo}"

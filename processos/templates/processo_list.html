@@ -10,45 +10,45 @@ Cadastro de Processos
     <div class="row">
         <!-- Sidebar Secundária (Filtro por Usuário) -->
         <aside class="col-md-3 col-lg-2 bg-white shadow-sm p-3 d-flex flex-column" 
-               style="border-right: 1px solid #e9ecef; min-height: 100vh;">
+                style="border-right: 1px solid #e9ecef; min-height: 100vh;">
             <h1 class="fw-bold mb-3" style="color: #808000; font-size: 1.5rem;">
                 <i class="fas fa-users me-2"></i> Usuários
             </h1>
-
+        
             <div id="userList" class="overflow-auto flex-grow-1" style="max-height: calc(100vh - 120px);">
                 {% for user in users %}
                 <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}user_id={{ user.id }}"
-                       class="user-card d-flex align-items-center p-2 rounded mb-2 text-decoration-none 
-                              {% if user.id|stringformat:'s' == request.GET.user_id %}active-user bg-light-secondary{% else %}hover-effect{% endif %}" 
-                       style="border: 1px solid #e9ecef; background: #f8f9fa; cursor: pointer; transition: all 0.3s;">
-                        <img src="{% if user.profile.photo %}{{ user.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-                             alt="Foto" 
-                             class="rounded-circle me-2 border" 
-                             width="40" 
-                             height="40" 
-                             style="object-fit: cover;">
-                        <div class="d-flex flex-column flex-grow-1">
-                            <span class="fw-bold text-dark" style="font-size: 14px;">{{ user.get_full_name }}</span>
+                        class="user-card d-flex align-items-center p-2 rounded mb-2 text-decoration-none 
+                            {% if user.id|stringformat:'s' == request.GET.user_id %}active-user bg-light-secondary{% else %}hover-effect{% endif %}" 
+                        style="border: 1px solid #e9ecef; background: #f8f9fa; cursor: pointer; transition: all 0.3s;">
+                    <img src="{% if user.profile.photo %}{{ user.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+                        alt="Foto" 
+                        class="rounded-circle me-2 border" 
+                        width="40" 
+                        height="40" 
+                        style="object-fit: cover;">
+                    <div class="d-flex flex-column flex-grow-1">
+                        <span class="fw-bold text-dark" style="font-size: 14px;">{{ user.get_full_name }}</span>
+                    </div>
+        
+                    {% with assessor_process_data|get_item:user.id as processo_data %}
+                        <div class="ms-auto d-flex align-items-center">
+                            <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #1d8cfc;">
+                                <i class="fas fa-folder me-1"></i>{{ processo_data.total|default:"0" }}
+                            </span>
+                            <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #05bb33;">
+                                <i class="fas fa-check-circle me-1"></i>{{ processo_data.concluidos|default:"0" }}
+                            </span>
+                            <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #dbad14;">
+                                <i class="fas fa-hourglass-half me-1"></i>{{ processo_data.pendentes|default:"0" }}
+                            </span>
                         </div>
-
-                        {% with processos_por_usuario|get_item:user.id as processo_data %}
-                            <div class="ms-auto d-flex align-items-center">
-                                <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #1d8cfc;">
-                                    <i class="fas fa-folder me-1"></i>{{ processo_data.total|default:"0" }}
-                                </span>
-                                <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #05bb33;">
-                                    <i class="fas fa-check-circle me-1"></i>{{ processo_data.concluidos|default:"0" }}
-                                </span>
-                                <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #dbad14;">
-                                    <i class="fas fa-hourglass-half me-1"></i>{{ processo_data.pendentes|default:"0" }}
-                                </span>
-                            </div>
-                        {% endwith %}
-                    </a>
+                    {% endwith %}
+                </a>
                 {% endfor %}
             </div>
         </aside>
-        
+    
         <!-- Conteúdo Principal -->
         <div class="col-md-9 col-lg-10">
             <!-- Cabeçalho -->
