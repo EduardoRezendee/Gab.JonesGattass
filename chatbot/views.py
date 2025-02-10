@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Conectar ao banco de dados PostgreSQL
 try:
-    db_uri = f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@127.0.0.1:{config('DB_PORT')}/{config('DB_NAME')}"
-    db = SQLDatabase.from_uri(db_uri)
+    db = SQLDatabase.from_uri("postgresql://postgres:03010315SSp@@#@127.0.0.1:5432/gabinete")
     logger.info("Conexão ao banco de dados PostgreSQL bem-sucedida!")
 except Exception as e:
     logger.error(f"Erro ao conectar ao banco de dados PostgreSQL: {e}")
