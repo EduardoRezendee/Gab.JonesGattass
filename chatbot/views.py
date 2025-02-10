@@ -107,7 +107,9 @@ def ask_chatbot(request):
                     FROM processos_processo p
                     JOIN processos_andamento a ON a.processo_id = p.id
                     LEFT JOIN auth_user u ON p.usuario_id = u.id
-                    WHERE a.status_id = (SELECT id FROM processos_status WHERE status = 'Em Revisão')
+                    WHERE 
+                        a.fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão')
+                        AND p.concluido = FALSE
                     ORDER BY p.id DESC
                     LIMIT 10;
                 """,
