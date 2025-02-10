@@ -9,7 +9,6 @@ from langchain_community.utilities import SQLDatabase
 from langchain_openai import ChatOpenAI
 from django.utils.timezone import now
 from urllib.parse import quote_plus
-from sqlalchemy.pool import QueuePool
 
 # Configuração da API OpenAI
 os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
@@ -18,22 +17,18 @@ os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Conectar ao banco de dados PostgreSQL com Pooling
+# Conectar ao banco de dados PostgreSQL
 try:
     # Escapando a senha para evitar problemas com caracteres especiais
     escaped_password = quote_plus(config("DB_PASSWORD"))
 
     # Criando a URI de conexão segura
     db_uri = f"postgresql+psycopg2://{config('DB_USER')}:{escaped_password}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+    
+    print(f"Tentando conectar ao banco: {db_uri}")  # DEBUG
 
-    # Criando a conexão com o banco utilizando pooling para otimização
-    db = SQLDatabase.from_uri(
-        db_uri,
-        poolclass=QueuePool,
-        pool_size=10,
-        max_overflow=5,
-        pool_timeout=30
-    )
+    # Criando a conexão com o banco
+    db = SQLDatabase.from_uri(db_uri)
     logger.info("✅ Conexão ao banco de dados PostgreSQL bem-sucedida!")
 except Exception as e:
     logger.error(f"❌ Erro ao conectar ao banco de dados PostgreSQL: {e}")
@@ -55,11 +50,9 @@ else:
 # Lista de saudações para respostas amigáveis
 SAUDACOES = ["olá", "oi", "bom dia", "boa tarde", "boa noite", "e aí"]
 
-
 def chatbot(request):
     """ Renderiza a interface do Chatbot """
     return render(request, 'chat.html')
-
 
 @login_required
 def ask_chatbot(request):
@@ -71,7 +64,7 @@ def ask_chatbot(request):
         return JsonResponse({"response": "O chatbot está temporariamente indisponível devido a problemas de conexão com o banco de dados."})
 
     question = request.GET.get("question", "").strip().lower()
-
+    
     if not question:
         return JsonResponse({"response": "Por favor, faça uma pergunta válida."})
 
@@ -113,10 +106,9 @@ def ask_chatbot(request):
                         COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
                     FROM processos_processo p
                     JOIN processos_andamento a ON a.processo_id = p.id
-                    JOIN processos_fase f ON a.fase_id = f.id
                     LEFT JOIN auth_user u ON p.usuario_id = u.id
                     WHERE 
-                        f.fase = 'Revisão'
+                        a.fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão')
                         AND p.concluido = FALSE
                     ORDER BY p.id DESC
                     LIMIT 10;
@@ -135,25 +127,22 @@ def ask_chatbot(request):
             }
         }
 
-        # Busca a query correspondente mais rapidamente
-        query_keys = queries.keys()
-        matched_key = next((key for key in query_keys if key in question), None)
+        # Verifica se a pergunta do usuário corresponde a alguma consulta SQL definida
+        for key, value in queries.items():
+            if key in question:
+                try:
+                    result = db.run(value["query"], value["params"]) or []
 
-        if matched_key:
-            value = queries[matched_key]
-            try:
-                result = db.run(value["query"], value["params"]) or []
+                    # Resposta personalizada
+                    if "custom_response" in value and result:
+                        response = value["custom_response"](result)
+                        return JsonResponse({"response": response})
 
-                # Resposta personalizada
-                if "custom_response" in value and result:
-                    response = value["custom_response"](result)
-                    return JsonResponse({"response": response}, safe=False, json_dumps_params={'ensure_ascii': False})
+                    return JsonResponse({"response": "Nenhum registro encontrado."})
 
-                return JsonResponse({"response": "Nenhum registro encontrado."})
-
-            except Exception as sql_error:
-                logger.error(f"Erro ao executar consulta SQL: {sql_error}")
-                return JsonResponse({"response": "Erro ao acessar os dados do banco. Verifique a conexão e tente novamente."})
+                except Exception as sql_error:
+                    logger.error(f"Erro ao executar consulta SQL: {sql_error}")
+                    return JsonResponse({"response": "Erro ao acessar os dados do banco. Verifique a conexão e tente novamente."})
 
         # Se não for uma saudação e não corresponder a uma consulta SQL, passa para o GPT responder
         prompt = f"""
@@ -172,7 +161,7 @@ def ask_chatbot(request):
             if not resposta_final:
                 return JsonResponse({"response": "Não encontrei informações relevantes para essa pergunta."})
 
-            return JsonResponse({"response": resposta_final}, safe=False, json_dumps_params={'ensure_ascii': False})
+            return JsonResponse({"response": resposta_final})
         except Exception as gpt_error:
             logger.error(f"Erro na API OpenAI: {gpt_error}")
             return JsonResponse({"response": "Erro ao processar sua pergunta. Tente novamente mais tarde."})
