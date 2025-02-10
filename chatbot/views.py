@@ -16,23 +16,27 @@ os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Conectar ao banco de dados PostgreSQL
 try:
-    # Conectar ao banco de dados PostgreSQL
-    db = SQLDatabase.from_uri(
-        f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
-    )
+    db_uri = f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+    db = SQLDatabase.from_uri(db_uri)
+    logger.info("Conexão ao banco de dados PostgreSQL bem-sucedida!")
 except Exception as e:
     logger.error(f"Erro ao conectar ao banco de dados PostgreSQL: {e}")
+    db = None  # Garante que a variável 'db' existe, mesmo que a conexão falhe
 
-# Utilizando GPT-4o Mini (mais barato e eficiente)
-llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+# Verifica se o banco foi conectado antes de criar o agente SQL
+if db:
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
 
-# Criar o agente SQL
-agent_executor = create_sql_agent(
-    llm=llm,
-    db=db,
-    verbose=True,
-)
+    agent_executor = create_sql_agent(
+        llm=llm,
+        db=db,
+        verbose=True,
+    )
+else:
+    logger.error("A variável 'db' está vazia. O agente SQL não será inicializado.")
+    agent_executor = None  # Evita que o código que depende do agente falhe
 
 # Lista de saudações para respostas amigáveis
 SAUDACOES = ["olá", "oi", "bom dia", "boa tarde", "boa noite", "e aí"]
@@ -46,6 +50,9 @@ def ask_chatbot(request):
     """ Processa perguntas enviadas pelo usuário e retorna respostas formatadas """
     if request.method != "GET":
         return JsonResponse({"error": "Método não permitido."}, status=405)
+
+    if not agent_executor:
+        return JsonResponse({"response": "O chatbot está temporariamente indisponível devido a problemas de conexão com o banco de dados."})
 
     question = request.GET.get("question", "").strip().lower()
     
@@ -68,7 +75,7 @@ def ask_chatbot(request):
                 "query": """
                     SELECT COUNT(*) 
                     FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = ?);
+                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);
                 """,
                 "params": [user.username],  # Evita SQL Injection
                 "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos."
@@ -77,7 +84,7 @@ def ask_chatbot(request):
                 "query": """
                     SELECT COUNT(*) 
                     FROM processos_processo 
-                    WHERE DATE(dt_criacao) = DATE(?);
+                    WHERE DATE(dt_criacao) = DATE(%s);
                 """,
                 "params": [now().date()],  # Usa a data atual corretamente
                 "custom_response": lambda result: f"Hoje entraram {result[0][0]} processos."
