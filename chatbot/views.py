@@ -92,18 +92,19 @@ def ask_chatbot(request):
             },
             "processos em revisão": {
                 "query": """
-                    SELECT 
-                        p.numero_processo, 
-                        COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario, 
-                        COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
-                    FROM processos_processo p
-                    JOIN processos_processoandamento a ON a.processo_id = p.id  -- Ajustado para nova tabela
-                    LEFT JOIN auth_user u ON p.usuario_id = u.id
-                    WHERE 
-                        a.fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão')
-                        AND p.concluido = FALSE
-                    ORDER BY p.id DESC
-                    LIMIT 10;
+                SELECT 
+                    p.numero_processo, 
+                    COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario, 
+                    COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
+                FROM processos_processo p
+                JOIN processos_processoandamento a ON a.processo_id = p.id  
+                LEFT JOIN auth_user u ON p.usuario_id = u.id
+                JOIN processos_fase f ON a.fase_id = f.id  -- Ajustado para buscar a fase diretamente
+                WHERE 
+                    f.fase = 'Revisão'  -- Agora filtramos diretamente pela fase
+                    AND p.concluido = FALSE
+                ORDER BY p.id DESC
+                LIMIT 10;
                 """,
                 "params": [],
                 "custom_response": lambda result: (
