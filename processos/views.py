@@ -643,19 +643,19 @@ def importar_processos(request):
                         # 🔹 Ajuste do usuário - Certifica-se de que o usuário existe
                         usuario = None
                         if "usuario" in row and pd.notna(row["usuario"]):
-                            username_input = str(row["usuario"]).strip()  # Remove espaços extras
+                            username_input = str(row["usuario"]).strip()
                             usuario = User.objects.filter(username=username_input).first()
 
-                            # 🔹 Se não encontrar, tenta buscar sem diferenciar maiúsculas/minúsculas
                             if not usuario:
                                 usuario = User.objects.filter(username__iexact=username_input).first()
 
-                            # Exibir mensagem se o usuário não for encontrado
                             if not usuario:
                                 messages.warning(request, f"⚠ Usuário '{username_input}' não encontrado na linha {index + 1}. Definido como vazio.")
 
                         data_dist = make_aware(pd.to_datetime(row["data_dist"])) if pd.notna(row["data_dist"]) else None
                         antigo = make_aware(pd.to_datetime(row["antigo"])) if "antigo" in row and pd.notna(row["antigo"]) else None
+                        dt_conclusao = make_aware(pd.to_datetime(row["dt_conclusao"])) if "dt_conclusao" in row and pd.notna(row["dt_conclusao"]) else None
+                        dt_prazo = make_aware(pd.to_datetime(row["dt_prazo"])) if "dt_prazo" in row and pd.notna(row["dt_prazo"]) else None
 
                         concluido = row.get("concluido", False)
                         if pd.isna(concluido):
@@ -666,11 +666,12 @@ def importar_processos(request):
                             data_dist=data_dist,
                             especie=especie,
                             camara=camara,
-                            usuario=usuario,  # Agora corretamente ajustado
+                            usuario=usuario,
                             concluido=concluido,
                             antigo=antigo,
+                            dt_conclusao=dt_conclusao,
+                            dt_prazo=dt_prazo,
                         )
-
                     except Exception as e:
                         messages.warning(request, f"❌ Erro ao importar linha {index + 1}: {str(e)}")
 
