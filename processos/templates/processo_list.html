@@ -351,8 +351,13 @@ Cadastro de Processos
                                 {% endif %}
                             </td>
                             <td>{{ processo.especie.sigla }}</td>
-                            <td>{{ processo.status_atual }}</td>
-
+                            <td>
+                                {% if processo.concluido %}
+                                    <span class="badge bg-success">Concluído</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                {% endif %}
+                            </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
                                     <a href="{% url 'processo_detail' processo.pk %}" class="btn btn-outline-info btn-sm" title="Visualizar">
