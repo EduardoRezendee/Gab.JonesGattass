@@ -90,7 +90,7 @@ class Processo(models.Model):
 class ProcessoAndamento(models.Model):
     processo = models.ForeignKey(Processo, on_delete=models.CASCADE, related_name='andamentos')
     andamento = models.CharField(max_length=255)
-    fase = models.ForeignKey(Fase, on_delete=models.CASCADE)  # Nome original mantido
+    fase = models.ForeignKey(Fase, on_delete=models.CASCADE, verbose_name="Fase do Processo")  # Nome original mantido
     link_doc = models.URLField(null=True, blank=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True)
