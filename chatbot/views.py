@@ -155,6 +155,7 @@ def ask_chatbot(request):
         2️⃣ **Andamentos** → Registra todas as movimentações dos processos, incluindo as fases *Elaboração, Revisão, Correção e L. PJE*.
 
         📊 **Tipos de Perguntas que você pode responder**:
+        - Quantos processos estão no gabinete total?
         - Quantos processos entraram, saíram ou estão pendentes?
         - Quais processos estão **em elaboração, revisão, correção ou na fase L. PJE**?
         - Listar os **processos mais antigos** e há **quantos dias estão pendentes**.
