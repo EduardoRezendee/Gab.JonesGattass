@@ -1,5 +1,5 @@
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Subquery, OuterRef,Q
-from processos.models import Processo, Andamento
+from processos.models import Processo, ProcessoAndamento
 
 def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None, data_fim=None):
     """
@@ -70,7 +70,7 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
         return round((value / total_processos) * 100, 1) if total_processos > 0 else 0
 
     # 🔹 Processos por Andamento (Somente NÃO Concluídos)
-    andamento_queryset = Andamento.objects.filter(~Q(status__status="Concluído")) \
+    andamento_queryset = ProcessoAndamento.objects.filter(~Q(status__status="Concluído")) \
         .values('andamento').annotate(total=Count('id')).order_by('andamento')
 
     andamento_data = {
@@ -91,7 +91,7 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
     ).aggregate(avg_duration=Avg('process_duration'))['avg_duration']
 
     # 🔹 Tempo Médio por Tipo de Andamento (Duração do andamento)
-    andamento_queryset = Andamento.objects.filter(
+    andamento_queryset = ProcessoAndamento.objects.filter(
         dt_inicio__isnull=False,
         dt_conclusao__isnull=False,
         dt_conclusao__gte=F('dt_inicio')
@@ -111,12 +111,12 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
         andamento_durations[tipo] = duration
 
     # 🔹 Cálculo do tempo aguardando início do andamento
-    andamento_queryset_waiting = Andamento.objects.filter(
+    andamento_queryset_waiting = ProcessoAndamento.objects.filter(
         dt_inicio__isnull=False
     )
 
     # Subquery para obter a conclusão do andamento anterior
-    subquery_andamento_anterior = Andamento.objects.filter(
+    subquery_andamento_anterior = ProcessoAndamento.objects.filter(
         processo=OuterRef('processo'),
         dt_conclusao__lt=OuterRef('dt_inicio')  # Pegamos o andamento anterior
     ).order_by('-dt_conclusao').values('dt_conclusao')[:1]
@@ -140,7 +140,7 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
         andamento_waiting_times[tipo] = waiting_time
 
     # 🔹 Ajuste para garantir que o tempo médio aguardando a **Elaboração** seja calculado corretamente
-    elaboracao_waiting_time = Andamento.objects.filter(
+    elaboracao_waiting_time = ProcessoAndamento.objects.filter(
         andamento__icontains="Elaboração",
         dt_inicio__isnull=False,
         processo__data_dist__isnull=False

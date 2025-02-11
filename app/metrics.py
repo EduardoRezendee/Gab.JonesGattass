@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from processos.models import Processo, Andamento
+from processos.models import Processo, ProcessoAndamento
 from django.utils.timezone import now
 from django.db.models import Count
 from datetime import date

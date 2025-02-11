@@ -1,5 +1,5 @@
 from django import forms
-from .models import Processo, Andamento
+from .models import Processo, ProcessoAndamento
 from django.contrib.auth.models import User
 from django import forms
 from django.utils.timezone import now, localtime
@@ -79,7 +79,7 @@ class ExcelUploadForm(forms.Form):
 
 class AndamentoForm(forms.ModelForm):
     class Meta:
-        model = Andamento
+        model = ProcessoAndamento
         fields = ['andamento', 'link_doc', 'usuario']
         widgets = {
             'andamento': forms.TextInput(attrs={'class': 'form-control'}),

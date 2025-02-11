@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, Andamento, HistoricoAndamento
+from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, ProcessoAndamento, HistoricoAndamento
 
 # Configuração para modelos simples
 @admin.register(Resultado)
@@ -50,7 +50,7 @@ class ProcessoAdmin(admin.ModelAdmin):
 
 
 # Configuração para o modelo Andamento
-@admin.register(Andamento)
+@admin.register(ProcessoAndamento)
 class AndamentoAdmin(admin.ModelAdmin):
     list_display = ('processo', 'andamento', 'fase', 'usuario', 'dt_inicio', 'dt_conclusao', 'dt_criacao')
     list_filter = ('fase', 'usuario')

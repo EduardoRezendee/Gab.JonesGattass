@@ -87,7 +87,7 @@ class Processo(models.Model):
 
 
 
-class Andamento(models.Model):
+class ProcessoAndamento(models.Model):
     processo = models.ForeignKey(Processo, on_delete=models.CASCADE, related_name='andamentos')
     andamento = models.CharField(max_length=255)
     fase = models.ForeignKey(Fase, on_delete=models.CASCADE)
@@ -112,7 +112,7 @@ class Andamento(models.Model):
     def enviar_para_fase(self, nova_fase):
         self.concluir_andamento()  # Conclui o andamento atual
         nova_fase_obj = Fase.objects.get(fase=nova_fase)
-        Andamento.objects.create(
+        ProcessoAndamento.objects.create(
             processo=self.processo,
             andamento=f"Movido para {nova_fase}",
             fase=nova_fase_obj,
@@ -125,7 +125,7 @@ class Andamento(models.Model):
 
 
 class HistoricoAndamento(models.Model):
-    andamento = models.ForeignKey(Andamento, on_delete=models.CASCADE, related_name='historico')
+    andamento = models.ForeignKey(ProcessoAndamento, on_delete=models.CASCADE, related_name='historico')
     fase_anterior = models.ForeignKey(Fase, on_delete=models.SET_NULL, null=True, blank=True, related_name='fase_anterior')
     fase_atual = models.ForeignKey(Fase, on_delete=models.SET_NULL, null=True, blank=True, related_name='fase_atual')
     dt_transicao = models.DateTimeField(auto_now_add=True)

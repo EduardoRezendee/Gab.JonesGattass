@@ -3,9 +3,8 @@ from django.urls import reverse_lazy
 from .forms import ProcessoForm, AndamentoForm, ComentarioProcessoForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime, timedelta
-from datetime import datetime, timedelta
 from calendar import month_name
-from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, Andamento, Fase
+from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase
 import locale
 from calendar import month_name
 from django.contrib.auth.models import User
@@ -75,7 +74,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
 
         # 🔹 **Filtrar apenas pela fase atual (último andamento do processo)**
         latest_fase = Subquery(
-            Andamento.objects.filter(
+            ProcessoAndamento.objects.filter(
                 processo=OuterRef('id')
             ).order_by('-dt_criacao').values('fase__fase')[:1]
         )
@@ -83,7 +82,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
 
         # 🔹 **Filtrar SOMENTE por status "Em andamento" ou "Não iniciado"**
         andamento_existe = Exists(
-            Andamento.objects.filter(
+            ProcessoAndamento.objects.filter(
                 processo=OuterRef('id'),
                 status__status__in=["Em andamento", "Não iniciado"]
             )
@@ -208,7 +207,7 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
         
-        return Andamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
+        return ProcessoAndamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
 
     def get_context_data(self, **kwargs):
         """
@@ -282,7 +281,7 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
         
-        return Andamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
+        return ProcessoAndamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
 
     def get_context_data(self, **kwargs):
         """
@@ -320,14 +319,14 @@ class AndamentoListView(LoginRequiredMixin, ListView):
 
 
 class AndamentoCreateView(LoginRequiredMixin,CreateView):
-    model = Andamento
+    model = ProcessoAndamento
     form_class = AndamentoForm
     template_name = 'andamento_form.html'
     success_url = reverse_lazy('andamento_list')
 
 
 class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
-    model = Andamento
+    model = ProcessoAndamento
     form_class = AndamentoForm
     template_name = 'andamento_form_update.html'
     success_url = reverse_lazy('andamento_list')
@@ -353,7 +352,7 @@ class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
             if nova_fase:
                 self.object.concluir_andamento()
                 nova_fase_obj = Fase.objects.get(fase=nova_fase)
-                Andamento.objects.create(
+                ProcessoAndamento.objects.create(
                     processo=self.object.processo,
                     andamento=f"Movido para {nova_fase}",
                     fase=nova_fase_obj,
@@ -366,7 +365,7 @@ class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
 
 
 class AndamentoDeleteView(LoginRequiredMixin,DeleteView):
-    model = Andamento
+    model = ProcessoAndamento
     template_name = "andamento_confirm_delete.html"
 
     def get_success_url(self):
@@ -380,7 +379,7 @@ class AndamentoDeleteView(LoginRequiredMixin,DeleteView):
 
 class AndamentoIniciarView(LoginRequiredMixin,UpdateView):
     def post(self, request, pk, *args, **kwargs):
-        andamento = get_object_or_404(Andamento, pk=pk)
+        andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         if not andamento.dt_inicio:  # Verifica se o andamento ainda não foi iniciado
             andamento.dt_inicio = now()
             andamento.status = Status.objects.get(status="Em andamento")  # Atualiza o status
@@ -390,7 +389,7 @@ class AndamentoIniciarView(LoginRequiredMixin,UpdateView):
 
 class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
-        andamento = get_object_or_404(Andamento, pk=pk)
+        andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         nova_fase = request.POST.get('nova_fase')
 
         # Finaliza o andamento atual
@@ -405,7 +404,7 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
 
         # Cria o novo andamento
         nova_fase_obj = get_object_or_404(Fase, fase=nova_fase)
-        Andamento.objects.create(
+        ProcessoAndamento.objects.create(
             processo=andamento.processo,
             andamento=f"Movido para {nova_fase}",
             fase=nova_fase_obj,
@@ -421,7 +420,7 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
 
 class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
-        andamento = get_object_or_404(Andamento, pk=pk)
+        andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         
         # Finaliza o andamento atual
         andamento.dt_conclusao = now()
@@ -439,7 +438,7 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
         fase_concluido, _ = Fase.objects.get_or_create(fase="Processo Concluído")
 
         # Criar um novo andamento indicando que o processo foi concluído na fase correta
-        novo_andamento = Andamento.objects.create(
+        novo_andamento = ProcessoAndamento.objects.create(
             processo=processo,
             andamento="Processo concluído",
             fase=fase_concluido,  # 🔥 Ajustado para a fase correta

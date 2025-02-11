@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
-from .models import Processo, Fase, Andamento, Status
+from .models import Processo, Fase, ProcessoAndamento, Status
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.conf import settings
@@ -15,7 +15,7 @@ def criar_andamento_inicial(sender, instance, created, **kwargs):
         try:
             fase_elaboracao = Fase.objects.get(fase="Elaboração")
             status_nao_iniciado = Status.objects.get(status="Não iniciado")
-            Andamento.objects.create(
+            ProcessoAndamento.objects.create(
                 processo=instance,
                 andamento="Início da Elaboração",
                 fase=fase_elaboracao,
@@ -70,7 +70,7 @@ def send_process_email_notification(sender, instance, created, **kwargs):
 
             threading.Thread(target=send_email).start()
 
-@receiver(post_save, sender=Andamento)
+@receiver(post_save, sender=ProcessoAndamento)
 def send_andamento_email_notification(sender, instance, created, **kwargs):
     """
     Envia notificação quando um andamento relevante é atribuído,
