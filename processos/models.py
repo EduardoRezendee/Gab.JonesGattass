@@ -85,12 +85,6 @@ class Processo(models.Model):
 
         super().save(*args, **kwargs)  # Chama o método save original
 
-    def save(self, *args, **kwargs):
-        # Se a espécie for "Liminar", definir automaticamente o prazo para 24h após a criação
-        if self.especie and self.especie.especie == "Liminar":
-            self.dt_prazo = now() + timedelta(hours=24)  # Define o prazo para 24h depois do momento atual
-
-        super().save(*args, **kwargs)  # Chama o método save original
 
 
 class Andamento(models.Model):
