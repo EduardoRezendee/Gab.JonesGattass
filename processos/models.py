@@ -90,7 +90,7 @@ class Processo(models.Model):
 class ProcessoAndamento(models.Model):
     processo = models.ForeignKey(Processo, on_delete=models.CASCADE, related_name='andamentos')
     andamento = models.CharField(max_length=255)
-    fase = models.ForeignKey(Fase, on_delete=models.CASCADE)
+    fase = models.ForeignKey(Fase, on_delete=models.CASCADE)  # Nome original mantido
     link_doc = models.URLField(null=True, blank=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True)
@@ -99,29 +99,35 @@ class ProcessoAndamento(models.Model):
     dt_criacao = models.DateTimeField(auto_now_add=True)
     dt_atualizacao = models.DateTimeField(auto_now=True)
 
+    @property
+    def fase_processo(self):
+        """ Alias para o campo fase """
+        return self.fase
+
     def iniciar_andamento(self):
-        self.dt_inicio = timezone.now()  # Inicia o andamento
-        self.status = Status.objects.get(status="Em andamento")  # Muda o status para "Em andamento"
+        self.dt_inicio = timezone.now()
+        self.status = Status.objects.get(status="Em andamento")
         self.save()
 
     def concluir_andamento(self):
-        self.dt_conclusao = timezone.now()  # Conclui o andamento
-        self.status = Status.objects.get(status="Concluído")  # Muda o status para "Concluído"
+        self.dt_conclusao = timezone.now()
+        self.status = Status.objects.get(status="Concluído")
         self.save()
 
     def enviar_para_fase(self, nova_fase):
-        self.concluir_andamento()  # Conclui o andamento atual
+        self.concluir_andamento()
         nova_fase_obj = Fase.objects.get(fase=nova_fase)
         ProcessoAndamento.objects.create(
             processo=self.processo,
             andamento=f"Movido para {nova_fase}",
-            fase=nova_fase_obj,
+            fase=nova_fase_obj,  # Continua funcionando normalmente
             usuario=self.usuario,
-            status=Status.objects.get(status="Não iniciado")  # Inicia na nova fase como "Não iniciado"
+            status=Status.objects.get(status="Não iniciado")
         )
 
     def __str__(self):
-        return f"{self.processo.numero_processo} - {self.fase.fase}"
+        return f"{self.processo.numero_processo} - {self.fase.fase}"  # Não precisa mudar aqui
+
 
 
 class HistoricoAndamento(models.Model):
