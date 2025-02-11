@@ -19,22 +19,17 @@ logger = logging.getLogger(__name__)
 
 # Conectar ao banco de dados PostgreSQL
 try:
-    # Escapando a senha para evitar problemas com caracteres especiais
     escaped_password = quote_plus(config("DB_PASSWORD"))
-
-    # Criando a URI de conexão segura
     db_uri = f"postgresql+psycopg2://{config('DB_USER')}:{escaped_password}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
     
     print(f"Tentando conectar ao banco: {db_uri}")  # DEBUG
 
-    # Criando a conexão com o banco
     db = SQLDatabase.from_uri(db_uri)
     logger.info("✅ Conexão ao banco de dados PostgreSQL bem-sucedida!")
 except Exception as e:
     logger.error(f"❌ Erro ao conectar ao banco de dados PostgreSQL: {e}")
     db = None  # Garante que a variável 'db' existe mesmo que a conexão falhe
 
-# Verifica se o banco foi conectado antes de criar o agente SQL
 if db:
     llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
 
@@ -45,9 +40,8 @@ if db:
     )
 else:
     logger.error("A variável 'db' está vazia. O agente SQL não será inicializado.")
-    agent_executor = None  # Evita que o código que depende do agente falhe
+    agent_executor = None  
 
-# Lista de saudações para respostas amigáveis
 SAUDACOES = ["olá", "oi", "bom dia", "boa tarde", "boa noite", "e aí"]
 
 def chatbot(request):
@@ -68,13 +62,11 @@ def ask_chatbot(request):
     if not question:
         return JsonResponse({"response": "Por favor, faça uma pergunta válida."})
 
-    user = request.user  # Obtém o usuário logado
-    username = f"{user.first_name} {user.last_name}".strip() or user.username  # Nome formatado
+    user = request.user
+    username = f"{user.first_name} {user.last_name}".strip() or user.username 
 
-    # Substituir "eu" pelo nome do usuário
     question = question.replace("eu", username)
 
-    # Responder a saudações diretamente
     if question in SAUDACOES:
         return JsonResponse({"response": f"Olá, {username}! Como posso ajudar você hoje?"})
 
@@ -86,7 +78,7 @@ def ask_chatbot(request):
                     FROM processos_processo 
                     WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);
                 """,
-                "params": [user.username],  # Evita SQL Injection
+                "params": [user.username],  
                 "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos."
             },
             "quantos processos entraram hoje": {
@@ -95,7 +87,7 @@ def ask_chatbot(request):
                     FROM processos_processo 
                     WHERE DATE(dt_criacao) = DATE(%s);
                 """,
-                "params": [now().date()],  # Usa a data atual corretamente
+                "params": [now().date()],  
                 "custom_response": lambda result: f"Hoje entraram {result[0][0]} processos."
             },
             "processos em revisão": {
@@ -105,7 +97,7 @@ def ask_chatbot(request):
                         COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario, 
                         COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
                     FROM processos_processo p
-                    JOIN processos_andamento a ON a.processo_id = p.id
+                    JOIN processos_processoandamento a ON a.processo_id = p.id  -- Ajustado para nova tabela
                     LEFT JOIN auth_user u ON p.usuario_id = u.id
                     WHERE 
                         a.fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão')
@@ -127,13 +119,11 @@ def ask_chatbot(request):
             }
         }
 
-        # Verifica se a pergunta do usuário corresponde a alguma consulta SQL definida
         for key, value in queries.items():
             if key in question:
                 try:
                     result = db.run(value["query"], value["params"]) or []
 
-                    # Resposta personalizada
                     if "custom_response" in value and result:
                         response = value["custom_response"](result)
                         return JsonResponse({"response": response})
@@ -144,7 +134,6 @@ def ask_chatbot(request):
                     logger.error(f"Erro ao executar consulta SQL: {sql_error}")
                     return JsonResponse({"response": "Erro ao acessar os dados do banco. Verifique a conexão e tente novamente."})
 
-        # Se não for uma saudação e não corresponder a uma consulta SQL, passa para o GPT responder
         prompt = f"""
         Você é um assistente especializado em consultas SQL para um sistema de **gabinete de desembargador jurídico**.  
         Seu papel é atuar como um **assessor de gestão**, fornecendo informações detalhadas sobre a produtividade dos assessores e auxiliando na administração do gabinete.
@@ -152,33 +141,18 @@ def ask_chatbot(request):
         📌 **Base de Dados**:
         O banco de dados contém **duas tabelas principais**:
         1️⃣ **Processos** → Contém informações sobre os processos judiciais, incluindo número do processo, data de entrada, status atual e responsáveis.  
-        2️⃣ **Andamentos** → Registra todas as movimentações dos processos, incluindo as fases *Elaboração, Revisão, Correção e L. PJE*, link's.
+        2️⃣ **Andamentos** → Registra todas as movimentações dos processos, incluindo as fases *Elaboração, Revisão, Correção e L. PJE*, links de documentos e responsáveis.
 
         📊 **Tipos de Perguntas que você pode responder**:
         - Quantos processos estão no gabinete total?
         - Quantos processos entraram, saíram ou estão pendentes?
         - Quais processos estão **em elaboração, revisão, correção ou na fase L. PJE**?
-        - Listar os **processos mais antigos** e há **quantos dias estão pendentes**.
         - Comparação da **produtividade dos assessores** com base no número de processos atribuídos/concluídos.
         - Qual é o **tempo médio de tramitação** dos processos?
-        - Quais processos aguardam **decisão há mais tempo**?
 
-        ⚠️ **Regras Específicas para Consultas**:
-        ✅ **Ao perguntar sobre processos em alguma fase específica ("em revisão", "em elaboração", "em correção" ou "em L. PJE")**, **exclua processos já concluídos**. Liste **apenas aqueles que ainda estão em andamento ou aguardam ação**.  
-        ✅ **Ao listar processos antigos, inclua o número do processo e o tempo pendente** para facilitar a análise.  
-        ✅ Sempre responda em **português brasileiro**, de forma **clara e objetiva**.  
+        ⚠️ **Regras Específicas**:
         ✅ **Se não houver dados no banco para a pergunta**, informe educadamente que **não há registros disponíveis**.  
-        ✅ **Se precisar de mais detalhes para responder corretamente**, peça **esclarecimentos ao usuário**.  
-
-        📌 **Diferenciação esntre perguntas pessoais e gerais**:
-        🟢 **Se a pergunta incluir termos como "meus processos", "atribuidos a mim", "minha produtividade"** → **Responda exclusivamente sobre os processos do usuário logado**.  
-        🟢 **Se a pergunta for genérica, como "qual foi a produtividade do gabinete?"** → **Forneça uma visão geral de todos os processos do gabinete**.  
-
-        🎯 **Objetivo**:
-        Seu foco é fornecer **insights rápidos e precisos** sobre a gestão do gabinete, garantindo que os assessores e o desembargador tenham controle total sobre os processos, sua tramitação e o desempenho da equipe.
-
-
-        Se a pergunta for irrelevante ou o banco não tiver resposta, avise educadamente.
+        ✅ Sempre responda em **português brasileiro**, de forma **clara e objetiva**.  
 
         📌 **Pergunta do usuário:** {question}
         """
