@@ -86,7 +86,7 @@ def get_process_gamification_metrics(user):
 
     # Dicionário de pesos específicos para cada espécie
     species_weights = {
-        "LIM": 5,  # Exemplo: 'Liminar' tem peso 5
+        "LIM": 1,  # Exemplo: 'Liminar' tem peso 5
         "OUTROS": 1,
         "RED": 3,
         "RCL": 2,
@@ -141,10 +141,6 @@ def get_process_gamification_metrics(user):
     }
 
 
-
-
-
-
 User = get_user_model()
 
 def get_top_users_by_xp():
@@ -156,7 +152,7 @@ def get_top_users_by_xp():
 
     # Dicionário de pesos específicos para cada espécie
     species_weights = {
-        "LIM": 5,  # Exemplo: 'Liminar' tem peso 5
+        "LIM": 1,  # Exemplo: 'Liminar' tem peso 5
         "OUTROS": 1,
         "RED": 3,
         "RCL": 2,

@@ -186,6 +186,173 @@ def ask_chatbot(request):
                     if result else "Nenhum processo pendente encontrado."
                 )
             }
+                        "tempo médio para concluir um processo": {
+                "query": """
+                    SELECT AVG(EXTRACT(EPOCH FROM (dt_conclusao - data_dist)) / 86400) 
+                    FROM processos_processo 
+                    WHERE dt_conclusao IS NOT NULL;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    f"O tempo médio para concluir um processo é de aproximadamente {round(result[0][0], 1)} dias."
+                    if result and result[0][0] else "Ainda não há processos concluídos para calcular o tempo médio."
+                )
+            },
+            "quantos processos estão atrasados": {
+                "query": """
+                    SELECT COUNT(*) 
+                    FROM processos_processo 
+                    WHERE dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
+                """,
+                "params": [],
+                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos atrasados."
+            },
+            "quantos processos tenho atrasados": {
+                "query": """
+                    SELECT COUNT(*) 
+                    FROM processos_processo 
+                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                    AND dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
+                """,
+                "params": [user.username],
+                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos atrasados."
+            },
+            "quais são meus processos atrasados": {
+                "query": """
+                    SELECT numero_processo, dt_prazo 
+                    FROM processos_processo 
+                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                    AND dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
+                """,
+                "params": [user.username],
+                "custom_response": lambda result: (
+                    "**⚠️ Processos Atrasados:**\n\n" +
+                    "\n".join([f"- **Número:** {row[0]}, **Prazo:** {row[1].strftime('%d/%m/%Y')}" for row in result])
+                    if result else "Nenhum processo atrasado encontrado."
+                )
+            },
+            "quantos processos estão em cada fase": {
+                "query": """
+                    SELECT f.fase, COUNT(p.id) 
+                    FROM processos_processo p
+                    JOIN processos_fase f ON p.fase_id = f.id
+                    GROUP BY f.fase
+                    ORDER BY COUNT(p.id) DESC;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    "**📌 Processos por Fase:**\n\n" +
+                    "\n".join([f"- **{row[0]}:** {row[1]} processos" for row in result])
+                    if result else "Nenhum processo encontrado."
+                )
+            },
+            "quantos processos estão na fase de correção": {
+                "query": """
+                    SELECT COUNT(*) 
+                    FROM processos_processo p
+                    JOIN processos_fase f ON p.fase_id = f.id
+                    WHERE f.fase = 'Correção';
+                """,
+                "params": [],
+                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos na fase de Correção."
+            },
+            "quantos processos estão na fase de julgamento": {
+                "query": """
+                    SELECT COUNT(*) 
+                    FROM processos_processo p
+                    JOIN processos_fase f ON p.fase_id = f.id
+                    WHERE f.fase = 'Julgamento';
+                """,
+                "params": [],
+                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos na fase de Julgamento."
+            },
+            "quem tem mais processos pendentes": {
+                "query": """
+                    SELECT u.username, COUNT(*) 
+                    FROM processos_processo p
+                    JOIN auth_user u ON p.usuario_id = u.id
+                    WHERE p.concluido = FALSE
+                    GROUP BY u.username
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 1;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    f"O usuário com mais processos pendentes é {result[0][0]} com {result[0][1]} processos."
+                    if result else "Nenhum usuário com processos pendentes encontrado."
+                )
+            },
+            "quem tem mais processos concluídos": {
+                "query": """
+                    SELECT u.username, COUNT(*) 
+                    FROM processos_processo p
+                    JOIN auth_user u ON p.usuario_id = u.id
+                    WHERE p.concluido = TRUE
+                    GROUP BY u.username
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 1;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    f"O usuário com mais processos concluídos é {result[0][0]} com {result[0][1]} processos."
+                    if result else "Nenhum usuário com processos concluídos encontrado."
+                )
+            },
+            "qual foi o último processo concluído": {
+                "query": """
+                    SELECT numero_processo, dt_conclusao 
+                    FROM processos_processo 
+                    WHERE concluido = TRUE
+                    ORDER BY dt_conclusao DESC 
+                    LIMIT 1;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    f"O último processo concluído foi o {result[0][0]} no dia {result[0][1].strftime('%d/%m/%Y')}."
+                    if result else "Nenhum processo concluído encontrado."
+                )
+            },
+            "quais são os processos que estão há mais tempo em andamento": {
+                "query": """
+                    SELECT p.numero_processo, f.fase, a.dt_inicio 
+                    FROM processos_processoandamento a
+                    JOIN processos_processo p ON a.processo_id = p.id
+                    JOIN processos_fase f ON a.fase_id = f.id
+                    WHERE a.dt_inicio IS NOT NULL AND p.concluido = FALSE
+                    ORDER BY a.dt_inicio ASC 
+                    LIMIT 5;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    "**📌 Processos em Andamento Há Mais Tempo:**\n\n" +
+                    "\n".join([f"- **Número:** {row[0]}, **Fase:** {row[1]}, **Início:** {row[2].strftime('%d/%m/%Y')}" for row in result])
+                    if result else "Nenhum processo em andamento há muito tempo encontrado."
+                )
+            }
+            "qual foi a produtividade dos assessores hoje": {
+                "query": """
+                    SELECT 
+                        u.first_name || ' ' || u.last_name AS assessor,
+                        COUNT(p.id) AS total_concluidos,
+                        STRING_AGG(DISTINCT e.sigla || ' (' || COUNT(e.sigla) OVER (PARTITION BY u.id, e.sigla) || ')', ', ') AS especies
+                    FROM processos_processo p
+                    JOIN auth_user u ON p.usuario_id = u.id
+                    JOIN processos_especie e ON p.especie_id = e.id
+                    WHERE p.concluido = TRUE 
+                    AND DATE(p.dt_conclusao) = CURRENT_DATE
+                    GROUP BY u.id, u.first_name, u.last_name
+                    ORDER BY total_concluidos DESC;
+                """,
+                "params": [],
+                "custom_response": lambda result: (
+                    "**📊 Produtividade dos Assessores Hoje:**\n\n" +
+                    "\n".join([
+                        f"- **{row[0]}:** {row[1]} processos concluídos ({row[2]})"
+                        for row in result
+                    ])
+                    if result else "Nenhum assessor concluiu processos hoje."
+                )
+            }
         }
 
         for key, value in queries.items():
