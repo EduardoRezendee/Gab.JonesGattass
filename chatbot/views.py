@@ -331,17 +331,17 @@ def ask_chatbot(request):
             },
             "qual foi a produtividade dos assessores hoje": {
                 "query": """
-                    SELECT 
-                        u.first_name || ' ' || u.last_name AS assessor,
-                        COUNT(p.id) AS total_concluidos,
-                        STRING_AGG(DISTINCT e.sigla || ' (' || COUNT(e.sigla) OVER (PARTITION BY u.id, e.sigla) || ')', ', ') AS especies
-                    FROM processos_processo p
-                    JOIN auth_user u ON p.usuario_id = u.id
-                    JOIN processos_especie e ON p.especie_id = e.id
-                    WHERE p.concluido = TRUE 
-                    AND DATE(p.dt_conclusao) = CURRENT_DATE
-                    GROUP BY u.id, u.first_name, u.last_name
-                    ORDER BY total_concluidos DESC;
+                        SELECT 
+                            u.first_name AS assessor,  -- Apenas o primeiro nome do assessor
+                            COUNT(p.id) AS total_concluidos,
+                            STRING_AGG(DISTINCT e.sigla || ' (' || COUNT(e.sigla) OVER (PARTITION BY u.id, e.sigla) || ')', ', ') AS especies
+                        FROM processos_processo p
+                        JOIN auth_user u ON p.usuario_id = u.id
+                        JOIN processos_especie e ON p.especie_id = e.id
+                        WHERE p.concluido = TRUE 
+                        AND DATE(p.dt_conclusao) = CURRENT_DATE
+                        GROUP BY u.id, u.first_name
+                        ORDER BY total_concluidos DESC;
                 """,
                 "params": [],
                 "custom_response": lambda result: (
