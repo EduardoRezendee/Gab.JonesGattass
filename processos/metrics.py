@@ -86,20 +86,21 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
         "data": [item["total"] for item in andamento_queryset],
     }
 
- # 🔹 Tempo Médio de Processos (Data de Distribuição até Conclusão)
+    # 🔹 Tempo Médio de Processos (Data de Distribuição até Conclusão)
     average_process_time = queryset.filter(
         data_dist__isnull=False,
         dt_conclusao__isnull=False,
-        dt_conclusao__gte=F('data_dist')  
+        dt_conclusao__gte=F('data_dist')
     ).annotate(
         process_duration=ExpressionWrapper(
             F('dt_conclusao') - F('data_dist'),
             output_field=DurationField()
         )
-    ).aggregate(avg_duration=Avg('process_duration'))['avg_duration']
+    ).aggregate(avg_duration=Avg('process_duration'))['avg_duration'] or "N/A"  # Trata valores None
 
     # 🔹 Tempo Médio por Tipo de Andamento (Duração do andamento)
     andamento_queryset = ProcessoAndamento.objects.filter(
+        processo__in=queryset,  # ✅ Agora filtramos apenas processos que passaram pelo filtro
         dt_inicio__isnull=False,
         dt_conclusao__isnull=False,
         dt_conclusao__gte=F('dt_inicio')
@@ -114,12 +115,13 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
                 F('dt_conclusao') - F('dt_inicio'),
                 output_field=DurationField()
             )
-        ).aggregate(avg_duration=Avg('andamento_duration'))['avg_duration']
-        
+        ).aggregate(avg_duration=Avg('andamento_duration'))['avg_duration'] or "N/A"  # Trata valores None
+
         andamento_durations[tipo] = duration
 
     # 🔹 Cálculo do tempo aguardando início do andamento
     andamento_queryset_waiting = ProcessoAndamento.objects.filter(
+        processo__in=queryset,  # ✅ Filtrando processos que passaram pelo filtro
         dt_inicio__isnull=False
     )
 
@@ -143,12 +145,13 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
     for tipo in ["Elaboração", "Correção", "Revisão", "L. PJE"]:
         waiting_time = andamento_queryset_waiting.filter(
             andamento__icontains=tipo
-        ).aggregate(avg_waiting_time=Avg('waiting_duration'))['avg_waiting_time']
+        ).aggregate(avg_waiting_time=Avg('waiting_duration'))['avg_waiting_time'] or "N/A"  # Trata valores None
 
         andamento_waiting_times[tipo] = waiting_time
 
     # 🔹 Ajuste para garantir que o tempo médio aguardando a **Elaboração** seja calculado corretamente
     elaboracao_waiting_time = ProcessoAndamento.objects.filter(
+        processo__in=queryset,  # ✅ Filtrando processos corretamente
         andamento__icontains="Elaboração",
         dt_inicio__isnull=False,
         processo__data_dist__isnull=False
@@ -157,9 +160,10 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
             F('dt_inicio') - F('processo__data_dist'),  # Correção: tempo de espera da Elaboração
             output_field=DurationField()
         )
-    ).aggregate(avg_waiting_time=Avg('waiting_duration'))['avg_waiting_time']
+    ).aggregate(avg_waiting_time=Avg('waiting_duration'))['avg_waiting_time'] or "N/A"  # Trata valores None
 
     andamento_waiting_times["Elaboração"] = elaboracao_waiting_time
+
 
     # 🔹 Função para formatar duração corretamente
     def format_duration(duration):

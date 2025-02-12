@@ -531,8 +531,6 @@ def process_metrics_view(request):
     })
 
 
-
-
 @login_required
 def adicionar_tarefa(request, processo_id):
     processo = get_object_or_404(Processo, id=processo_id)
