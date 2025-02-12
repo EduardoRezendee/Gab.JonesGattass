@@ -19,9 +19,11 @@ def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None,
     if data_fim:
         queryset = queryset.filter(data_dist__lte=data_fim)
     
-    # Filtro por status (concluído ou pendente)
+   # Filtro por status (concluído ou pendente)
     if status is not None:
-        queryset = queryset.filter(concluido=status)
+        status = True if status == "concluido" else False if status == "pendente" else None
+        if status is not None:
+            queryset = queryset.filter(concluido=status)
     
     # Filtro por número do processo
     if numero_processo:
