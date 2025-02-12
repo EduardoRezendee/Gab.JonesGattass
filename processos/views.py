@@ -469,6 +469,8 @@ def process_metrics_view(request):
     mes_distribuicao = request.GET.get('mes_distribuicao')
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
+    status = request.GET.get('status')
+    numero_processo = request.GET.get('numero_processo')
 
     # Converte strings de data para objetos datetime (se fornecidos)
     if data_inicio:
@@ -481,7 +483,9 @@ def process_metrics_view(request):
         assessor=assessor, 
         mes_distribuicao=mes_distribuicao, 
         data_inicio=data_inicio, 
-        data_fim=data_fim
+        data_fim=data_fim,
+        status=status,
+        numero_processo=numero_processo
     )
 
     # Lista de meses disponíveis para filtro
@@ -520,7 +524,9 @@ def process_metrics_view(request):
         "assessores": assessores,
         "filtros": {
             "data_inicio": request.GET.get('data_inicio', ''),
-            "data_fim": request.GET.get('data_fim', '')
+            "data_fim": request.GET.get('data_fim', ''),
+            "status": request.GET.get('status', ''),
+            "numero_processo": request.GET.get('numero_processo', '')
         }
     })
 
