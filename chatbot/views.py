@@ -185,8 +185,8 @@ def ask_chatbot(request):
                     "\n".join([f"- Processo {row[0]} distribuído no dia {row[1].strftime('%d/%m/%Y')}" for row in result])
                     if result else "Nenhum processo pendente encontrado."
                 )
-            }
-                        "tempo médio para concluir um processo": {
+            },
+            "tempo médio para concluir um processo": {
                 "query": """
                     SELECT AVG(EXTRACT(EPOCH FROM (dt_conclusao - data_dist)) / 86400) 
                     FROM processos_processo 
@@ -328,7 +328,7 @@ def ask_chatbot(request):
                     "\n".join([f"- **Número:** {row[0]}, **Fase:** {row[1]}, **Início:** {row[2].strftime('%d/%m/%Y')}" for row in result])
                     if result else "Nenhum processo em andamento há muito tempo encontrado."
                 )
-            }
+            },
             "qual foi a produtividade dos assessores hoje": {
                 "query": """
                     SELECT 
