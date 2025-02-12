@@ -325,7 +325,7 @@ class AndamentoCreateView(LoginRequiredMixin,CreateView):
     success_url = reverse_lazy('andamento_list')
 
 
-class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
+class AndamentoUpdateView(LoginRequiredMixin, UpdateView):
     model = ProcessoAndamento
     form_class = AndamentoForm
     template_name = 'andamento_form_update.html'
@@ -337,14 +337,22 @@ class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
         # Redireciona para a URL da lista de andamentos, incluindo o parâmetro 'processo'
         return f"{reverse('andamento_list')}?processo={processo_id}"
 
+    def get_context_data(self, **kwargs):
+        # Adiciona o objeto andamento ao contexto para evitar erro no template
+        context = super().get_context_data(**kwargs)
+        context["andamento"] = self.object
+        return context
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         
         # Verifica se a ação é para iniciar o andamento
         if 'iniciar_andamento' in request.POST:
-            self.object.dt_inicio = now()
-            self.object.save()
-            return redirect(self.success_url + f'?processo={self.object.processo.pk}')
+            if not self.object.dt_inicio:  # Evita reiniciar um andamento já iniciado
+                self.object.dt_inicio = now()
+                self.object.status = Status.objects.get(status="Em andamento")
+                self.object.save()
+            return redirect(self.get_success_url())
         
         # Verifica se a ação é para enviar para outra fase
         if 'enviar_para_fase' in request.POST:
@@ -356,11 +364,13 @@ class AndamentoUpdateView(LoginRequiredMixin,UpdateView):
                     processo=self.object.processo,
                     andamento=f"Movido para {nova_fase}",
                     fase=nova_fase_obj,
-                    usuario=request.user
+                    usuario=request.user,
+                    status=Status.objects.get(status="Não iniciado")
                 )
-            return redirect(self.success_url + f'?processo={self.object.processo.pk}')
-            
+            return redirect(self.get_success_url())
+        
         return super().post(request, *args, **kwargs)
+
 
 
 
