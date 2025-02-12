@@ -84,7 +84,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         andamento_existe = Exists(
             ProcessoAndamento.objects.filter(
                 processo=OuterRef('id'),
-                status__status__in=["Em andamento", "Não iniciado"]
+                status__status__in=["Em andamento", "Não iniciado", "Concluído"]
             )
         )
         queryset = queryset.filter(andamento_existe)
@@ -158,8 +158,6 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context["assessor_process_data"] = {
             item["id"]: item for item in metrics_data["assessor_process_data"]
         }
-        print("Dados de assessor_process_data:")
-        print(context["assessor_process_data"])
 
         return context
 
@@ -606,8 +604,6 @@ def export_processos_xlsx(request):
 @login_required 
 def adicionar_comentario(request, processo_id):
     """ Adiciona um comentário a um processo específico via AJAX """
-
-    print(f"Recebendo requisição AJAX para processo_id={processo_id}")
 
     if not processo_id:
         return JsonResponse({"error": "ID do processo não fornecido."}, status=400)
