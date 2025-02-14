@@ -4,7 +4,7 @@ from .forms import ProcessoForm, AndamentoForm, ComentarioProcessoForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime, timedelta
 from calendar import month_name
-from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase
+from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase, Resultado
 import locale
 from calendar import month_name
 from django.contrib.auth.models import User
@@ -22,6 +22,7 @@ from .metrics import get_advanced_metrics
 from accounts.models import UserProfile
 from django.urls import reverse
 from django.utils.timezone import now
+from django.views import View
 from django.db.models import Subquery, OuterRef, Exists
 
 
@@ -217,9 +218,13 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
 
+        # Busca o processo
         processo = get_object_or_404(Processo, pk=processo_id)
+
+        # Exclui a fase "Processo Concluído"
         fases = Fase.objects.exclude(fase="Processo Concluído")
 
+        # Organiza os andamentos por fase
         andamentos_por_fase = [
             {
                 'fase': fase,
@@ -229,12 +234,50 @@ class AndamentoListView(LoginRequiredMixin, ListView):
             for fase in fases
         ]
 
+        # Criar o formulário com os dados do processo
+        form = ProcessoForm(instance=processo)
+
+        # Carregar opções corretamente para os dropdowns
+        form.fields["tipo"].queryset = Tipo.objects.all()
+        form.fields["resultado"].queryset = Resultado.objects.all()
+
+        # DEBUG: Verifique se os valores estão sendo carregados corretamente
+        print(f"Tipo Selecionado: {processo.tipo}, Resultado Selecionado: {processo.resultado}")
+
+        # Atualiza o contexto com os dados do processo, andamentos e formulário
         context.update({
             'processo': processo,
             'andamentos_por_fase': andamentos_por_fase,
+            'form': form,
         })
         return context
 
+    
+class ProcessoPartialUpdateView(View):
+    def post(self, request, processo_id):
+        processo = get_object_or_404(Processo, id=processo_id)
+
+        tipo_id = request.POST.get("tipo")
+        resultado_id = request.POST.get("resultado")
+
+        # Verifica se os campos foram enviados corretamente
+        if not tipo_id or not resultado_id:
+            return JsonResponse({'error': 'Campos obrigatórios não foram enviados'}, status=400)
+
+        # Converte os IDs para instâncias reais do modelo
+        tipo = get_object_or_404(Tipo, id=tipo_id)
+        resultado = get_object_or_404(Resultado, id=resultado_id)
+
+        # Atualiza os valores no processo
+        processo.tipo = tipo
+        processo.resultado = resultado
+        processo.save()
+
+        print(f"✅ Processo atualizado - Tipo: {processo.tipo}, Resultado: {processo.resultado}")  # DEBUG
+
+        # 🔹 Redirecionar para a página correta com o objeto atualizado
+        return redirect(f'/andamentos/?processo={processo.id}')
+    
 class ProcessoCreateView(LoginRequiredMixin,CreateView):
     model = Processo
     form_class = ProcessoForm
@@ -267,14 +310,15 @@ class ProcessoDeleteView(LoginRequiredMixin,DeleteView):
 
 from django.http import Http404
 
+from django.shortcuts import get_object_or_404
+from .models import Processo, ProcessoAndamento, Fase
+from .forms import ProcessoForm
+
 class AndamentoListView(LoginRequiredMixin, ListView):
     template_name = 'andamento_list.html'
     context_object_name = 'andamentos'
 
     def get_queryset(self):
-        """
-        Retorna os andamentos relacionados ao processo atual, com validação de ID.
-        """
         processo_id = self.request.GET.get('processo')
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
@@ -282,23 +326,19 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         return ProcessoAndamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
 
     def get_context_data(self, **kwargs):
-        """
-        Adiciona informações adicionais ao contexto, excluindo a fase 'Processo Concluído'.
-        """
         context = super().get_context_data(**kwargs)
 
-        # Valida o processo_id
         processo_id = self.request.GET.get('processo')
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
 
-        # Busca o processo
         processo = get_object_or_404(Processo, pk=processo_id)
 
-        # Obtém as fases, excluindo 'Processo Concluído'
-        fases = Fase.objects.exclude(fase="Processo Concluído")  # Filtro aplicado
+        # Criar o formulário com os dados do processo
+        form = ProcessoForm(instance=processo)
 
-        # Organiza os andamentos por fase
+        fases = Fase.objects.exclude(fase="Processo Concluído")  
+
         andamentos_por_fase = []
         for fase in fases:
             andamentos_por_fase.append({
@@ -307,10 +347,10 @@ class AndamentoListView(LoginRequiredMixin, ListView):
                 'concluidos': self.get_queryset().filter(fase=fase, status__status="Concluído"),
             })
 
-        # Atualiza o contexto
         context.update({
             'processo': processo,
             'andamentos_por_fase': andamentos_por_fase,
+            'form': form,  # Adicionando o formulário ao contexto
         })
         return context
 

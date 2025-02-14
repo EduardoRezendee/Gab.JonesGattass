@@ -1,0 +1,9 @@
+<form id="upload-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div id="drop-area" class="drop-zone">
+        <p>Arraste e solte os arquivos aqui ou clique para selecionar</p>
+        <input type="file" id="file-input" multiple>
+    </div>
+    <ul id="file-list"></ul>
+    <button type="submit" class="btn btn-primary w-100">Enviar Documento</button>
+</form>

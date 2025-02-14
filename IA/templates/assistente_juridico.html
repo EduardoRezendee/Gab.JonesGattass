@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="chat-container mx-auto" style="max-width: 800px;">
+        <!-- Título do Chat -->
+        <h2 class="text-center mb-3" style="color: #808000;">
+            <i class="fa-solid fa-robot"></i> Assistente Jurídico
+        </h2>
+
+        <!-- Card do Chat -->
+        <div class="card shadow border-0">
+            <div class="card-body">
+                <!-- Área de Mensagens -->
+                <div id="chat-box" class="chat-box d-flex flex-column overflow-auto border rounded p-3"
+                     style="height: 350px; background-color: white; border-color: #808000;">
+                    <!-- Mensagens serão adicionadas dinamicamente aqui -->
+                </div>
+
+                <!-- Área de Upload de Arquivos -->
+                <div id="drop-area" class="drop-area mt-3 p-3 text-center border rounded"
+                     style="background-color: #f9f9f9; border-color: #808000;">
+                    <p class="mb-2 text-muted">
+                        <i class="fa-solid fa-file-arrow-up"></i> Arraste e solte arquivos aqui ou clique para selecionar
+                    </p>
+                    <input type="file" id="file-input" multiple style="display: none;">
+                    <button class="btn btn-outline-secondary btn-sm" 
+                            style="border-color: #808000; color: #808000;"
+                            onclick="document.getElementById('file-input').click()">
+                        Selecionar Arquivos
+                    </button>
+                </div>
+
+                <!-- Lista de Arquivos Anexados -->
+                <ul id="file-list" class="file-list mt-3 list-unstyled"></ul>
+
+                <!-- Campo de Entrada e Envio -->
+                <div class="chat-input-container mt-3 d-flex">
+                    <input type="text" id="chat-input" class="form-control shadow-sm"
+                           placeholder="Digite sua pergunta..." 
+                           onkeypress="if(event.keyCode==13) sendQuestion()"
+                           style="background-color: white; border-color: #808000;">
+                    <button class="btn shadow-sm ms-2" 
+                            style="background-color: #808000; color: white; border: none;"
+                            onclick="sendQuestion()">
+                        <i class="fa-solid fa-paper-plane"></i> 
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Personalizado -->
+<script src="{% static 'js/chat.js' %}"></script>
+{% endblock %}

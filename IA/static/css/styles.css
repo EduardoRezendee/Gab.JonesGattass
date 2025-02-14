@@ -1,0 +1,102 @@
+body {
+    background-color: #f4f7fc;
+}
+
+.chat-container {
+    max-width: 700px;
+    margin: auto;
+}
+
+.chat-box {
+    height: 450px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-bubble {
+    padding: 12px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    display: inline-block;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.user-msg {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+    text-align: right;
+}
+
+.bot-msg {
+    background-color: #e9ecef;
+    color: #333;
+    align-self: flex-start;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.chat-input {
+    flex-grow: 1;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.send-btn {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estilizar área de arrastar arquivos */
+.drop-area {
+    border: 2px dashed #007bff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 10px;
+    color: #007bff;
+    background: #f8f9fa;
+}
+
+.drop-area.dragover {
+    background-color: #e2e6ea;
+}
+
+.file-list {
+    margin-top: 10px;
+    list-style: none;
+    padding: 0;
+}
+
+.file-list li {
+    background: #f1f1f1;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.remove-file {
+    cursor: pointer;
+    color: red;
+    font-weight: bold;
+}

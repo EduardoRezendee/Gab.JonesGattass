@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'accounts',
     'publico',
     'chatbot',
+    'IA',
 ]
 
 LOGIN_URL = 'login'
@@ -83,6 +84,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'app.wsgi.application'
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -97,6 +99,7 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
 
 
 

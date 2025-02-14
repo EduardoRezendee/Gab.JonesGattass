@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Painel da Inteligência Artificial</h2>
+    <div class="row text-center">
+        <!-- 🟢 Assistente Jurídico (Abre Normalmente) -->
+        <div class="col-md-3">
+            <a href="{% url 'assistente_juridico' %}" class="text-decoration-none">
+                <div class="card p-3 shadow">
+                    <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                    <h5 class="mt-2">Assistente Jurídico</h5>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🔹 Configurar Prompt (Abre Modal) -->
+        <div class="col-md-3">
+            <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalPrompt">
+                <div class="card p-3 shadow">
+                    <i class="bi bi-gear fs-1 text-secondary"></i>
+                    <h5 class="mt-2">Configurar Prompt</h5>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🔹 Base de Conhecimento (Abre Modal) -->
+        <div class="col-md-3">
+            <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalBaseConhecimento">
+                <div class="card p-3 shadow">
+                    <i class="bi bi-file-earmark-text fs-1 text-info"></i>
+                    <h5 class="mt-2">Base de Conhecimento</h5>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🔹 Modelos de Decisões (Abre Modal) -->
+        <div class="col-md-3">
+            <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalModelos">
+                <div class="card p-3 shadow">
+                    <i class="bi bi-folder fs-1 text-success"></i>
+                    <h5 class="mt-2">Modelos de Decisões</h5>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 🔻 MODAIS (Conteúdos) 🔻 -->
+
+<!-- 🛠️ Modal: Configurar Prompt -->
+<div class="modal fade" id="modalPrompt" tabindex="-1" aria-labelledby="modalPromptLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPromptLabel">Configurar Prompt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="{% url 'editar_prompt' %}" width="100%" height="400px" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📂 Modal: Base de Conhecimento -->
+<div class="modal fade" id="modalBaseConhecimento" tabindex="-1" aria-labelledby="modalBaseConhecimentoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalBaseConhecimentoLabel">Base de Conhecimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="{% url 'upload_base' %}" width="100%" height="400px" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📂 Modal: Modelos de Decisões -->
+<div class="modal fade" id="modalModelos" tabindex="-1" aria-labelledby="modalModelosLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalModelosLabel">Modelos de Decisões</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="{% url 'upload_modelos' %}" width="100%" height="400px" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.3s ease-in-out;
+        border-radius: 10px;
+    }
+    .card:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+{% endblock %}
