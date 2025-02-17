@@ -115,6 +115,12 @@ def send_andamento_email_notification(sender, instance, created, **kwargs):
 # Lista de fases que NÃO devem ser notificadas nos andamentos
 EXCLUDED_PHASES = ["Processo Concluído", "Elaboração"]
 
+import logging
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.urls import reverse
+from .models import Processo
+
 # Configuração de logging
 logger = logging.getLogger(__name__)
 
@@ -137,13 +143,17 @@ def send_process_whatsapp_notification(sender, instance, created, **kwargs):
                 f"🔗 [Ver detalhes]({andamento_url})"
             )
 
-            # Verifica se o usuário tem um perfil com número de telefone
-            user_phone = getattr(instance.usuario, 'profile', None)
-            if user_phone and getattr(user_phone, 'telefone', None):
-                phone_number = user_phone.telefone
-                send_whatsapp_message(phone_number, message)
-                logger.info(f"✅ WhatsApp enviado para {phone_number} sobre o processo {instance.numero_processo}.")
+            # Verifica se o usuário tem um perfil e um número de telefone cadastrado
+            if hasattr(instance.usuario, 'profile') and instance.usuario.profile.telefone:
+                phone_number = instance.usuario.profile.telefone.strip()  # Remove espaços extras
+                
+                if phone_number:  # Garante que o telefone não está vazio
+                    send_whatsapp_message(phone_number, message)
+                    logger.info(f"✅ WhatsApp enviado para {phone_number} sobre o processo {instance.numero_processo}.")
+                else:
+                    logger.warning(f"⚠️ O usuário {instance.usuario} tem um perfil, mas o número de telefone está vazio. WhatsApp não enviado.")
             else:
                 logger.warning(f"⚠️ Nenhum número de telefone encontrado para o usuário {instance.usuario}. WhatsApp não enviado.")
+
     except Exception as e:
-        logger.error(f"❌ Erro ao enviar WhatsApp para processo {instance.numero_processo}: {e}")
+        logger.error(f"❌ Erro ao enviar WhatsApp para processo {instance.numero_processo}: {e}", exc_info=True)

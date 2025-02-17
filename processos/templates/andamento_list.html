@@ -18,42 +18,37 @@
         </p>
     </div>
 </div>
-
-
         <!-- Formulário Minimalista -->
         <form method="POST" action="{% url 'processo_partial_update' processo.id %}" class="d-flex align-items-center">
             {% csrf_token %}
 
             <div class="d-flex align-items-center me-3">
                 <label for="tipo" class="form-label fw-semibold me-2 mb-0"
-                       style="color: #808000; font-size: 0.9rem;">Tipo</label>
+                    style="color: #808000; font-size: 0.9rem;">Tipo</label>
                 <select id="tipo" name="tipo" class="form-select shadow-sm"
                         style="border-color: #808000; background-color: #CFE2FF; font-size: 0.9rem; height: 32px; min-width: 150px;">
+                    <option value="" {% if not processo.tipo %}selected{% endif %}>Selecione...</option>
                     {% for choice in form.fields.tipo.queryset %}
                         <option value="{{ choice.id }}" {% if choice.id == processo.tipo.id %}selected{% endif %}>
                             {{ choice.tipo }}
                         </option>
-                    {% empty %}
-                        <option value="" disabled>Nenhuma opção disponível</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div class="d-flex align-items-center me-3">
                 <label for="resultado" class="form-label fw-semibold me-2 mb-0"
-                       style="color: #808000; font-size: 0.9rem;">Resultado</label>
+                    style="color: #808000; font-size: 0.9rem;">Resultado</label>
                 <select id="resultado" name="resultado" class="form-select shadow-sm"
                         style="border-color: #808000; background-color: #CFE2FF; font-size: 0.9rem; height: 32px; min-width: 150px;">
+                    <option value="" {% if not processo.resultado %}selected{% endif %}>Selecione...</option>
                     {% for choice in form.fields.resultado.queryset %}
                         <option value="{{ choice.id }}" {% if choice.id == processo.resultado.id %}selected{% endif %}>
                             {{ choice.resultado }}
                         </option>
-                    {% empty %}
-                        <option value="" disabled>Nenhuma opção disponível</option>
                     {% endfor %}
                 </select>
             </div>
-
             <button type="submit" class="btn shadow-sm px-3"
                     style="background-color: #808000; color: white; border: none; height: 32px;">
                 Salvar
@@ -61,7 +56,6 @@
         </form>
     </div>
 </div>
-
     <!-- Kanban de Fases -->
     <div class="container mt-4">
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
