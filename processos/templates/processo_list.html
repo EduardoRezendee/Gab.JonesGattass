@@ -303,17 +303,17 @@ Cadastro de Processos
                                 </a>
                             </th>
                             <th>
-                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'antigo_recente' %}antigo_antigo{% else %}antigo_recente{% endif %}" 
-                                   class="text-black text-decoration-none">
-                                    Antigo
-                                    {% if request.GET.ordenar == "antigo_recente" %}
-                                        <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Recente -->
-                                    {% elif request.GET.ordenar == "antigo_antigo" %}
-                                        <i class="bi bi-arrow-down"></i> <!-- Ícone para Mais Antigo -->
-                                    {% else %}
-                                        <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
-                                    {% endif %}
-                                </a>
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'externo_recente' %}externo_antigo{% else %}externo_recente{% endif %}" 
+                                class="text-black text-decoration-none">
+                                Número Externo
+                                 {% if request.GET.ordenar == "externo_recente" %}
+                                     <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Recente -->
+                                 {% elif request.GET.ordenar == "externo_antigo" %}
+                                     <i class="bi bi-arrow-down"></i> <!-- Ícone para Mais Antigo -->
+                                 {% else %}
+                                     <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
+                                 {% endif %}
+                             </a>
                             </th>
                             
                             <th>Fase</th> 
@@ -341,7 +341,7 @@ Cadastro de Processos
                             <td>{{ processo.numero_processo }}</td>
                             <td>{{ processo.data_dist|date:"d/m/Y" }}</td>
                             <td>{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
-                            <td>{{ processo.antigo|date:"d/m/Y" }}</td>
+                            <td>{{ processo.numero_externo|date:"d/m/Y" }}</td>
                             <td>{{ processo.fase_atual }}</td>
                             <td>
                                 {% if processo.dt_prazo %}

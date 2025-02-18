@@ -59,16 +59,18 @@ class Status(models.Model):
         return self.status
 
 
+from django.db import models
 from django.utils.timezone import now
 
 class Processo(models.Model):
     numero_processo = models.CharField(max_length=50)
+    numero_externo = models.IntegerField(null=True, blank=True)  # Novo campo numérico
     data_dist = models.DateTimeField(default=now)
     especie = models.ForeignKey(Especie, on_delete=models.CASCADE)
     resultado = models.ForeignKey(Resultado, on_delete=models.SET_NULL, null=True, blank=True)
     tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, null=True, blank=True)
     camara = models.ForeignKey(Camara, on_delete=models.CASCADE, null=True, blank=True)
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)  # Removido name="usuario"
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     dt_julgamento = models.DateTimeField(null=True, blank=True)
     dt_prazo = models.DateTimeField(null=True, blank=True)
     dt_criacao = models.DateTimeField(auto_now_add=True)
@@ -78,12 +80,11 @@ class Processo(models.Model):
     antigo = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Se a espécie for "Liminar", o tipo também será "Liminar"
         if self.especie and self.especie.especie == "Liminar":
             tipo_liminar, _ = Tipo.objects.get_or_create(tipo="Liminar")
-            self.tipo = tipo_liminar  # Garante que o tipo seja "Liminar"
-
-        super().save(*args, **kwargs)  # Chama o método save original
+            self.tipo = tipo_liminar
+        
+        super().save(*args, **kwargs)
 
 
 

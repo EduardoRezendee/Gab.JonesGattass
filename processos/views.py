@@ -47,8 +47,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         ordering = {
             "mais_recente": "-data_dist",
             "mais_antigo": "data_dist",
-            "antigo_recente": "-antigo",
-            "antigo_antigo": "antigo",
+            "externo_recente": "-numero_externo",
+            "externo_antigo": "numero_externo",
         }.get(order_by, "-data_dist")  # Ordem padrão
 
         queryset = queryset.order_by(ordering)
@@ -135,8 +135,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context["ordenacao_opcoes"] = [
             {"valor": "mais_recente", "label": "Mais Recente"},
             {"valor": "mais_antigo", "label": "Mais Antigo"},
-            {"valor": "antigo_recente", "label": "Mais Recente por Antiguidade"},
-            {"valor": "antigo_antigo", "label": "Mais Antigo por Antiguidade"},
+            {"valor": "externo_recente", "label": "Mais Recente por Número Externo"},
+            {"valor": "externo_antigo", "label": "Mais Antigo por Número Externo"},
         ]
 
         # Usuários ordenados
@@ -702,7 +702,6 @@ def importar_processos(request):
                                 messages.warning(request, f"⚠ Usuário '{username_input}' não encontrado na linha {index + 1}. Definido como vazio.")
 
                         data_dist = make_aware(pd.to_datetime(row["data_dist"])) if pd.notna(row["data_dist"]) else None
-                        antigo = make_aware(pd.to_datetime(row["antigo"])) if "antigo" in row and pd.notna(row["antigo"]) else None
                         dt_conclusao = make_aware(pd.to_datetime(row["dt_conclusao"])) if "dt_conclusao" in row and pd.notna(row["dt_conclusao"]) else None
                         dt_prazo = make_aware(pd.to_datetime(row["dt_prazo"])) if "dt_prazo" in row and pd.notna(row["dt_prazo"]) else None
 
@@ -710,14 +709,22 @@ def importar_processos(request):
                         if pd.isna(concluido):
                             concluido = False
 
+                        # 🔹 Novo campo: numero_externo
+                        numero_externo = None
+                        if "numero_externo" in row and pd.notna(row["numero_externo"]):
+                            try:
+                                numero_externo = int(row["numero_externo"])
+                            except ValueError:
+                                messages.warning(request, f"⚠ Número externo inválido na linha {index + 1}. Definido como vazio.")
+
                         Processo.objects.create(
                             numero_processo=row["numero_processo"],
+                            numero_externo=numero_externo,  # ✅ Novo campo adicionado
                             data_dist=data_dist,
                             especie=especie,
                             camara=camara,
                             usuario=usuario,
                             concluido=concluido,
-                            antigo=antigo,
                             dt_conclusao=dt_conclusao,
                             dt_prazo=dt_prazo,
                         )
