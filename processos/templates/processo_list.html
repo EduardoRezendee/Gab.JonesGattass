@@ -269,11 +269,6 @@ Cadastro de Processos
                                             value="{{ request.GET.data_dist }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="data_prazo" class="form-label fw-bold" style="color: #083464;">Data de Prazo</label>
-                                        <input type="date" id="data_prazo" class="form-control shadow-sm" name="data_prazo"
-                                            value="{{ request.GET.data_prazo }}">
-                                    </div>
-                                    <div class="col-md-4">
                                         <label for="data_julgamento" class="form-label fw-bold" style="color: #083464;">Data de Julgamento</label>
                                         <input type="date" id="data_julgamento" class="form-control shadow-sm" name="data_julgamento"
                                             value="{{ request.GET.data_julgamento }}">
@@ -319,7 +314,7 @@ Cadastro de Processos
                             <th>
                                 <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'dias_gabinete_recente' %}dias_gabinete_antigo{% else %}dias_gabinete_recente{% endif %}" 
                                    class="text-black text-decoration-none">
-                                   Dias no Gabinete
+                                   Dias Gabinete
                                    {% if request.GET.ordenar == "dias_gabinete_recente" %}
                                        <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Tempo no Gabinete -->
                                    {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
@@ -330,12 +325,6 @@ Cadastro de Processos
                                 </a>
                             </th>                            
                             <th>Fase</th> 
-                            <th>
-                                <a href="?ordenar=dt_prazo" class="text-black text-decoration-none">
-                                    Prazo 
-                                    <i class="bi bi-arrow-up-down"></i>
-                                </a>
-                            </th>
                             <th>
                                 <a href="?ordenar=especie__sigla" class="text-black text-decoration-none">
                                     Espécie 
@@ -363,13 +352,6 @@ Cadastro de Processos
                             </td>
                             
                             <td>{{ processo.fase_atual }}</td>
-                            <td>
-                                {% if processo.dt_prazo %}
-                                    {{ processo.dt_prazo|date:"d/m/Y" }}
-                                {% else %}
-                                    <span class="text-muted">Sem prazo</span>
-                                {% endif %}
-                            </td>
                             <td>{{ processo.especie.sigla }}</td>
                             <td>
                                 {% if processo.concluido %}
