@@ -208,12 +208,12 @@ Cadastro de Processos
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="status">
-                                            <option value="">Todos os Status</option>
-                                            <option value="Concluído" {% if request.GET.status == "Concluído" %}selected{% endif %}>Concluído</option>
-                                            <option value="Pendente" {% if request.GET.status == "Pendente" %}selected{% endif %}>Pendente</option>
+                                        <select class="form-select shadow-sm" name="status" id="status">
+                                            <option value="pendente" {% if request.GET.status == "pendente" or not request.GET.status %}selected{% endif %}>Pendente</option>
+                                            <option value="concluído" {% if request.GET.status == "concluído" %}selected{% endif %}>Concluído</option>
                                         </select>
                                     </div>
+                                    
                                     <div class="col-md-4">
                                         <select class="form-select shadow-sm" name="camara">
                                             <option value="">Todas as Câmaras</option>

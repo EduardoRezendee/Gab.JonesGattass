@@ -40,28 +40,37 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         """
         queryset = Processo.objects.all()
 
-        # Captura o parâmetro de ordenação da URL
+        # 🔹 Captura o parâmetro de ordenação da URL
         order_by = self.request.GET.get("ordenar", "data_dist")
 
-        # 🔹 Garante uma ordenação segura para os campos do banco de dados
+        # 🔹 Captura o status da URL, se não houver, define "Pendente" como padrão
+        status = self.request.GET.get('status', "").strip().lower()
+        if not status:  # Se nenhum status foi passado, aplica "Pendente" por padrão
+            status = "pendente"
+
+        # 🔹 Filtra corretamente o status antes da ordenação
+        if status == "concluído":
+            queryset = queryset.filter(concluido=True)
+        else:
+            queryset = queryset.filter(concluido=False)  # 🔹 Mantém apenas os pendentes ao ordenar
+
+        # 🔹 Garante uma ordenação segura
         ordering = {
             "mais_recente": "-data_dist",
             "mais_antigo": "data_dist",
         }.get(order_by, "-data_dist")  # Ordem padrão
 
-        # 🔹 Se for ordenar por um campo do banco, usamos .order_by()
         if order_by in ordering:
-            return queryset.order_by(ordering)
+            queryset = queryset.order_by(ordering)
 
-        # 🔹 Para ordenar por 'dias_no_gabinete', é necessário converter em lista
+        # 🔹 Para ordenar por 'dias_no_gabinete', converte para lista
         if order_by in ["dias_gabinete_recente", "dias_gabinete_antigo"]:
-            queryset_list = list(queryset)  # Converte apenas nessa situação
+            queryset_list = list(queryset)
             reverse = order_by == "dias_gabinete_recente"
             queryset_list.sort(key=lambda p: p.dias_no_gabinete() or 0, reverse=reverse)
-            return queryset_list  # Retorna a lista ordenada
+            return queryset_list
 
-        # Captura filtros da URL
-        status = self.request.GET.get('status')
+        # 🔹 Captura filtros da URL
         fase_atual = self.request.GET.get('fase_atual')
         camara = self.request.GET.get('camara')
         tipo = self.request.GET.get('tipo')
@@ -70,17 +79,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         meus_processos = self.request.GET.get('meus_processos', None)
         user_id = self.request.GET.get('user_id')
 
-        # Filtrar apenas processos NÃO concluídos quando status estiver vazio
-        if status:
-            status = status.strip().lower()
-            if status == "concluído":
-                queryset = queryset.filter(concluido=True)
-            elif status == "pendente":
-                queryset = queryset.filter(concluido=False)
-        else:
-            queryset = queryset.filter(concluido=False)  # Padrão: exclui concluídos
-
-        # 🔹 **Filtrar apenas pela fase atual (último andamento do processo)**
+        # 🔹 Filtrar apenas pela fase atual (último andamento do processo)
         latest_fase = Subquery(
             ProcessoAndamento.objects.filter(
                 processo=OuterRef('id')
@@ -88,18 +87,18 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         )
         queryset = queryset.annotate(fase_atual=latest_fase)
 
-        # 🔹 **Filtrar SOMENTE por status "Em andamento" ou "Não iniciado"**
+        # 🔹 Filtrar SOMENTE por status "Em andamento" ou "Não iniciado"
         andamento_existe = Exists(
             ProcessoAndamento.objects.filter(
                 processo=OuterRef('id'),
-                status__status__in=["Em andamento", "Não iniciado", "Concluído"]
+                status__status__in=["Em andamento", "Não iniciado"]
             )
         )
         queryset = queryset.filter(andamento_existe)
 
-        # Aplicar filtros específicos
+        # 🔹 Aplicar filtros específicos
         filtros = {
-            'fase_atual': fase_atual,  # 🔹 Agora corretamente comparando com nome da fase
+            'fase_atual': fase_atual,
             'camara__camara': camara,
             'tipo__tipo': tipo,
             'especie__especie': especie,
@@ -110,15 +109,15 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             if valor:
                 queryset = queryset.filter(**{campo: valor})
 
-        # Filtrar processos apenas do usuário logado (se opção estiver ativada)
+        # 🔹 Filtrar processos apenas do usuário logado (se opção estiver ativada)
         if meus_processos == 'on':
             queryset = queryset.filter(usuario=self.request.user)
 
-        # Filtrar por usuário específico
+        # 🔹 Filtrar por usuário específico
         if user_id:
             queryset = queryset.filter(usuario__id=user_id)
 
-        # 🔹 **Corrigido: Filtragem por datas**
+        # 🔹 Filtragem por datas (aplicada somente se houver valores)
         data_dist = self.request.GET.get('data_dist')
         data_prazo = self.request.GET.get('data_prazo')
         data_julgamento = self.request.GET.get('data_julgamento')
@@ -138,6 +137,9 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         """
         context = super().get_context_data(**kwargs)
 
+        # Captura o status da requisição ou define "Pendente" como padrão
+        status_atual = self.request.GET.get('status', 'pendente')
+
         # Opções de ordenação
         context["ordenacao_opcoes"] = [
             {"valor": "mais_recente", "label": "Mais Recente"},
@@ -150,7 +152,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context['users'] = User.objects.select_related('profile').order_by('first_name', 'last_name')
 
         # Adiciona filtros para os campos relacionados
-        context['statuses'] = ["Em andamento", "Não iniciado"]
+        context['statuses'] = ["Em andamento", "Não iniciado", "Concluído", "Pendente"]
+        context['status_selecionado'] = status_atual  # 🔹 Passa o status selecionado para o template
         context['fases'] = Fase.objects.exclude(fase="Concluído").values_list('fase', flat=True)
         context['camaras'] = Camara.objects.all()
         context['tipos'] = Tipo.objects.all()
