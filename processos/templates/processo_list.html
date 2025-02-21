@@ -51,15 +51,29 @@ Cadastro de Processos
     
         <!-- Conteúdo Principal -->
         <div class="col-md-9 col-lg-10">
-            <!-- Cabeçalho -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-                <div class="flex-grow-1">
-                    <h1 class="fw-bold" style="color: #808000; font-size: 1.5rem;">
-                        <i class="bi bi-folder-fill me-2"></i> Cadastro de Processos
-                    </h1>
-                    <hr style="height: 2px; background-color: #bea066; border: none; width: 100%;">
-                </div>
+        <!-- Cabeçalho -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div class="flex-grow-1">
+                <h1 class="fw-bold" style="color: #808000; font-size: 1.5rem;">
+                    <i class="bi bi-folder-fill me-2"></i> Cadastro de Processos
+                </h1>
+                <hr style="height: 2px; background-color: #bea066; border: none; width: 100%;">
             </div>
+            <!-- Botão para gerar relatório diário -->
+            <a href="{% url 'gerar_pdf' %}" class="btn btn-success">
+                📄 Gerar PDF
+            </a>
+        </div>
+
+        <!-- Exibir mensagens de sucesso ou erro -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} mt-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
 
             <!-- Barra de Pesquisa e Botões -->
             <div class="row g-3 align-items-center mb-4">
@@ -303,19 +317,18 @@ Cadastro de Processos
                                 </a>
                             </th>
                             <th>
-                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'externo_recente' %}externo_antigo{% else %}externo_recente{% endif %}" 
-                                class="text-black text-decoration-none">
-                                Número Externo
-                                 {% if request.GET.ordenar == "externo_recente" %}
-                                     <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Recente -->
-                                 {% elif request.GET.ordenar == "externo_antigo" %}
-                                     <i class="bi bi-arrow-down"></i> <!-- Ícone para Mais Antigo -->
-                                 {% else %}
-                                     <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
-                                 {% endif %}
-                             </a>
-                            </th>
-                            
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'dias_gabinete_recente' %}dias_gabinete_antigo{% else %}dias_gabinete_recente{% endif %}" 
+                                   class="text-black text-decoration-none">
+                                   Dias no Gabinete
+                                   {% if request.GET.ordenar == "dias_gabinete_recente" %}
+                                       <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Tempo no Gabinete -->
+                                   {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
+                                       <i class="bi bi-arrow-down"></i> <!-- Ícone para Menos Tempo no Gabinete -->
+                                   {% else %}
+                                       <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
+                                   {% endif %}
+                                </a>
+                            </th>                            
                             <th>Fase</th> 
                             <th>
                                 <a href="?ordenar=dt_prazo" class="text-black text-decoration-none">
@@ -341,7 +354,14 @@ Cadastro de Processos
                             <td>{{ processo.numero_processo }}</td>
                             <td>{{ processo.data_dist|date:"d/m/Y" }}</td>
                             <td>{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
-                            <td>{{ processo.numero_externo|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if processo.dias_no_gabinete is not None %}
+                                    {{ processo.dias_no_gabinete }} dias
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            
                             <td>{{ processo.fase_atual }}</td>
                             <td>
                                 {% if processo.dt_prazo %}

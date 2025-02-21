@@ -41,17 +41,24 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         queryset = Processo.objects.all()
 
         # Captura o parâmetro de ordenação da URL
-        order_by = self.request.GET.get('ordenar', 'data_dist')
+        order_by = self.request.GET.get("ordenar", "data_dist")
 
-        # 🔹 Garante uma ordenação segura
+        # 🔹 Garante uma ordenação segura para os campos do banco de dados
         ordering = {
             "mais_recente": "-data_dist",
             "mais_antigo": "data_dist",
-            "externo_recente": "-numero_externo",
-            "externo_antigo": "numero_externo",
         }.get(order_by, "-data_dist")  # Ordem padrão
 
-        queryset = queryset.order_by(ordering)
+        # 🔹 Se for ordenar por um campo do banco, usamos .order_by()
+        if order_by in ordering:
+            return queryset.order_by(ordering)
+
+        # 🔹 Para ordenar por 'dias_no_gabinete', é necessário converter em lista
+        if order_by in ["dias_gabinete_recente", "dias_gabinete_antigo"]:
+            queryset_list = list(queryset)  # Converte apenas nessa situação
+            reverse = order_by == "dias_gabinete_recente"
+            queryset_list.sort(key=lambda p: p.dias_no_gabinete() or 0, reverse=reverse)
+            return queryset_list  # Retorna a lista ordenada
 
         # Captura filtros da URL
         status = self.request.GET.get('status')
@@ -135,8 +142,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context["ordenacao_opcoes"] = [
             {"valor": "mais_recente", "label": "Mais Recente"},
             {"valor": "mais_antigo", "label": "Mais Antigo"},
-            {"valor": "externo_recente", "label": "Mais Recente por Número Externo"},
-            {"valor": "externo_antigo", "label": "Mais Antigo por Número Externo"},
+            {"valor": "dias_gabinete_recente", "label": "Mais Tempo no Gabinete"},
+            {"valor": "dias_gabinete_antigo", "label": "Menos Tempo no Gabinete"},
         ]
 
         # Usuários ordenados
@@ -742,3 +749,78 @@ def importar_processos(request):
 
     return render(request, "importar_processos.html", {"form": form})
 
+
+from django.http import HttpResponse
+from django.utils.timezone import now
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from processos.models import Processo
+from django.db import models
+
+@login_required
+def gerar_pdf_produtividade(request):
+    """
+    Gera um PDF com o relatório diário de produtividade, com um layout mais refinado.
+    """
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="relatorio_produtividade_{now().date()}.pdf"'
+
+    buffer = response
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # 🔹 Título do relatório
+    title = Paragraph(f"<b>📊 Relatório de Produtividade - {now().date()}</b>", styles["Title"])
+    elements.append(title)
+    elements.append(Spacer(1, 15))  # Espaçamento abaixo do título
+
+    # 🔹 Buscar dados dos assessores
+    produtividade = []
+    assessores = User.objects.filter(processo__isnull=False).distinct()
+
+    for assessor in assessores:
+        processos_entrada = Processo.objects.filter(usuario=assessor, data_dist__date=now().date()).count()
+        processos_concluidos = Processo.objects.filter(usuario=assessor, concluido=True, dt_conclusao__date=now().date()).count()
+        produtividade.append([assessor.get_full_name() or assessor.username, processos_entrada, processos_concluidos])
+
+    # 🔹 Criar a tabela de produtividade
+    data = [["Assessor", "Entrada", "Concluído"]] + produtividade  # Cabeçalho + Dados
+    table = Table(data, colWidths=[260, 100, 100])  # Ajustando largura das colunas
+
+    # 🔹 Estilizar a tabela
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),  # Cabeçalho azul escuro
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),  # Texto branco no cabeçalho
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),  # Centralizar texto
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),  # Fonte do cabeçalho
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),  # Espaçamento no cabeçalho
+        ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),  # Fundo dos dados
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),  # Adicionar bordas
+        ("ROWBACKGROUNDS", (1, -1), (-1, -1), [colors.white, colors.lightgrey]),  # Alternar cores de linhas
+    ]))
+
+    # 🔹 Adicionar a tabela ao PDF
+    elements.append(table)
+    elements.append(Spacer(1, 20))  # Espaçamento abaixo da tabela
+
+    # 🔹 Total Geral - Melhorando layout e alinhamento
+    total_entrada = Processo.objects.filter(data_dist__date=now().date()).count()
+    total_concluido = Processo.objects.filter(concluido=True, dt_conclusao__date=now().date()).count()
+
+    total_section = Paragraph(f"""
+        <font size=13><b>📌 Total Geral</b></font><br/><br/>
+        ✅ <b>Processos Recebidos Hoje:</b> {total_entrada}<br/>
+        ✅ <b>Processos Concluídos Hoje:</b> {total_concluido}
+    """, styles["Normal"])
+
+    elements.append(total_section)
+
+    # 🔹 Construir e salvar o PDF
+    doc.build(elements)
+    return response

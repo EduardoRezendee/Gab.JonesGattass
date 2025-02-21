@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Produtividade</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            margin: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #4A4A4A;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table-container th, .table-container td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .table-container th {
+            background-color: #4A4A4A;
+            color: white;
+            font-weight: bold;
+        }
+        .table-container td {
+            background-color: #f9f9f9;
+        }
+        .total-section {
+            margin-top: 30px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .total-section p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📊 Relatório de Produtividade - {{ data|date:"d/m/Y" }}</h1>
+
+    <table class="table-container">
+        <tr>
+            <th>Assessor</th>
+            <th>Processos Entrada</th>
+            <th>Processos Concluídos</th>
+        </tr>
+        {% for assessor, dados in produtividade.items %}
+            <tr>
+                <td><strong>{{ assessor }}</strong></td>
+                <td>{{ dados.entrada }}</td>
+                <td>{{ dados.concluido }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <div class="total-section">
+        <h3>📌 Total Geral</h3>
+        <p>✅ <strong>Processos Recebidos Hoje:</strong> {{ total_entrada }}</p>
+        <p>✅ <strong>Processos Concluídos Hoje:</strong> {{ total_concluido }}</p>
+    </div>
+
+</body>
+</html>

@@ -79,6 +79,12 @@ class Processo(models.Model):
     dt_conclusao = models.DateTimeField(null=True, blank=True)
     antigo = models.DateTimeField(null=True, blank=True)
 
+    def dias_no_gabinete(self):
+        """Calcula quantos dias o processo está no gabinete"""
+        if self.antigo:
+            return (now().date() - self.antigo.date()).days
+        return None  # Retorna None se não houver data
+
     def save(self, *args, **kwargs):
         if self.especie and self.especie.especie == "Liminar":
             tipo_liminar, _ = Tipo.objects.get_or_create(tipo="Liminar")
