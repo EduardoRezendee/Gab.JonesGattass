@@ -45,25 +45,25 @@ class ProcessoListView(LoginRequiredMixin, ListView):
 
         # 🔹 Captura o status da URL, se não houver, define "Pendente" como padrão
         status = self.request.GET.get('status', "").strip().lower()
-        if not status:  # Se nenhum status foi passado, aplica "Pendente" por padrão
+        if not status:  
             status = "pendente"
 
         # 🔹 Filtra corretamente o status antes da ordenação
         if status == "concluído":
             queryset = queryset.filter(concluido=True)
         else:
-            queryset = queryset.filter(concluido=False)  # 🔹 Mantém apenas os pendentes ao ordenar
+            queryset = queryset.filter(concluido=False)
 
-        # 🔹 Garante uma ordenação segura
+        # 🔹 Aplica ordenação segura
         ordering = {
             "mais_recente": "-data_dist",
             "mais_antigo": "data_dist",
-        }.get(order_by, "-data_dist")  # Ordem padrão
+        }.get(order_by, "-data_dist")
 
         if order_by in ordering:
             queryset = queryset.order_by(ordering)
 
-        # 🔹 Para ordenar por 'dias_no_gabinete', converte para lista
+        # 🔹 Para ordenar por 'dias_no_gabinete'
         if order_by in ["dias_gabinete_recente", "dias_gabinete_antigo"]:
             queryset_list = list(queryset)
             reverse = order_by == "dias_gabinete_recente"
@@ -79,22 +79,15 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         meus_processos = self.request.GET.get('meus_processos', None)
         user_id = self.request.GET.get('user_id')
 
-        # 🔹 Filtrar apenas pela fase atual (último andamento do processo)
+        # 🔹 Obtém a última fase ativa do processo (excluindo fases concluídas)
         latest_fase = Subquery(
             ProcessoAndamento.objects.filter(
-                processo=OuterRef('id')
+                processo=OuterRef('id'),
+                status__status__in=["Em andamento", "Não iniciado"]  # 🔹 Garante que só pega fases ativas
             ).order_by('-dt_criacao').values('fase__fase')[:1]
         )
-        queryset = queryset.annotate(fase_atual=latest_fase)
 
-        # 🔹 Filtrar SOMENTE por status "Em andamento" ou "Não iniciado"
-        andamento_existe = Exists(
-            ProcessoAndamento.objects.filter(
-                processo=OuterRef('id'),
-                status__status__in=["Em andamento", "Não iniciado"]
-            )
-        )
-        queryset = queryset.filter(andamento_existe)
+        queryset = queryset.annotate(fase_atual=latest_fase).filter(fase_atual__isnull=False)
 
         # 🔹 Aplicar filtros específicos
         filtros = {
@@ -117,7 +110,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         if user_id:
             queryset = queryset.filter(usuario__id=user_id)
 
-        # 🔹 Filtragem por datas (aplicada somente se houver valores)
+        # 🔹 Filtragem por datas (se aplicável)
         data_dist = self.request.GET.get('data_dist')
         data_prazo = self.request.GET.get('data_prazo')
         data_julgamento = self.request.GET.get('data_julgamento')
@@ -153,25 +146,24 @@ class ProcessoListView(LoginRequiredMixin, ListView):
 
         # Adiciona filtros para os campos relacionados
         context['statuses'] = ["Em andamento", "Não iniciado", "Concluído", "Pendente"]
-        context['status_selecionado'] = status_atual  # 🔹 Passa o status selecionado para o template
+        context['status_selecionado'] = status_atual
         context['fases'] = Fase.objects.exclude(fase="Concluído").values_list('fase', flat=True)
         context['camaras'] = Camara.objects.all()
         context['tipos'] = Tipo.objects.all()
         context['especies'] = Especie.objects.all()
 
-        # 🔹 **Adiciona tarefas do dia do usuário**
+        # 🔹 Adiciona tarefas do dia do usuário
         tarefas = TarefaDoDia.objects.filter(usuario=self.request.user)
         context['tarefas_do_dia'] = tarefas
         context['tarefas_do_dia_ids'] = list(tarefas.values_list('processo__id', flat=True))
 
-        # 🔹 **Adiciona métricas de processos por usuário**
+        # 🔹 Adiciona métricas de processos por usuário
         metrics_data = get_advanced_metrics()
         context["assessor_process_data"] = {
             item["id"]: item for item in metrics_data["assessor_process_data"]
         }
 
         return context
-
 
 class ProcessoCreateView(LoginRequiredMixin, CreateView):
     model = Processo
