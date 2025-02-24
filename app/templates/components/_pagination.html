@@ -1,17 +1,17 @@
 {% if page_obj.has_other_pages %}
   <nav>
     <ul class="pagination justify-content-center">
-      {% with filtros=request.GET.urlencode %}
+      {% with filtros=request.GET.copy %}
+        {% if filtros.page %}  {# Remove a chave 'page' da querystring #}
+          {% with filtros.pop.page as _ %} {% endwith %}
+        {% endif %}
+
         {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page=1">
-              Primeira
-            </a>
+            <a class="page-link" href="?{{ filtros.urlencode }}&page=1">Primeira</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page={{ page_obj.previous_page_number }}">
-              Anterior
-            </a>
+            <a class="page-link" href="?{{ filtros.urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
           </li>
         {% endif %}
 
@@ -19,13 +19,13 @@
           {% if page_number <= page_obj.number|add:3 and page_number >= page_obj.number|add:-3 %}
             {% if page_obj.number == page_number %}
               <li class="page-item active">
-                <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page={{ page_number }}">
+                <a class="page-link" href="?{{ filtros.urlencode }}&page={{ page_number }}">
                   {{ page_number }}
                 </a>
               </li>
             {% else %}
               <li class="page-item">
-                <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page={{ page_number }}">
+                <a class="page-link" href="?{{ filtros.urlencode }}&page={{ page_number }}">
                   {{ page_number }}
                 </a>
               </li>
@@ -35,14 +35,10 @@
 
         {% if page_obj.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page={{ page_obj.next_page_number }}">
-              Próxima
-            </a>
+            <a class="page-link" href="?{{ filtros.urlencode }}&page={{ page_obj.next_page_number }}">Próxima</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?{% if filtros %}{{ filtros }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
-              Última
-            </a>
+            <a class="page-link" href="?{{ filtros.urlencode }}&page={{ page_obj.paginator.num_pages }}">Última</a>
           </li>
         {% endif %}
       {% endwith %}

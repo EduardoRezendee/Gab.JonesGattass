@@ -40,37 +40,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         """
         queryset = Processo.objects.all()
 
-        # 🔹 Captura o parâmetro de ordenação da URL
-        order_by = self.request.GET.get("ordenar", "data_dist")
-
-        # 🔹 Captura o status da URL, se não houver, define "Pendente" como padrão
-        status = self.request.GET.get('status', "").strip().lower()
-        if not status:  
-            status = "pendente"
-
-        # 🔹 Filtra corretamente o status antes da ordenação
-        if status == "concluído":
-            queryset = queryset.filter(concluido=True)
-        else:
-            queryset = queryset.filter(concluido=False)
-
-        # 🔹 Aplica ordenação segura
-        ordering = {
-            "mais_recente": "-data_dist",
-            "mais_antigo": "data_dist",
-        }.get(order_by, "-data_dist")
-
-        if order_by in ordering:
-            queryset = queryset.order_by(ordering)
-
-        # 🔹 Para ordenar por 'dias_no_gabinete'
-        if order_by in ["dias_gabinete_recente", "dias_gabinete_antigo"]:
-            queryset_list = list(queryset)
-            reverse = order_by == "dias_gabinete_recente"
-            queryset_list.sort(key=lambda p: p.dias_no_gabinete() or 0, reverse=reverse)
-            return queryset_list
-
         # 🔹 Captura filtros da URL
+        status = self.request.GET.get('status', "").strip().lower() or "pendente"
         fase_atual = self.request.GET.get('fase_atual')
         camara = self.request.GET.get('camara')
         tipo = self.request.GET.get('tipo')
@@ -78,6 +49,12 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         numero_processo = self.request.GET.get('numero_processo')
         meus_processos = self.request.GET.get('meus_processos', None)
         user_id = self.request.GET.get('user_id')
+
+        # 🔹 Filtra corretamente o status antes da ordenação
+        if status == "concluído":
+            queryset = queryset.filter(concluido=True)
+        else:
+            queryset = queryset.filter(concluido=False)
 
         # 🔹 Obtém a última fase ativa do processo (excluindo fases concluídas)
         latest_fase = Subquery(
@@ -111,16 +88,35 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(usuario__id=user_id)
 
         # 🔹 Filtragem por datas (se aplicável)
-        data_dist = self.request.GET.get('data_dist')
-        data_prazo = self.request.GET.get('data_prazo')
-        data_julgamento = self.request.GET.get('data_julgamento')
+        data_filtros = {
+            'data_dist': 'data_dist',
+            'data_prazo': 'dt_prazo',
+            'data_julgamento': 'dt_julgamento',
+        }
 
-        if data_dist:
-            queryset = queryset.filter(data_dist__date=datetime.strptime(data_dist, '%Y-%m-%d').date())
-        if data_prazo:
-            queryset = queryset.filter(dt_prazo__date=datetime.strptime(data_prazo, '%Y-%m-%d').date())
-        if data_julgamento:
-            queryset = queryset.filter(dt_julgamento__date=datetime.strptime(data_julgamento, '%Y-%m-%d').date())
+        for param, field in data_filtros.items():
+            valor = self.request.GET.get(param)
+            if valor:
+                queryset = queryset.filter(**{f"{field}__date": datetime.strptime(valor, '%Y-%m-%d').date()})
+
+        # 🔹 Captura o parâmetro de ordenação da URL
+        order_by = self.request.GET.get("ordenar", "data_dist")
+
+        # 🔹 Aplica ordenação segura
+        ordering_dict = {
+            "mais_recente": "-data_dist",
+            "mais_antigo": "data_dist",
+        }
+
+        if order_by in ordering_dict:
+            queryset = queryset.order_by(ordering_dict[order_by])
+
+        # 🔹 Ordenação por 'dias_no_gabinete' (realiza sorting manual)
+        elif order_by in ["dias_gabinete_recente", "dias_gabinete_antigo"]:
+            queryset_list = list(queryset)
+            reverse = order_by == "dias_gabinete_recente"
+            queryset_list.sort(key=lambda p: p.dias_no_gabinete() or 0, reverse=reverse)
+            return queryset_list
 
         return queryset
 

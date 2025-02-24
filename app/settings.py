@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-3mry0!qt@k&!dvic0r!$!w55**(jg@3^1srfsaby-jxuk#3db!
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "gestaogabineteccs.com",
+    "gestaogabineteccs.com",  # Domínio principal
     "127.0.0.1",  
     "localhost",
 ]
