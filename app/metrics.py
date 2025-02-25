@@ -52,8 +52,9 @@ def get_process_metrics(user):
     # Ordenar os processos atrasados primeiro
     processos_detalhados = sorted(
         processos_detalhados,
-        key=lambda x: (x['dias_diferenca'] if x['dias_diferenca'] is not None else float('inf'))
+        key=lambda x: (0 if x['especie'] == "Liminar" else 1, x['data_dist'])
     )
+
 
     metrics = {
         'total_processos_nao_concluidos': processos_nao_concluidos.count(),
@@ -66,79 +67,78 @@ def get_process_metrics(user):
     }
 
 
-
-
-from django.utils.timezone import now
-
 def get_process_gamification_metrics(user):
     """
-    Calcula a gamificação baseada nos processos concluídos no prazo e fora do prazo.
-    Inclui contagem por espécie com pesos específicos.
+    Calcula a gamificação baseada nos processos concluídos, sem dependência de prazos.
+    Mantém a contagem por espécie e penalizações específicas por resultado.
     """
-    # Filtra os processos concluídos do usuário
+    # 🔹 Filtra os processos concluídos do usuário
     completed_processes = Processo.objects.filter(usuario=user, concluido=True)
 
-    # Inicializa variáveis
-    points_no_prazo = 0
-    points_fora_prazo = 0
+    print(f"🔹 Usuário: {user}")
+    print(f"🔹 Processos Concluídos Encontrados: {completed_processes.count()}")
+
+    if not completed_processes.exists():
+        print("⚠️ Nenhum processo concluído encontrado!")
+
+    total_points = 0
     species_count = {}  # Contagem por espécie
     details = []
 
-    # Dicionário de pesos específicos para cada espécie
     species_weights = {
-        "LIM": 1,  # Exemplo: 'Liminar' tem peso 5
+        "LIM": 1,  
         "OUTROS": 1,
-        "RED": 3,
-        "RCL": 2,
-        "RAI": 3,
-        "RAC": 2,
+        "RED": 1,
+        "RCL": 1,
+        "RAI": 1,
+        "RAC": 1,
         "QN": 1,
-        "PV": 2,
+        "PV": 1,
         "PET": 1,
         "MS": 1,
-        "HC": 2,
-        "CC": 3,
-        "AR": 2,
-        "ADI": 4,
-        "AGR I": 4,  # Exemplo: 'Agravo Interno' tem peso 4
+        "HC": 1,
+        "CC": 1,
+        "AR": 1,
+        "ADI": 1,
+        "AGR I": 1,  
+    }
+
+
+    penalties = {
+        ("AGR I", "PROVIDO"): -2,
+        ("AGR I", "PARCIALMENTE PROVIDO"): -1,
+        ("RED", "ACOLHIDO"): -2,
+        ("RED", "PARCIALMENTE ACOLHIDO"): -1,
     }
 
     for process in completed_processes:
-        # Contabiliza espécie
         sigla_especie = process.especie.sigla if process.especie else "Sem Sigla"
         species_count[sigla_especie] = species_count.get(sigla_especie, 0) + 1
 
-        # Obtém o peso da espécie, com valor padrão 1 se não estiver no dicionário
         weight = species_weights.get(sigla_especie, 1)
+        resultado_processo = process.resultado.resultado if process.resultado else None
+        penalty = penalties.get((sigla_especie, resultado_processo), 0)
 
-        if process.dt_conclusao and process.dt_prazo:
-            # Verifica se foi concluído no prazo
-            if process.dt_conclusao <= process.dt_prazo:
-                points_no_prazo += 1.5 * weight  # Pontos com peso da espécie
-                status = "No Prazo"
-            else:
-                points_fora_prazo += 1 * weight  # Pontos com peso da espécie
-                status = "Fora do Prazo"
+        final_points = weight + penalty
+        final_points = max(0, final_points)
+        total_points += final_points
 
-            # Adiciona detalhes para o template
-            details.append({
-                'numero_processo': process.numero_processo,
-                'prazo': process.dt_prazo,
-                'data_conclusao': process.dt_conclusao,
-                'status': status,
-                'points': 1.5 * weight if status == "No Prazo" else 1 * weight,
-                'especie': sigla_especie,
-            })
+        details.append({
+            'numero_processo': process.numero_processo,
+            'especie': sigla_especie,
+            'resultado': resultado_processo,
+            'points': final_points,
+            'penalty': penalty,
+        })
 
-    total_points = points_no_prazo + points_fora_prazo
+    print("🔹 Contagem por Espécie:", species_count)
 
     return {
         'points': total_points,
-        'points_no_prazo': points_no_prazo,
-        'points_fora_prazo': points_fora_prazo,
         'details': details,
-        'species_count': species_count,  # Adiciona contagem por espécie
+        'species_count': species_count,
     }
+
 
 
 User = get_user_model()
@@ -146,27 +146,35 @@ User = get_user_model()
 def get_top_users_by_xp():
     """
     Calcula a gamificação para todos os usuários e retorna os 3 com mais pontos.
-    Inclui contagem por espécie com pesos específicos.
+    Inclui contagem por espécie com pesos específicos e penalizações baseadas no resultado.
     """
     all_users_data = []
 
-    # Dicionário de pesos específicos para cada espécie
+    # 🔹 Dicionário de pesos específicos para cada espécie
     species_weights = {
         "LIM": 1,  
         "OUTROS": 1,
-        "RED": 3,
-        "RCL": 2,
-        "RAI": 3,
-        "RAC": 2,
+        "RED": 1,
+        "RCL": 1,
+        "RAI": 1,
+        "RAC": 1,
         "QN": 1,
-        "PV": 2,
+        "PV": 1,
         "PET": 1,
         "MS": 1,
-        "HC": 2,
-        "CC": 3,
-        "AR": 2,
-        "ADI": 4,
-        "AGR I": 4,  
+        "HC": 1,
+        "CC": 1,
+        "AR": 1,
+        "ADI": 1,
+        "AGR I": 1,  
+    }
+
+    # 🔹 Penalizações específicas por resultado
+    penalties = {
+        ("AGR I", "PROVIDO"): -2,
+        ("AGR I", "PARCIALMENTE PROVIDO"): -1,
+        ("RED", "ACOLHIDO"): -2,
+        ("RED", "PARCIALMENTE ACOLHIDO"): -1,
     }
 
     for user in User.objects.all():
@@ -181,13 +189,17 @@ def get_top_users_by_xp():
             sigla_especie = process.especie.sigla if process.especie else "Sem Sigla"
             species_count[sigla_especie] = species_count.get(sigla_especie, 0) + 1
 
-            # Obtém o peso da espécie
-            weight = species_weights.get(sigla_especie, 1)  # Peso padrão 1 caso a espécie não esteja no dicionário
-            
-            # Apenas soma os pontos baseado no peso da espécie
-            points += weight
+            # Obtém o peso da espécie (padrão 1 se não estiver no dicionário)
+            weight = species_weights.get(sigla_especie, 1)
 
-        # Adiciona o usuário e seus pontos à lista
+            # Verifica se a espécie e o resultado possuem penalização
+            resultado_processo = process.resultado.resultado if process.resultado else None
+            penalty = penalties.get((sigla_especie, resultado_processo), 0)  # Padrão 0 se não houver penalização
+            
+            # Aplica a pontuação final considerando a penalização
+            points += weight + penalty
+
+        # 🔹 Adiciona o usuário e seus pontos à lista
         all_users_data.append({
             'user': user,
             'name': user.get_full_name(),
@@ -196,7 +208,7 @@ def get_top_users_by_xp():
             'species_count': species_count,  
         })
 
-    # Ordena os usuários pelo total de pontos em ordem decrescente e pega os 3 primeiros
+    # 🔹 Ordena os usuários pelo total de pontos em ordem decrescente e pega os 3 primeiros
     top_users = sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
 
     return top_users
