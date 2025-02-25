@@ -152,7 +152,7 @@ def get_top_users_by_xp():
 
     # Dicionário de pesos específicos para cada espécie
     species_weights = {
-        "LIM": 1,  # Exemplo: 'Liminar' tem peso 5
+        "LIM": 1,  
         "OUTROS": 1,
         "RED": 3,
         "RCL": 2,
@@ -166,7 +166,7 @@ def get_top_users_by_xp():
         "CC": 3,
         "AR": 2,
         "ADI": 4,
-        "AGR I": 4,  # Exemplo: 'Agravo Interno' tem peso 4
+        "AGR I": 4,  
     }
 
     for user in User.objects.all():
@@ -177,19 +177,15 @@ def get_top_users_by_xp():
         species_count = {}
 
         for process in completed_processes:
-            # Contabiliza espécie
+            # Obtém a sigla da espécie
             sigla_especie = process.especie.sigla if process.especie else "Sem Sigla"
             species_count[sigla_especie] = species_count.get(sigla_especie, 0) + 1
 
             # Obtém o peso da espécie
             weight = species_weights.get(sigla_especie, 1)  # Peso padrão 1 caso a espécie não esteja no dicionário
-
-            if process.dt_conclusao and process.dt_prazo:
-                # Verifica se foi concluído no prazo
-                if process.dt_conclusao <= process.dt_prazo:
-                    points += 1.5 * weight  # Pontos com peso da espécie
-                else:
-                    points += 1 * weight  # Pontos com peso da espécie
+            
+            # Apenas soma os pontos baseado no peso da espécie
+            points += weight
 
         # Adiciona o usuário e seus pontos à lista
         all_users_data.append({
@@ -197,10 +193,11 @@ def get_top_users_by_xp():
             'name': user.get_full_name(),
             'photo': user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo else '',
             'points': points,
-            'species_count': species_count,  # Contagem por espécie
+            'species_count': species_count,  
         })
 
     # Ordena os usuários pelo total de pontos em ordem decrescente e pega os 3 primeiros
     top_users = sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
 
     return top_users
+
