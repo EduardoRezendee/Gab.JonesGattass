@@ -1,0 +1,55 @@
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark" 
+         style="background-color: #CFE2FF; padding: 10px; border-bottom: 7px solid #808000; 
+                border-radius: 0 0 40px 40px; position: relative; height: 70px;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <!-- Ícones de Contato -->
+            <div>
+                <a href="#" class="text-white me-3" style="font-size: 1.3rem;">
+                    <i class="fa-brands fa-whatsapp" style="color: rgb(4, 30, 115);"></i>
+                </a>
+                <a href="#" class="text-white" style="font-size: 1.3rem;">
+                    <i class="fa-solid fa-envelope" style="color: rgb(4, 34, 91);"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Logo Ajustado (Mais para Cima) -->
+    <div class="text-center"
+         style="position: absolute; top: 65px; left: 50%; transform: translate(-50%, -50%);">
+        <img src="https://auditoria-mc.tjmt.jus.br/portalauditoria-arquivos-prod/cms/logo_2_9db0973afc.png" 
+             alt="Logo Sistema de Gestão" 
+             style="height: 120px; width: auto; background-color: white; padding: 5px; 
+                    border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+                    border: 1px solid #ddd;">
+    </div>
+</header>
+<!-- Texto "Primeira Câmara do Direito Privado" com Design Elaborado -->
+<div class="container-fluid d-flex align-items-center" style="margin-top: 20px; padding-left: 20px;">
+    <div style="background-color: rgba(2, 33, 90, 0.1); padding: 10px 20px; border-radius: 10px; 
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); display: inline-flex; align-items: center;">
+        <i class="fas fa-balance-scale me-3" style="font-size: 1.5rem; color: #02215a;"></i>
+        <h4 style="font-size: 1.25rem; color: #02215a; font-weight: 600; margin: 0;">
+            Primeira Câmara do Direito Privado
+        </h4>
+    </div>
+</div>
+<!-- Menu Ajustado (Mais para Baixo) -->
+<nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Início</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'agendamento' %}">Agenda Atendimento</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'noticias' %}">Notícias</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'paineis' %}">Painéis</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">

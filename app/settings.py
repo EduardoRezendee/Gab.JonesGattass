@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'app',
     'processos',
     'accounts',
     'publico',
@@ -103,7 +103,6 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-
 
 
 

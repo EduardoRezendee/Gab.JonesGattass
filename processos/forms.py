@@ -80,26 +80,18 @@ class ExcelUploadForm(forms.Form):
 class AndamentoForm(forms.ModelForm):
     class Meta:
         model = ProcessoAndamento
-        fields = ['andamento', 'link_doc', 'usuario']
+        fields = ['link_doc']
         widgets = {
-            'andamento': forms.TextInput(attrs={'class': 'form-control'}),
+    
             'link_doc': forms.URLInput(attrs={'class': 'form-control'}),
-            'usuario': forms.Select(attrs={'class': 'form-control'}),
+
         }
         labels = {
-            'andamento': 'Descrição do Andamento',
+
             'link_doc': 'Link do Documento',
-            'usuario': 'Usuário',
+
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Ordena os usuários pelo nome e personaliza o rótulo
-        self.fields['usuario'].queryset = User.objects.all().order_by('first_name')
-        self.fields['usuario'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}"
-        
-        if self.instance and self.instance.fase.fase == "Elaboração":
-            self.fields['usuario'].widget.attrs['readonly'] = True
 
 from .models import ComentarioProcesso
 

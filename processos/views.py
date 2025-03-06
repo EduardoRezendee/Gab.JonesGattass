@@ -138,7 +138,9 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         ]
 
         # Usuários ordenados
-        context['users'] = User.objects.select_related('profile').order_by('first_name', 'last_name')
+        context['users'] = User.objects.filter(
+            id__in=Processo.objects.values_list('usuario_id', flat=True)
+        ).select_related('profile').order_by('first_name', 'last_name')
 
         # Adiciona filtros para os campos relacionados
         context['statuses'] = ["Em andamento", "Não iniciado", "Concluído", "Pendente"]
@@ -250,7 +252,6 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         })
         return context
 
-    
 class ProcessoPartialUpdateView(View):
     def post(self, request, processo_id):
         processo = get_object_or_404(Processo, id=processo_id)
@@ -437,6 +438,7 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
         andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         nova_fase = request.POST.get('nova_fase')
+        origem = request.POST.get('origem', 'home')  # Padrão para 'home' se não fornecido
 
         # Finaliza o andamento atual
         andamento.dt_conclusao = now()
@@ -447,6 +449,8 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
         usuario_responsavel = andamento.processo.usuario  # Usuário padrão (do processo)
         if nova_fase == "Revisão":
             usuario_responsavel = UserProfile.objects.filter(funcao="revisor(a)").first().user
+        elif nova_fase == "Revisão Desa":
+            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargadora").first().user
 
         # Cria o novo andamento
         nova_fase_obj = get_object_or_404(Fase, fase=nova_fase)
@@ -459,9 +463,11 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
             link_doc=andamento.link_doc  # Copia o link do documento
         )
 
-        return redirect(reverse('andamento_list') + f"?processo={andamento.processo.pk}")
-
-
+        # Redireciona para a página de origem
+        if origem == "andamento_list":
+            return redirect(reverse('andamento_list') + f"?processo={andamento.processo.pk}")
+        else:  # Inclui 'home' e qualquer outro caso
+            return redirect('home')
 
 
 class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
@@ -574,11 +580,20 @@ def adicionar_tarefa(request, processo_id):
     processo = get_object_or_404(Processo, id=processo_id)
     TarefaDoDia.objects.get_or_create(usuario=request.user, processo=processo)
 
-    # Captura os parâmetros da URL para manter os filtros após adicionar a tarefa
+    # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'processo_list')
+    origem = request.POST.get('origem', 'processo_list')  # Default para 'processo_list' se não especificado
+
+    # Captura os parâmetros da URL para manter os filtros
     query_params = request.GET.copy()
     query_params.pop('page', None)  # Remove paginação para evitar problemas
 
-    url = reverse('processo_list')  # Define a URL base da lista de processos
+    # Define a URL de redirecionamento com base na origem
+    if origem == 'home':
+        url = reverse('home')
+    else:
+        url = reverse('processo_list')
+
+    # Adiciona os parâmetros de query à URL, se existirem
     if query_params:
         return redirect(f"{url}?{query_params.urlencode()}")
     return redirect(url)
@@ -588,11 +603,20 @@ def remover_tarefa(request, processo_id):
     processo = get_object_or_404(Processo, id=processo_id)
     TarefaDoDia.objects.filter(usuario=request.user, processo=processo).delete()
 
-    # Captura os parâmetros da URL para manter os filtros após remover a tarefa
+    # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'processo_list')
+    origem = request.POST.get('origem', 'processo_list')  # Default para 'processo_list' se não especificado
+
+    # Captura os parâmetros da URL para manter os filtros
     query_params = request.GET.copy()
     query_params.pop('page', None)  # Remove paginação para evitar problemas
 
-    url = reverse('processo_list')  # Define a URL base da lista de processos
+    # Define a URL de redirecionamento com base na origem
+    if origem == 'home':
+        url = reverse('home')
+    else:
+        url = reverse('processo_list')
+
+    # Adiciona os parâmetros de query à URL, se existirem
     if query_params:
         return redirect(f"{url}?{query_params.urlencode()}")
     return redirect(url)
@@ -751,7 +775,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from processos.models import Processo
-from django.db import models
 
 @login_required
 def gerar_pdf_produtividade(request):

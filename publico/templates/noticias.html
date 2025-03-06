@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Notícias</h2>
+
+    <div class="row">
+        {% for noticia in noticias %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                {% if noticia.imagem %}
+                <img src="{{ noticia.imagem.url }}" class="card-img-top" alt="{{ noticia.titulo }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ noticia.titulo }}</h5>
+                    <p class="card-text">{{ noticia.conteudo|truncatechars:100 }}</p>
+                    <a href="{% url 'noticia_detalhe' noticia.id %}" class="btn btn-primary">Leia mais</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center">Nenhuma notícia disponível.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+``

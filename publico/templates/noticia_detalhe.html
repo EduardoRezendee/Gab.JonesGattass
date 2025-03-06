@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-3">{{ noticia.titulo }}</h2>
+
+    {% if noticia.imagem %}
+    <div class="text-center mb-4">
+        <img src="{{ noticia.imagem.url }}" class="img-fluid rounded" alt="{{ noticia.titulo }}">
+    </div>
+    {% endif %}
+
+    <p><strong>Publicado em:</strong> {{ noticia.data_publicacao|date:"d/m/Y H:i" }}</p>
+    <p>{{ noticia.conteudo }}</p>
+
+    {% if noticia.link %}
+    <p><a href="{{ noticia.link }}" class="btn btn-outline-primary" target="_blank">Saiba mais</a></p>
+    {% endif %}
+
+    <a href="{% url 'noticias' %}" class="btn btn-secondary mt-3">Voltar para Notícias</a>
+</div>
+{% endblock %}

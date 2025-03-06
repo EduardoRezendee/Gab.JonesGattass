@@ -1,0 +1,27 @@
+{% extends 'base.html' %}  <!-- Mantém a estrutura do site -->
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="text-center mt-4">Agendamento</h2>
+
+    <div class="agendamento-container d-flex justify-content-center mt-3">
+        <iframe src="https://outlook.office365.com/owa/calendar/teste6@tjmt.jus.br/bookings/" 
+                width="100%" height="800px" 
+                style="border:0; min-height: 85vh;" title="Agendamento">
+        </iframe>
+    </div>
+</div>
+<style>
+    .agendamento-container iframe {
+    width: 100%;
+    height: 85vh;  /* Ajusta para ocupar 85% da altura da tela */
+    border: none;
+}
+.agendamento-container iframe {
+    width: 100%;
+    height: 100vh; /* Ocupa toda a tela */
+    border: none;
+}
+
+</style>
+{% endblock %}

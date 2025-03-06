@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Painéis</h2>
+
+    <div class="row">
+        {% for painel in paineis %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ painel.titulo }}</h5>
+                    <p class="card-text">{{ painel.descricao }}</p>
+                    <a href="{{ painel.link_painel }}" class="btn btn-primary" target="_blank">Acessar Painel</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center">Nenhum painel disponível.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

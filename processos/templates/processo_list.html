@@ -1,48 +1,49 @@
 {% extends 'base2.html' %}
 
 {% block title %}
-Cadastro de Processos
+Distribuição de Processos
 {% endblock %}
 
 {% block content %}
 {% load custom_filters %}
-<div class="container-fluid mt-3">
+
+<div class="container-fluid mt-4">
     <div class="row">
         <!-- Sidebar Secundária (Filtro por Usuário) -->
         <aside class="col-md-3 col-lg-2 bg-white shadow-sm p-3 d-flex flex-column" 
                 style="border-right: 1px solid #e9ecef; min-height: 100vh;">
-            <h1 class="fw-bold mb-3" style="color: #808000; font-size: 1.5rem;">
-                <i class="fas fa-users me-2"></i> Usuários
+            <h1 class="fw-bold mb-4" style="color: #808000; font-size: 1.5rem;">
+                <i class="bi bi-users me-2"></i> Usuários
             </h1>
         
             <div id="userList" class="overflow-auto flex-grow-1" style="max-height: calc(100vh - 120px);">
                 {% for user in users %}
                 <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}user_id={{ user.id }}"
-                        class="user-card d-flex align-items-center p-2 rounded mb-2 text-decoration-none 
-                            {% if user.id|stringformat:'s' == request.GET.user_id %}active-user bg-light-secondary{% else %}hover-effect{% endif %}" 
-                        style="border: 1px solid #e9ecef; background: #f8f9fa; cursor: pointer; transition: all 0.3s;">
+                   class="user-card d-flex align-items-center p-2 rounded mb-2 text-decoration-none 
+                   {% if user.id|stringformat:'s' == request.GET.user_id %}active-user bg-light{% else %}hover-effect{% endif %}" 
+                   style="border: 1px solid #e9ecef; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease;">
                     <img src="{% if user.profile.photo %}{{ user.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-                        alt="Foto" 
-                        class="rounded-circle me-2 border" 
-                        width="40" 
-                        height="40" 
-                        style="object-fit: cover;">
+                         alt="Foto de {{ user.get_full_name }}" 
+                         class="rounded-circle me-2 border" 
+                         width="40" 
+                         height="40" 
+                         style="object-fit: cover; border-color: #bea066 !important;">
                     <div class="d-flex flex-column flex-grow-1">
-                        <span class="fw-bold text-dark" style="font-size: 14px;">{{ user.get_full_name }}</span>
+                        <span class="fw-semibold text-dark" style="font-size: 14px;">{{ user.get_full_name }}</span>
                     </div>
         
                     {% with assessor_process_data|get_item:user.id as processo_data %}
-                        <div class="ms-auto d-flex align-items-center">
-                            <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #1d8cfc;">
-                                <i class="fas fa-folder me-1"></i>{{ processo_data.total|default:"0" }}
-                            </span>
-                            <span class="badge bg-light text-dark me-1" style="font-size: 11px; border: 1px solid #05bb33;">
-                                <i class="fas fa-check-circle me-1"></i>{{ processo_data.concluidos|default:"0" }}
-                            </span>
-                            <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #dbad14;">
-                                <i class="fas fa-hourglass-half me-1"></i>{{ processo_data.pendentes|default:"0" }}
-                            </span>
-                        </div>
+                    <div class="ms-auto d-flex align-items-center gap-1">
+                        <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #1d8cfc;">
+                            <i class="bi bi-folder me-1" style="color: #1d8cfc;"></i>{{ processo_data.total|default:"0" }}
+                        </span>
+                        <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #05bb33;">
+                            <i class="bi bi-check-circle me-1" style="color: #05bb33;"></i>{{ processo_data.concluidos|default:"0" }}
+                        </span>
+                        <span class="badge bg-light text-dark" style="font-size: 11px; border: 1px solid #dbad14;">
+                            <i class="bi bi-hourglass-split me-1" style="color: #dbad14;"></i>{{ processo_data.pendentes|default:"0" }}
+                        </span>
+                    </div>
                     {% endwith %}
                 </a>
                 {% endfor %}
@@ -50,155 +51,166 @@ Cadastro de Processos
         </aside>
     
         <!-- Conteúdo Principal -->
-        <div class="col-md-9 col-lg-10">
-        <!-- Cabeçalho -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-            <div class="flex-grow-1">
-                <h1 class="fw-bold" style="color: #808000; font-size: 1.5rem;">
-                    <i class="bi bi-folder-fill me-2"></i> Cadastro de Processos
-                </h1>
-                <hr style="height: 2px; background-color: #bea066; border: none; width: 100%;">
-            </div>
-            <!-- Botão para gerar relatório diário -->
-            <a href="{% url 'gerar_pdf' %}" class="btn btn-success">
-                📄 Produtividade Diária
-            </a>
-        </div>
-
-        <!-- Exibir mensagens de sucesso ou erro -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} mt-2" role="alert">
-                    {{ message }}
+        <div class="col-md-9 col-lg-10 p-3">
+            <!-- Cabeçalho -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div class="flex-grow-1">
+                    <h1 class="fw-bold" style="color: #808000; font-size: 1.75rem;">
+                        <i class="bi bi-folder-fill me-2"></i> Cadastro de Processos
+                    </h1>
+                    <hr style="height: 2px; background: linear-gradient(to right, #bea066, #808000); border: none; width: 30%; opacity: 0.8;">
                 </div>
-            {% endfor %}
-        {% endif %}
+                <!-- Botão para gerar relatório diário -->
+                <a href="{% url 'gerar_pdf' %}" class="btn btn-success btn-sm shadow-sm d-flex align-items-center gap-2"
+                   style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+                    <i class="bi bi-file-earmark-text"></i> Produtividade Diária
+                </a>
+            </div>
 
+            <!-- Exibir mensagens de sucesso ou erro -->
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <!-- Barra de Pesquisa e Botões -->
             <div class="row g-3 align-items-center mb-4">
                 <!-- Campo de pesquisa -->
-                <div class="col-lg-6 col-md-6">
+                <div class="col-md-6 col-lg-5">
                     <form method="get">
                         <div class="input-group shadow-sm">
                             <input type="text" class="form-control" placeholder="Pesquisar Número do Processo" 
-                                   name="numero_processo" value="{{ request.GET.numero_processo }}" 
-                                   style="border-radius: 30px 0 0 30px; font-size: 1rem; padding: 0.5rem 1rem;">
+                                   name="numero_processo" value="{{ request.GET.numero_processo }}"
+                                   style="border-radius: 20px 0 0 20px; font-size: 0.95rem; padding: 0.75rem 1rem; border: 1px solid #e9ecef;">
                             <button type="submit" class="btn text-white d-flex align-items-center justify-content-center" 
-                                    style="background-color: #808000; border-color: #e7e7e7; border-radius: 0 30px 30px 0; font-size: 1rem; padding: 0.5rem 1rem; transition: transform 0.2s;">
-                                <i class="bi bi-search me-2"></i> <span>Pesquisar</span>
+                                    style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 0 20px 20px 0; font-size: 0.95rem; padding: 0.75rem 1.5rem; transition: transform 0.2s ease;">
+                                <i class="bi bi-search me-2"></i> Pesquisar
                             </button>
                         </div>
                     </form>
                 </div>
 
                 <!-- Botões de Ação -->
-                <div class="col-lg-6 col-md-6 d-flex justify-content-end gap-2">
-                    <a href="{% url 'exportar_excel' %}" class="btn text-white shadow-sm d-flex align-items-center justify-content-center" 
-                       style="background-color: #808000; border-color: #808000; border-radius: 30px; font-size: 1rem; padding: 0.5rem 1.5rem; transition: transform 0.2s;">
-                        <i class="bi bi-file-earmark-excel me-2"></i> <span>Exportar Excel</span>
+                <div class="col-md-6 col-lg-7 d-flex justify-content-end gap-2 flex-wrap">
+                    <a href="{% url 'exportar_excel' %}" class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                       style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+                        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
                     </a>
-
-                    <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm d-flex align-items-center justify-content-center"
-                       style="background-color: #ececec; border-color: #808000; border-radius: 30px; font-size: 1rem; padding: 0.5rem 1.5rem; transition: transform 0.2s;">
-                        <i class="bi bi-x-lg me-2"></i> <span>Limpar Filtros</span>
+                    <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm d-flex align-items-center gap-2"
+                       style="border-color: #808000; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+                        <i class="bi bi-x-lg"></i> Limpar Filtros
                     </a>
-
-                    <a href="{% url 'processo_create' %}" class="btn text-white shadow-sm d-flex align-items-center justify-content-center" 
-                       style="background-color: #808000; border-color: #808000; border-radius: 30px; font-size: 1rem; padding: 0.5rem 1.5rem; transition: transform 0.2s;">
-                        <i class="bi bi-plus-lg me-2"></i> <span>Novo Processo</span>
+                    <a href="{% url 'processo_create' %}" class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                       style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+                        <i class="bi bi-plus-lg"></i> Novo Processo
                     </a>
-                    <a href="{% url 'importar_processos' %}" class="btn btn-success">📂</a>
+                    <a href="{% url 'importar_processos' %}" class="btn btn-success btn-sm shadow-sm d-flex align-items-center justify-content-center"
+                       style="border-radius: 20px; padding: 0.5rem 1rem; transition: transform 0.2s ease;">
+                        <i class="bi bi-upload"></i>
+                    </a>
                 </div>
             </div>
+
             <!-- Meu Dia -->
             <div class="accordion mb-4" id="accordionMeuDia">
-                <div class="accordion-item shadow-sm">
+                <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
                     <h2 class="accordion-header" id="headingMeuDia">
-                        <button class="accordion-button d-flex align-items-center justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMeuDia" aria-expanded="true" aria-controls="collapseMeuDia" style="background: linear-gradient(135deg, #cbe3fb, #cbe3fb); color: #2C3E50; border-radius: 8px;">
+                        <button class="accordion-button d-flex align-items-center justify-content-between" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapseMeuDia" aria-expanded="true" 
+                                aria-controls="collapseMeuDia" 
+                                style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2C3E50; border-radius: 12px; font-size: 1.1rem; font-weight: 600;">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-sun-fill"></i>
-                                <span class="fw-normal">Meu Dia</span>
+                                <i class="bi bi-sun-fill" style="color: #808000;"></i>
+                                <span>Meu Dia</span>
                             </div>
-                            <span class="badge bg-light text-dark fs-6 px-2 py-1 rounded-pill">{{ tarefas_do_dia|length }}</span>
+                            <span class="badge bg-light text-dark fs-6 px-2 py-1 rounded-pill" style="border: 1px solid #808000;">
+                                {{ tarefas_do_dia|length }}
+                            </span>
                         </button>
                     </h2>
-                    <div id="collapseMeuDia" class="accordion-collapse collapse show" aria-labelledby="headingMeuDia" data-bs-parent="#accordionMeuDia">
-                        <div class="accordion-body" style="background-color: #f8f9fa;">
+                    <div id="collapseMeuDia" class="accordion-collapse collapse show" aria-labelledby="headingMeuDia" 
+                         data-bs-parent="#accordionMeuDia">
+                        <div class="accordion-body p-4" style="background-color: #f8f9fa;">
                             {% if tarefas_do_dia %}
-                                <ul class="list-group">
-                                    {% for tarefa in tarefas_do_dia %}
-                                        <li class="list-group-item shadow-sm p-3 mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="border-radius: 10px; background: white;">
-                                            <div class="w-100">
-                                                <h6 class="fw-bold text-primary">
-                                                    <i class="bi bi-folder-fill"></i> {{ tarefa.processo.numero_processo }}
-                                                </h6>
-                                                <p class="mb-1"><strong>Espécie:</strong> {{ tarefa.processo.especie }}</p>
-
-                                                <!-- Destaque visual para os prazos -->
-                                                <p class="mb-0">
-                                                    <strong>Prazo:</strong> 
-                                                    {% if tarefa.processo.dt_prazo %}
-                                                        {% if tarefa.processo.dt_prazo < today %}
-                                                            <span class="badge bg-danger px-2 py-1">Vencido: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
-                                                        {% elif tarefa.processo.dt_prazo == today %}
-                                                            <span class="badge bg-warning text-dark px-2 py-1">Hoje: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
-                                                        {% else %}
-                                                            <span class="badge bg-success px-2 py-1">Até: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
-                                                        {% endif %}
+                            <div class="row g-3">
+                                {% for tarefa in tarefas_do_dia %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card shadow-sm p-3 h-100" style="border-radius: 12px; border-left: 4px solid #bea066; transition: transform 0.2s ease;">
+                                        <div class="d-flex flex-column h-100">
+                                            <h6 class="fw-bold text-primary mb-2">
+                                                <i class="bi bi-folder-fill me-1"></i> {{ tarefa.processo.numero_processo }}
+                                            </h6>
+                                            <p class="mb-1 small"><strong>Espécie:</strong> {{ tarefa.processo.especie }}</p>
+                                            <p class="mb-3 small">
+                                                <strong>Prazo:</strong> 
+                                                {% if tarefa.processo.dt_prazo %}
+                                                    {% if tarefa.processo.dt_prazo < today %}
+                                                        <span class="badge bg-danger px-2 py-1">Vencido: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
+                                                    {% elif tarefa.processo.dt_prazo == today %}
+                                                        <span class="badge bg-warning text-dark px-2 py-1">Hoje: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
                                                     {% else %}
-                                                        <span class="text-muted">Sem prazo definido</span>
+                                                        <span class="badge bg-success px-2 py-1">Até: {{ tarefa.processo.dt_prazo|date:"d/m/Y" }}</span>
                                                     {% endif %}
-                                                </p>
-                                            </div>
-
-                                            <div class="d-flex gap-2 mt-2 mt-md-0">
-                                                <!-- Ver Andamento -->
-                                                <a href="{% url 'andamento_list' %}?processo={{ tarefa.processo.id }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 px-3">
+                                                {% else %}
+                                                    <span class="text-muted">Sem prazo definido</span>
+                                                {% endif %}
+                                            </p>
+                                            <div class="d-flex gap-2 mt-auto">
+                                                <a href="{% url 'andamento_list' %}?processo={{ tarefa.processo.id }}" 
+                                                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 px-3" 
+                                                   style="border-radius: 20px;">
                                                     <i class="bi bi-list-task"></i> Andamentos
                                                 </a>
-
-                                                <!-- Remover Tarefa -->
-                                                <a href="{% url 'remover_tarefa' tarefa.processo.id %}" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 px-3">
+                                                <a href="{% url 'remover_tarefa' tarefa.processo.id %}" 
+                                                   class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 px-3" 
+                                                   style="border-radius: 20px;">
                                                     <i class="bi bi-trash"></i> Remover
                                                 </a>
                                             </div>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                             {% else %}
-                                <p class="text-muted text-center mt-3">
-                                    <i class="bi bi-emoji-neutral"></i> Nenhuma tarefa adicionada ao Meu Dia.
-                                </p>
+                            <p class="text-muted text-center mt-3">
+                                <i class="bi bi-emoji-neutral me-2"></i> Nenhuma tarefa adicionada ao Meu Dia.
+                            </p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-           <!-- Filtros avançados no acordeão -->
+            <!-- Filtros Avançados no Acordeão -->
             <div class="accordion mb-4" id="accordionFiltros">
-                <div class="accordion-item shadow-sm">
+                <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
                     <h2 class="accordion-header" id="headingFiltros">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseFiltros" aria-expanded="false" aria-controls="collapseFiltros"
-                            style="background-color: #cbe3fb; color: #2C3E50;">
-                            <i class="bi bi-funnel me-2"></i> Filtros Avançados
+                                data-bs-target="#collapseFiltros" aria-expanded="false" aria-controls="collapseFiltros"
+                                style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2C3E50; font-size: 1.1rem; font-weight: 600;">
+                            <i class="bi bi-funnel me-2" style="color: #808000;"></i> Filtros Avançados
                         </button>
                     </h2>
                     <div id="collapseFiltros" class="accordion-collapse collapse" aria-labelledby="headingFiltros"
-                        data-bs-parent="#accordionFiltros">
-                        <div class="accordion-body" style="background-color: #ffffff;">
-                            <h5 class="fw-bold mb-3" style="color: #ffffff;">Filtros</h5>
+                         data-bs-parent="#accordionFiltros">
+                        <div class="accordion-body p-4" style="background-color: #ffffff;">
                             <form method="get">
                                 {% for key, value in request.GET.items %}
-                                    {% if key != 'status' and key != 'fase_atual' and key != 'camara' and key != 'tipo' and key != 'especie' %}
+                                    {% if key != 'status' and key != 'fase_atual' and key != 'camara' and key != 'tipo' and key != 'especie' and key != 'data_mes' and key != 'data_dist' and key != 'data_julgamento' %}
                                         <input type="hidden" name="{{ key }}" value="{{ value }}">
                                     {% endif %}
                                 {% endfor %}                            
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="fase_atual">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Fase Atual</label>
+                                        <select class="form-select shadow-sm" name="fase_atual" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="">Todas as Fases</option>
                                             {% for fase in fases %}
                                             <option value="{{ fase }}" {% if request.GET.fase_atual == fase %}selected{% endif %}>
@@ -208,14 +220,15 @@ Cadastro de Processos
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="status" id="status">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Status</label>
+                                        <select class="form-select shadow-sm" name="status" id="status" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="pendente" {% if request.GET.status == "pendente" or not request.GET.status %}selected{% endif %}>Pendente</option>
                                             <option value="concluído" {% if request.GET.status == "concluído" %}selected{% endif %}>Concluído</option>
                                         </select>
                                     </div>
-                                    
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="camara">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Câmara</label>
+                                        <select class="form-select shadow-sm" name="camara" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="">Todas as Câmaras</option>
                                             {% for camara in camaras %}
                                             <option value="{{ camara }}" {% if request.GET.camara == camara %}selected{% endif %}>
@@ -226,9 +239,10 @@ Cadastro de Processos
                                     </div>
                                 </div>
 
-                                <div class="row g-3 mt-3">
+                                <div class="row g-3 mt-2">
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="tipo">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Tipo</label>
+                                        <select class="form-select shadow-sm" name="tipo" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="">Todos os Tipos</option>
                                             {% for tipo in tipos %}
                                             <option value="{{ tipo }}" {% if request.GET.tipo == tipo %}selected{% endif %}>
@@ -237,9 +251,9 @@ Cadastro de Processos
                                             {% endfor %}
                                         </select>
                                     </div>
-
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="especie">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Espécie</label>
+                                        <select class="form-select shadow-sm" name="especie" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="">Todas as Espécies</option>
                                             {% for especie in especies %}
                                             <option value="{{ especie }}" {% if request.GET.especie == especie %}selected{% endif %}>
@@ -248,13 +262,12 @@ Cadastro de Processos
                                             {% endfor %}
                                         </select>
                                     </div>
-
                                     <div class="col-md-4">
-                                        <select class="form-select shadow-sm" name="data_mes">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Mês</label>
+                                        <select class="form-select shadow-sm" name="data_mes" style="border-radius: 10px; padding: 0.5rem;">
                                             <option value="">Mês</option>
                                             {% for mes_num, mes_nome in meses %}
-                                            <option value="{{ mes_num }}" {% if request.GET.data_mes == mes_num|stringformat:"d" %}
-                                                selected{% endif %}>
+                                            <option value="{{ mes_num }}" {% if request.GET.data_mes == mes_num|stringformat:"d" %}selected{% endif %}>
                                                 {{ mes_nome }}
                                             </option>
                                             {% endfor %}
@@ -262,76 +275,76 @@ Cadastro de Processos
                                     </div>
                                 </div>
 
-                                <div class="row g-3 mt-3">
+                                <div class="row g-3 mt-2">
                                     <div class="col-md-4">
-                                        <label for="data_dist" class="form-label fw-bold" style="color: #083464;">Data de Distribuição</label>
+                                        <label for="data_dist" class="form-label fw-semibold small" style="color: #083464;">Data de Distribuição</label>
                                         <input type="date" id="data_dist" class="form-control shadow-sm" name="data_dist"
-                                            value="{{ request.GET.data_dist }}">
+                                               value="{{ request.GET.data_dist }}" style="border-radius: 10px; padding: 0.5rem;">
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="data_julgamento" class="form-label fw-bold" style="color: #083464;">Data de Julgamento</label>
+                                        <label for="data_julgamento" class="form-label fw-semibold small" style="color: #083464;">Data de Julgamento</label>
                                         <input type="date" id="data_julgamento" class="form-control shadow-sm" name="data_julgamento"
-                                            value="{{ request.GET.data_julgamento }}">
+                                               value="{{ request.GET.data_julgamento }}" style="border-radius: 10px; padding: 0.5rem;">
                                     </div>
-                                </div>
-
-                                <div class="mt-4 text-end">
-                                    <button type="submit" class="btn text-white shadow-sm" style="background-color: #808000;">
-                                        <i class="bi bi-funnel"></i> Aplicar Filtros
-                                    </button>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="submit" class="btn text-white shadow-sm w-100" 
+                                                style="background: linear-gradient(135deg, #808000, #bea066); border-radius: 20px; padding: 0.5rem; transition: transform 0.2s ease;">
+                                            <i class="bi bi-funnel me-2"></i> Aplicar Filtros
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
+
             <!-- Tabela de Processos -->
-            <div class="table-responsive shadow-sm rounded p-3 bg-white">
-                <table class="table table-hover table-bordered align-middle">
-                    <thead class="text-white" style="background-color: #083464;">
+            <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
+                <table class="table table-hover align-middle">
+                    <thead style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff;">
                         <tr>
-                            <th class="text">Nº Processo</th>
-                            <th>
+                            <th class="text-center">Nº Processo</th>
+                            <th class="text-center">
                                 <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'mais_recente' %}mais_antigo{% else %}mais_recente{% endif %}" 
                                    class="text-black text-decoration-none">
                                     Data Distribuição 
                                     {% if request.GET.ordenar == "mais_recente" %}
-                                        <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Recente -->
+                                        <i class="bi bi-arrow-up"></i>
                                     {% elif request.GET.ordenar == "mais_antigo" %}
-                                        <i class="bi bi-arrow-down"></i> <!-- Ícone para Mais Antigo -->
+                                        <i class="bi bi-arrow-down"></i>
                                     {% else %}
-                                        <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
+                                        <i class="bi bi-arrow-up-down"></i>
                                     {% endif %}
                                 </a>
                             </th>
-                            
-                            <th>
+                            <th class="text-center">
                                 <a href="?ordenar=usuario__first_name" class="text-black text-decoration-none">
                                     Responsável 
                                     <i class="bi bi-arrow-up-down"></i>
                                 </a>
                             </th>
-                            <th>
+                            <th class="text-center">
                                 <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'dias_gabinete_recente' %}dias_gabinete_antigo{% else %}dias_gabinete_recente{% endif %}" 
                                    class="text-black text-decoration-none">
-                                   Dias Gabinete
-                                   {% if request.GET.ordenar == "dias_gabinete_recente" %}
-                                       <i class="bi bi-arrow-up"></i> <!-- Ícone para Mais Tempo no Gabinete -->
-                                   {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
-                                       <i class="bi bi-arrow-down"></i> <!-- Ícone para Menos Tempo no Gabinete -->
-                                   {% else %}
-                                       <i class="bi bi-arrow-up-down"></i> <!-- Ícone padrão -->
-                                   {% endif %}
+                                    Dias Gabinete
+                                    {% if request.GET.ordenar == "dias_gabinete_recente" %}
+                                        <i class="bi bi-arrow-up"></i>
+                                    {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
+                                        <i class="bi bi-arrow-down"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-up-down"></i>
+                                    {% endif %}
                                 </a>
-                            </th>                            
-                            <th>Fase</th> 
-                            <th>
+                            </th>
+                            <th class="text-center">Fase</th>
+                            <th class="text-center">
                                 <a href="?ordenar=especie__sigla" class="text-black text-decoration-none">
                                     Espécie 
                                     <i class="bi bi-arrow-up-down"></i>
                                 </a>
                             </th>
-                            <th>Status</th> <!-- Ordenação removida -->
+                            <th class="text-center">Status</th>
                             <th class="text-center">Ações</th>
                             <th class="text-center">Meu Dia</th>
                             <th class="text-center">Andamentos</th>
@@ -339,21 +352,20 @@ Cadastro de Processos
                     </thead>
                     <tbody>
                         {% for processo in processos %}
-                        <tr>
-                            <td>{{ processo.numero_processo }}</td>
-                            <td>{{ processo.data_dist|date:"d/m/Y" }}</td>
-                            <td>{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
-                            <td>
+                        <tr style="transition: background 0.3s ease;">
+                            <td class="text-center">{{ processo.numero_processo }}</td>
+                            <td class="text-center">{{ processo.data_dist|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
+                            <td class="text-center">
                                 {% if processo.dias_no_gabinete is not None %}
-                                    {{ processo.dias_no_gabinete }} dias
+                                    <span class="badge bg-light text-dark">{{ processo.dias_no_gabinete }} dias</span>
                                 {% else %}
                                     -
                                 {% endif %}
                             </td>
-                            
-                            <td>{{ processo.fase_atual }}</td>
-                            <td>{{ processo.especie.sigla }}</td>
-                            <td>
+                            <td class="text-center">{{ processo.fase_atual }}</td>
+                            <td class="text-center">{{ processo.especie.sigla }}</td>
+                            <td class="text-center">
                                 {% if processo.concluido %}
                                     <span class="badge bg-success">Concluído</span>
                                 {% else %}
@@ -362,13 +374,18 @@ Cadastro de Processos
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'processo_detail' processo.pk %}" class="btn btn-outline-info btn-sm" title="Visualizar">
+                                    <a href="{% url 'processo_detail' processo.pk %}" class="btn btn-outline-info btn-sm" 
+                                       title="Visualizar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{% url 'processo_update' processo.pk %}" class="btn btn-outline-warning btn-sm" title="Editar">
+                                    <a href="{% url 'processo_update' processo.pk %}" class="btn btn-outline-warning btn-sm" 
+                                       title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ processo.pk }}" data-name="{{ processo.numero_processo }}" title="Excluir">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal" data-id="{{ processo.pk }}" 
+                                            data-name="{{ processo.numero_processo }}" title="Excluir" 
+                                            style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -377,19 +394,24 @@ Cadastro de Processos
                                 {% with request.GET.urlencode as filtros %}
                                     {% if processo.id in tarefas_do_dia_ids %}
                                         <a href="{% url 'remover_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
-                                           class="btn btn-outline-danger btn-sm" title="Remover Tarefa">
+                                           class="btn btn-outline-danger btn-sm" title="Remover Tarefa" 
+                                           style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     {% else %}
                                         <a href="{% url 'adicionar_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
-                                           class="btn btn-outline-success btn-sm" title="Adicionar Tarefa">
+                                           class="btn btn-outline-success btn-sm" title="Adicionar Tarefa" 
+                                           style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                             <i class="bi bi-plus-circle"></i>
                                         </a>
                                     {% endif %}
                                 {% endwith %}
-                            </td>                                                                                 
+                            </td>
                             <td class="text-center">
-                                <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}" class="btn text-white btn-sm" style="background-color: #5DADE2;" title="Ver Andamentos">
+                                <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}" 
+                                   class="btn text-white btn-sm" 
+                                   style="background: linear-gradient(135deg, #5DADE2, #4682B4); border-radius: 20px; padding: 0.25rem 0.75rem;" 
+                                   title="Ver Andamentos">
                                     <i class="bi bi-list-task"></i>
                                 </a>
                             </td>
@@ -406,6 +428,31 @@ Cadastro de Processos
         </div>
     </div>
 </div>
+
+<style>
+/* Ajustes para Responsividade */
+@media (max-width: 767px) {
+    .user-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    .user-card img {
+        margin: 0 auto;
+    }
+    .user-card .ms-auto {
+        margin-top: 0.5rem;
+    }
+    .table th, .table td {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+    .input-group, .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem !important;
+    }
+}
+</style>
 
 <!-- Modal de Confirmação de Delete -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">

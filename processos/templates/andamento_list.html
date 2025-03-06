@@ -1,256 +1,473 @@
-{% extends 'base.html' %}
+{% extends 'base2.html' %}
 {% load custom_filters %}
 
 {% block content %}
-<div class="container mt-3">
-    <div class="bg-white p-3 rounded shadow-sm mb-3 border-start border-4 d-flex align-items-center justify-content-between"
-         style="border-color: #808000; min-height: 75px;">  
-
-<!-- Informações do Processo -->
-<div class="d-flex align-items-center">
-    <i class="bi bi-folder-fill me-3 fs-4" style="color: #808000;"></i>
-    <div>
-        <h6 class="fw-semibold mb-1" style="color: #808000; font-size: 1rem;">
-            {{ processo.numero_processo }}
-        </h6>
-        <p class="mb-0 text-muted d-flex align-items-center" style="font-size: 0.85rem;">
-            <i class="bi bi-clock-history me-1"></i> Última atualização: {{ processo.dt_atualizacao|date:"d/m/Y H:i" }}
-        </p>
-    </div>
-</div>
-        <!-- Formulário Minimalista -->
-        <form method="POST" action="{% url 'processo_partial_update' processo.id %}" class="d-flex align-items-center">
-            {% csrf_token %}
-
-            <div class="d-flex align-items-center me-3">
-                <label for="tipo" class="form-label fw-semibold me-2 mb-0"
-                    style="color: #808000; font-size: 0.9rem;">Tipo</label>
-                <select id="tipo" name="tipo" class="form-select shadow-sm"
-                        style="border-color: #808000; background-color: #CFE2FF; font-size: 0.9rem; height: 32px; min-width: 150px;">
-                    <option value="" {% if not processo.tipo %}selected{% endif %}>Selecione...</option>
-                    {% for choice in form.fields.tipo.queryset %}
-                        <option value="{{ choice.id }}" {% if choice.id == processo.tipo.id %}selected{% endif %}>
-                            {{ choice.tipo }}
-                        </option>
-                    {% endfor %}
-                </select>
+<div class="container-fluid mt-4">
+    <!-- Informações do Processo -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4 border-start border-4 d-flex flex-wrap align-items-center justify-content-between"
+         style="border-color: #808000; min-height: 75px; border-radius: 12px;">  
+        <!-- Informações do Processo -->
+        <div class="d-flex align-items-center flex-grow-1">
+            <i class="bi bi-folder-fill me-3 fs-3" style="color: #808000;"></i>
+            <div>
+                <h6 id="numero_processo" class="fw-bold mb-1" style="color: #808000; font-size: 1.1rem;">
+                    {{ processo.numero_processo }}
+                </h6>
+                <p class="mb-0 text-muted d-flex align-items-center" style="font-size: 0.9rem;">
+                    <i class="bi bi-clock-history me-1"></i> Última atualização: {{ processo.dt_atualizacao|date:"d/m/Y H:i" }}
+                </p>
             </div>
+        </div>
 
-            <div class="d-flex align-items-center me-3">
-                <label for="resultado" class="form-label fw-semibold me-2 mb-0"
-                    style="color: #808000; font-size: 0.9rem;">Resultado</label>
-                <select id="resultado" name="resultado" class="form-select shadow-sm"
-                        style="border-color: #808000; background-color: #CFE2FF; font-size: 0.9rem; height: 32px; min-width: 150px;">
-                    <option value="" {% if not processo.resultado %}selected{% endif %}>Selecione...</option>
-                    {% for choice in form.fields.resultado.queryset %}
-                        <option value="{{ choice.id }}" {% if choice.id == processo.resultado.id %}selected{% endif %}>
-                            {{ choice.resultado }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="btn shadow-sm px-3"
-                    style="background-color: #808000; color: white; border: none; height: 32px;">
-                Salvar
+        <!-- Formulário Minimalista e Botão para Modal -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <form method="POST" action="{% url 'processo_partial_update' processo.id %}" class="d-flex flex-wrap align-items-center gap-2">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-2">
+                    <label for="tipo" class="form-label fw-semibold me-2 mb-0" style="color: #808000; font-size: 0.9rem;">Tipo</label>
+                    <select id="tipo" name="tipo" class="form-select shadow-sm"
+                            style="border-color: #808000; background-color: #f8f9fa; font-size: 0.9rem; height: 38px; min-width: 150px; border-radius: 10px;">
+                        <option value="" {% if not processo.tipo %}selected{% endif %}>Selecione...</option>
+                        {% for choice in form.fields.tipo.queryset %}
+                            <option value="{{ choice.id }}" {% if choice.id == processo.tipo.id %}selected{% endif %}>
+                                {{ choice.tipo }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label for="resultado" class="form-label fw-semibold me-2 mb-0" style="color: #808000; font-size: 0.9rem;">Resultado</label>
+                    <select id="resultado" name="resultado" class="form-select shadow-sm"
+                            style="border-color: #808000; background-color: #f8f9fa; font-size: 0.9rem; height: 38px; min-width: 150px; border-radius: 10px;">
+                        <option value="" {% if not processo.resultado %}selected{% endif %}>Selecione...</option>
+                        {% for choice in form.fields.resultado.queryset %}
+                            <option value="{{ choice.id }}" {% if choice.id == processo.resultado.id %}selected{% endif %}>
+                                {{ choice.resultado }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn shadow-sm px-4" 
+                        style="background: linear-gradient(135deg, #808000, #bea066); color: white; border: none; height: 38px; border-radius: 20px; transition: transform 0.2s ease;">
+                    <i class="bi bi-save me-2"></i> Salvar
+                </button>
+            </form>
+
+            <!-- Botão para abrir o Modal de Histórico -->
+            <button type="button" class="btn shadow-sm px-4 ms-2" data-bs-toggle="modal" data-bs-target="#historicoModal"
+                    style="background: linear-gradient(135deg, #808000, #bea066); color: white; border: none; height: 38px; border-radius: 20px; transition: transform 0.2s ease;">
+                <i class="bi bi-clock-history me-2"></i> Histórico
             </button>
-        </form>
+        </div>
     </div>
-</div>
-    <!-- Kanban de Fases -->
-    <div class="container mt-4">
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            {% for item in andamentos_por_fase %}
-                {% if item.fase.fase != "Processo Concluído" %}
-                    <div class="col">
-                    <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; overflow: hidden;">
-                    <!-- Cabeçalho da Fase -->
-                    <div class="card-header text-center" style="background-color: #083464; color: #ffffff; padding: 15px;">
-                        <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
-                    </div>
-                    <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
-                        <div class="accordion" id="accordionFase{{ item.fase.id }}">
-                            <!-- Não Iniciado + Em Andamento -->
-                            <div class="accordion-item border-0 mb-3" style="border-radius: 8px; overflow: hidden;">
-                                <h2 class="accordion-header" id="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNaoIniciadoEmAndamento{{ item.fase.id }}" aria-expanded="true" aria-controls="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" style="background-color: #e9ecef; font-size: 0.9rem; color: #002855; font-weight: bold;">
-                                        Não Iniciado e Em Andamento
-                                    </button>
-                                </h2>
-                                <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" class="accordion-collapse collapse show" aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
-                                    <div class="accordion-body" style="padding: 15px;">
-                                        {% for andamento in item.nao_iniciado_em_andamento %}
-                                            <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
-                                                <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #bea066; padding: 15px;">
-                                                    <h6 class="card-title" style="font-size: 1rem; font-weight: bold; color: #083464;">{{ andamento.andamento }}</h6>
-                                                    <p class="card-text mb-2">
-                                                        <strong>Status:</strong>
-                                                        <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                                                            {{ andamento.status }}
-                                                        </span>
-                                                    </p>
-                                                <p class="card-text mb-2">
-                                                    <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
-                                                </p>
-                                                {% if andamento.link_doc %}
-                                                <a href="{{ andamento.link_doc }}" target="_blank" class="btn btn-outline-info btn-sm" style="color: #002855;">
-                                                    <i class="bi bi-link-45deg"></i> Abrir Documento
-                                                </a>
-                                                {% endif %}
-                                                <div class="d-flex flex-wrap gap-2 mt-3">
-                                                    {% if not andamento.dt_inicio %}
-                                                    <form id="startAndamentoForm-{{ andamento.pk }}" method="post" action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
-                                                        {% csrf_token %}
-                                                        <button type="button" class="btn btn-sm btn-success" onclick="startAndamento('{{ andamento.pk }}')" title="Iniciar">
-                                                            <i class="bi bi-play-fill"></i>
-                                                        </button>
-                                                    </form>
-                                                    {% endif %}
-                                                    <a href="{% url 'andamento_update' andamento.pk %}" class="btn btn-warning btn-sm" title="Editar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ andamento.pk }}" data-name="{{ andamento.andamento }}" title="Excluir">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
 
-                                                    <div class="dropdown">
-                                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownActions{{ andamento.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            Ações
-                                                        </button>
-                                                        <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
-                                                            {% if andamento.fase.fase != "Revisão" %}
-                                                            <li>
-                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                    {% csrf_token %}
-                                                                    <input type="hidden" name="nova_fase" value="Revisão">
-                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
-                                                                </form>
-                                                            </li>
+    <!-- Kanban de Fases -->
+    <div class="row g-4">
+        {% with fases_orderadas="Elaboração|Revisão|Correção|Revisão Desa|Devolvido|L. PJE" %}
+            {% for fase_nome in fases_orderadas|split:"|" %}
+                {% for item in andamentos_por_fase %}
+                    {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
+                        <div class="col-2">
+                            <div class="card shadow-sm border-0 h-100" 
+                                 style="border-radius: 12px; overflow: hidden; border-top: 4px solid #bea066;">
+                                <!-- Cabeçalho da Fase -->
+                                <div class="card-header text-center" 
+                                     style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff; padding: 15px;">
+                                    <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
+                                </div>
+                                <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
+                                    <div class="accordion" id="accordionFase{{ item.fase.id }}">
+                                        <!-- Não Iniciado + Em Andamento -->
+                                        <div class="accordion-item border-0 mb-3" style="border-radius: 8px; overflow: hidden;">
+                                            <h2 class="accordion-header" id="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                                        data-bs-target="#collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
+                                                        aria-expanded="true" aria-controls="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
+                                                        style="background: linear-gradient(135deg, #e9ecef, #f1f3f5); font-size: 0.95rem; color: #002855; font-weight: 600;">
+                                                    Não Iniciado e Em Andamento
+                                                </button>
+                                            </h2>
+                                            <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
+                                                 class="accordion-collapse collapse show" 
+                                                 aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                                <div class="accordion-body" style="padding: 15px;">
+                                                    {% for andamento in item.nao_iniciado_em_andamento %}
+                                                    <div class="card mb-3 shadow-sm border-0" 
+                                                         style="border-radius: 8px; border-left: 5px solid #bea066;">
+                                                        <div class="card-body p-3">
+                                                            <h6 class="card-title mb-2" style="font-size: 1rem; font-weight: bold; color: #083464;">
+                                                                {{ andamento.andamento }}
+                                                            </h6>
+                                                            <p class="card-text mb-2 small">
+                                                                <strong>Status:</strong>
+                                                                <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                                    {{ andamento.status }}
+                                                                </span>
+                                                            </p>
+                                                            <p class="card-text mb-2 small">
+                                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                                            </p>
+                                                            {% if andamento.link_doc %}
+                                                            <a href="{{ andamento.link_doc }}" target="_blank" 
+                                                               class="btn btn-outline-info btn-sm d-flex align-items-center gap-1 px-3 mb-2" 
+                                                               style="border-radius: 20px;">
+                                                                <i class="bi bi-link-45deg"></i> Abrir Documento
+                                                            </a>
                                                             {% endif %}
-                                                            
-                                                            {% if andamento.fase.fase != "Correção" %}
-                                                            <li>
-                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                            <div class="d-flex flex-wrap gap-2">
+                                                                {% if not andamento.dt_inicio %}
+                                                                <form id="startAndamentoForm-{{ andamento.pk }}" method="post" 
+                                                                      action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
                                                                     {% csrf_token %}
-                                                                    <input type="hidden" name="nova_fase" value="Correção">
-                                                                    <button class="dropdown-item" type="submit">Enviar para Correção</button>
-                                                                </form>
-                                                            </li>
-                                                            {% endif %}
-                                                            
-                                                            {% if andamento.fase.fase != "L. PJE" %}
-                                                            <li>
-                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                    {% csrf_token %}
-                                                                    <input type="hidden" name="nova_fase" value="L. PJE">
-                                                                    <button class="dropdown-item" type="submit">Enviar para L. PJE</button>
-                                                                </form>
-                                                            </li>
-                                                            {% endif %}
-                                                            
-                                                            {% if andamento.fase.fase == "L. PJE" %}
-                                                            <li>
-                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
-                                                                    {% csrf_token %}
-                                                                    <button type="submit" class="dropdown-item text-success">
-                                                                        <i class="bi bi-check-circle"></i> Concluir Processo
+                                                                    <button type="button" class="btn btn-sm btn-success shadow-sm" 
+                                                                            onclick="startAndamento('{{ andamento.pk }}')" 
+                                                                            title="Iniciar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                                        <i class="bi bi-play-fill"></i>
                                                                     </button>
                                                                 </form>
-                                                            </li>
-                                                            {% endif %}
-                                                        </ul>
+                                                                {% endif %}
+                                                                <!-- Botão Editar que abre o modal -->
+                                                                <button type="button" class="btn btn-warning btn-sm shadow-sm" 
+                                                                        data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ andamento.pk }}"
+                                                                        title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <div class="dropdown">
+                                                                    <button class="btn btn-secondary btn-sm shadow-sm dropdown-toggle" 
+                                                                            type="button" id="dropdownActions{{ andamento.pk }}" 
+                                                                            data-bs-toggle="dropdown" aria-expanded="false"
+                                                                            style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                                        Ações
+                                                                    </button>
+                                                                    <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
+                                                                        {% if andamento.fase.fase == "Elaboração" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+
+                                                                        {% if andamento.fase.fase == "Revisão" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Correção">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Correção</button>
+                                                                                </form>
+                                                                            </li>
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão Desa">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Desa</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+
+                                                                        {% if andamento.fase.fase == "Correção" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
+                                                                                </form>
+                                                                            </li>
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão Desa">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Desa</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+
+                                                                        {% if andamento.fase.fase == "Revisão Desa" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Devolvido">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Devolvido</button>
+                                                                                </form>
+                                                                            </li>
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="L. PJE">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para L. PJE</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+
+                                                                        {% if andamento.fase.fase == "Devolvido" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão Desa">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Desa</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+
+                                                                        {% if andamento.fase.fase == "L. PJE" %}
+                                                                            <li>
+                                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button type="submit" class="dropdown-item text-success">
+                                                                                        <i class="bi bi-check-circle me-1"></i> Concluir Processo
+                                                                                    </button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
+
+                                                    <!-- Modal de Edição para este Andamento -->
+                                                    <div class="modal fade" id="editAndamentoModal{{ andamento.pk }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ andamento.pk }}" aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header" style="background: linear-gradient(135deg, #808000, #bea066); color: white;">
+                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <form method="POST" action="{% url 'andamento_update' andamento.pk %}">
+                                                                        {% csrf_token %}
+                                                                        <div class="mb-3">
+                                                                            <label for="link_doc_{{ andamento.pk }}" class="form-label fw-semibold" style="color: #808000;">Link do Documento</label>
+                                                                            <input type="url" id="link_doc_{{ andamento.pk }}" name="link_doc" class="form-control shadow-sm" 
+                                                                                   value="{{ andamento.link_doc }}" style="border-radius: 10px;">
+                                                                        </div>
+                                                                        <div class="modal-footer">
+                                                                            <button type="button" class="btn btn-outline-secondary shadow-sm" 
+                                                                                    data-bs-dismiss="modal" style="border-radius: 20px;">Cancelar</button>
+                                                                            <button type="submit" class="btn shadow-sm" 
+                                                                                    style="background: linear-gradient(135deg, #808000, #bea066); color: white; border: none; border-radius: 20px;">
+                                                                                <i class="bi bi-save me-2"></i> Salvar
+                                                                            </button>
+                                                                        </div>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% empty %}
+                                                    <p class="text-muted text-center py-3">
+                                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento registrado.
+                                                    </p>
+                                                    {% endfor %}
                                                 </div>
                                             </div>
                                         </div>
-                                        {% empty %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Concluídos -->
-                            <div class="accordion-item border-0">
-                                <h2 class="accordion-header" id="headingConcluidos{{ item.fase.id }}">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConcluidos{{ item.fase.id }}" aria-expanded="false" aria-controls="collapseConcluidos{{ item.fase.id }}" style="background-color: #e9f5e9; font-size: 0.9rem; color: #198754; font-weight: bold;">
-                                        Concluídos
-                                    </button>
-                                </h2>
-                                <div id="collapseConcluidos{{ item.fase.id }}" class="accordion-collapse collapse" aria-labelledby="headingConcluidos{{ item.fase.id }}">
-                                    <div class="accordion-body" style="padding: 15px;">
-                                        {% for andamento in item.concluidos %}
-                                        <div class="card mb-3 shadow-sm border-0" style="border-radius: 8px;">
-                                            <div class="card-body" style="background-color: #ffffff; border-left: 5px solid #198754; padding: 15px;">
-                                                <h6 class="card-title text-success" style="font-size: 1rem; font-weight: bold;">{{ andamento.andamento }}</h6>
-                                                <p class="card-text mb-2">
-                                                    <strong>Status:</strong>
-                                                    <span class="badge bg-success">Concluído</span>
-                                                </p>
-                                                <p class="card-text mb-2">
-                                                    <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
-                                                </p>
+                                        <!-- Concluídos -->
+                                        <div class="accordion-item border-0">
+                                            <h2 class="accordion-header" id="headingConcluidos{{ item.fase.id }}">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                        data-bs-target="#collapseConcluidos{{ item.fase.id }}" 
+                                                        aria-expanded="false" aria-controls="collapseConcluidos{{ item.fase.id }}" 
+                                                        style="background: linear-gradient(135deg, #e9f5e9, #f0f9f0); font-size: 0.95rem; color: #198754; font-weight: 600;">
+                                                    Concluídos
+                                                </button>
+                                            </h2>
+                                            <div id="collapseConcluidos{{ item.fase.id }}" 
+                                                 class="accordion-collapse collapse" 
+                                                 aria-labelledby="headingConcluidos{{ item.fase.id }}">
+                                                <div class="accordion-body" style="padding: 15px;">
+                                                    {% for andamento in item.concluidos %}
+                                                    <div class="card mb-3 shadow-sm border-0" 
+                                                         style="border-radius: 8px; border-left: 5px solid #198754;">
+                                                        <div class="card-body p-3">
+                                                            <h6 class="card-title text-success mb-2" style="font-size: 1rem; font-weight: bold;">
+                                                                {{ andamento.andamento }}
+                                                            </h6>
+                                                            <p class="card-text mb-2 small">
+                                                                <strong>Status:</strong>
+                                                                <span class="badge bg-success">Concluído</span>
+                                                            </p>
+                                                            <p class="card-text mb-2 small">
+                                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {% empty %}
+                                                    <p class="text-muted text-center py-3">
+                                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento concluído.
+                                                    </p>
+                                                    {% endfor %}
+                                                </div>
                                             </div>
                                         </div>
-                                        {% empty %}
-                                        <p class="text-muted text-center">Nenhum andamento concluído.</p>
-                                        {% endfor %}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
-        </div>
+        {% endwith %}
     </div>
-    <div class="d-flex justify-content-between align-items-center mt-5"> <!-- Adiciona margem superior -->
-        <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary">
+
+    <!-- Botão Voltar -->
+    <div class="container mt-5">
+        <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm d-flex align-items-center gap-2"
+           style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
             <i class="bi bi-arrow-left"></i> Voltar para Processos
         </a>
     </div>
 </div>
+
+<!-- Modal para Histórico de Andamentos -->
+<div class="modal fade" id="historicoModal" tabindex="-1" aria-labelledby="historicoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border: none; border-radius: 8px;">
+            <!-- Cabeçalho do Modal -->
+            <div class="modal-header" style="background-color: #f5f5f5; border-bottom: 1px solid #ddd; border-radius: 8px 8px 0 0; padding: 12px 20px;">
+                <h5 class="modal-title" id="historicoModalLabel" style="font-size: 1.1rem; font-weight: bold; color: #333;">Histórico de Movimentações</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- Corpo do Modal -->
+            <div class="modal-body" style="padding: 20px;">
+                <div class="table-responsive">
+                    <table class="table" style="font-size: 0.9rem; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Fase</th>
+                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Status</th>
+                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Usuário</th>
+                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Data de Início</th>
+                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Data de Conclusão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for andamento in andamentos %}
+                                <tr>
+                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.fase.fase }}</td>
+                                    <td style="padding: 10px 15px;">
+                                        <span class="badge" style="background-color: {% if andamento.status.status == 'Concluído' %}#28a745{% else %}#003087{% endif %}; color: white; padding: 4px 10px; font-size: 0.75rem; border-radius: 12px;">
+                                            {{ andamento.status.status }}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.usuario.username|default:"-" }}</td>
+                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.dt_inicio|date:"d/m/Y H:i"|default:"-" }}</td>
+                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.dt_conclusao|date:"d/m/Y H:i"|default:"-" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted" style="padding: 20px;">
+                                        Nenhum andamento registrado.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Rodapé do Modal -->
+            <div class="modal-footer" style="border-top: 1px solid #ddd; padding: 10px 20px;">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" style="background-color: #003087; border: none; border-radius: 4px; padding: 6px 20px; font-size: 0.9rem;">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Botão para abrir/fechar comentários -->
-<button id="toggle-comments" class="btn btn-light d-flex align-items-center gap-2 position-fixed"
-    style="right: 20px; bottom: 20px; z-index: 1050; border-radius: 20px; padding: 8px 12px;">
+<button id="toggle-comments" class="btn btn-light d-flex align-items-center gap-2 position-fixed shadow-sm"
+        style="right: 20px; bottom: 20px; z-index: 1050; border-radius: 20px; padding: 8px 12px; background: linear-gradient(135deg, #f1f7ff, #e9f1ff);">
     <i class="bi bi-chat-dots"></i> Comentários 
     <span id="comment-notification" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
 </button>
 
-<!-- Caixa de Comentários (Maior e mais ajustada) -->
-<div id="comment-box" class="position-fixed end-0 bottom-0 bg-white shadow-lg p-3 rounded-start d-none"
-    style="width: 450px; height: 80vh; max-height: 80vh; z-index: 1050; overflow: hidden; display: flex; flex-direction: column;">
-
+<!-- Caixa de Comentários -->
+<div id="comment-box" class="position-fixed end-0 bottom-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+     style="width: 450px; height: 80vh; max-height: 80vh; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #bea066;">
     <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="fw-bold m-0"><i class="bi bi-chat-dots"></i> Comentários</h6>
-        <button id="close-comments" class="btn btn-sm btn-outline-secondary">Fechar</button>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold m-0" style="color: #808000;"><i class="bi bi-chat-dots me-2"></i> Comentários</h6>
+        <button id="close-comments" class="btn btn-sm btn-outline-secondary shadow-sm" style="border-radius: 20px;">Fechar</button>
     </div>
 
     <!-- Histórico de Comentários -->
-    <div id="comentarios-{{ processo.id }}" class="chat-container flex-grow-1 overflow-auto border rounded p-3"
-        style="max-width: 100%; min-height: 65vh;">
+    <div id="comentarios-{{ processo.id }}" class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
+         style="max-width: 100%; min-height: 65vh; background-color: #f8f9fa;">
         {% for comentario in processo.comentarios.all %}
-            <div class="d-flex align-items-start border-bottom pb-2 mb-2">
-                <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-                <div class="w-100">
-                    <strong>{{ comentario.usuario.get_full_name }}</strong>
-                    <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                    <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
-                </div>
+        <div class="d-flex align-items-start border-bottom pb-2 mb-2">
+            <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+                 alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+            <div class="w-100">
+                <strong>{{ comentario.usuario.get_full_name }}</strong>
+                <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
             </div>
+        </div>
         {% empty %}
-            <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+        <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
         {% endfor %}
     </div>
 
     <!-- Formulário de Novo Comentário -->
     <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
         {% csrf_token %}
-        <textarea name="texto" class="form-control me-2 border rounded small" rows="1" placeholder="Escreva seu comentário..."></textarea>
-        <button type="submit" class="btn btn-outline-primary">Enviar</button>
+        <textarea name="texto" class="form-control me-2 border rounded small" rows="1" placeholder="Escreva seu comentário..." style="border-radius: 10px;"></textarea>
+        <button type="submit" class="btn btn-outline-primary shadow-sm" style="border-radius: 20px;">Enviar</button>
     </form>
 </div>
+
+<style>
+/* Ajustes para Responsividade */
+@media (max-width: 767px) {
+    .form-select, .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem !important;
+        height: 34px !important;
+    }
+    .modal-body {
+        padding: 1rem !important;
+    }
+    .modal-body .d-flex {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem !important;
+    }
+    .modal-body i.bi-arrow-right {
+        transform: rotate(90deg);
+        margin: 0.5rem 0 !important;
+    }
+    #comment-box {
+        width: 100%;
+        height: 60vh;
+        max-height: 60vh;
+    }
+    .col-2 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Estilo para o Modal */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+}
+</style>
+
+<!-- Incluindo Animate.css para animações -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
