@@ -4,8 +4,6 @@ from processos.models import Processo, ProcessoAndamento, TarefaDoDia, Comentari
 from accounts.models import UserProfile
 from .metrics import get_process_metrics, get_process_gamification_metrics, get_top_users_by_xp
 from django.utils import timezone
-from itertools import groupby
-from operator import itemgetter
 
 @login_required(login_url='login')
 def home(request):
@@ -89,11 +87,12 @@ def home(request):
 
     # Processos detalhados para usuários comuns
     processos_detalhados = []
+    active_tab = None  # Variável para determinar a aba ativa
     if not is_revisor and not is_desembargadora:
         processos_nao_concluidos = Processo.objects.filter(usuario=user, concluido=False).select_related('especie', 'usuario')
         for processo in processos_nao_concluidos:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
-            if ultimo_andamento and processo.pk:  # Garantir que processo.pk existe
+            if ultimo_andamento and processo.pk:
                 processos_detalhados.append({
                     'pk': processo.pk,
                     'andamento_pk': ultimo_andamento.pk,
@@ -110,7 +109,6 @@ def home(request):
                     'comentarios': ComentarioProcesso.objects.filter(processo=processo).values('texto', 'data_criacao', 'usuario__first_name', 'usuario__last_name')
                 })
 
-        # Ordenar por Liminar primeiro e depois por dias_no_gabinete (decrescente)
         processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
         # Definir ordem fixa das fases
@@ -121,6 +119,13 @@ def home(request):
 
         # Ordenar as fases de acordo com a ordem fixa
         fases = [(phase, phase_dict.get(phase, [])) for phase in fixed_phase_order if phase in phase_dict]
+
+        # Determinar a aba ativa (baseado na primeira fase com processos ou um parâmetro de URL)
+        fase_param = request.GET.get('fase', None)
+        if fase_param and fase_param in fixed_phase_order:
+            active_tab = fase_param
+        elif fases:
+            active_tab = fases[0][0]  # Primeira fase com processos
 
     # Ajuste para Tarefas do Dia (Meu Dia)
     tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo')
@@ -139,7 +144,7 @@ def home(request):
                 'dt_prazo': tarefa.processo.dt_prazo if tarefa.processo else None,
                 'andamento_pk': ultimo_andamento.pk if ultimo_andamento else None,
                 'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
-                'andamento': ultimo_andamento,  # Para uso em formulários de envio
+                'andamento': ultimo_andamento,
                 'comentarios': ComentarioProcesso.objects.filter(processo=tarefa.processo).select_related('usuario') if tarefa.processo else []
             }
         }
@@ -171,7 +176,26 @@ def home(request):
         'tarefas_ids': list(tarefas_ids),
         'tarefas_do_dia': tarefas_detalhadas,
         'fases': fases if not is_revisor and not is_desembargadora else None,
-        'today': timezone.now().date(),  # Adicionado para comparação de prazos
+        'active_tab': active_tab,  # Adicionando a aba ativa ao contexto
+        'today': timezone.now().date(),
     }
 
     return render(request, 'home.html', context)
+
+
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
+from django.contrib import messages
+
+
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'change_password.html'
+    success_url = reverse_lazy('home')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Sua senha foi alterada com sucesso!')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Erro ao alterar a senha. Verifique os campos.')
+        return super().form_invalid(form)

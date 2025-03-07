@@ -9,402 +9,119 @@ from langchain_community.utilities import SQLDatabase
 from langchain_openai import ChatOpenAI
 from django.utils.timezone import now
 from urllib.parse import quote_plus
+from django.views.decorators.http import require_GET
 
 # Configuração da API OpenAI
 os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
 
-# Configurar logs para depuração
+# Configurar logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Conectar ao banco de dados PostgreSQL
-try:
-    escaped_password = quote_plus(config("DB_PASSWORD"))
-    db_uri = f"postgresql+psycopg2://{config('DB_USER')}:{escaped_password}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
-    
-    print(f"Tentando conectar ao banco: {db_uri}")  # DEBUG
+def get_db_connection():
+    """Retorna uma conexão ao banco de dados PostgreSQL."""
+    try:
+        escaped_password = quote_plus(config("DB_PASSWORD"))
+        db_uri = f"postgresql+psycopg2://{config('DB_USER')}:{escaped_password}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+        logger.info(f"Tentando conectar ao banco: {db_uri}")
+        return SQLDatabase.from_uri(db_uri)
+    except Exception as e:
+        logger.error(f"❌ Erro ao conectar ao banco: {e}")
+        return None
 
-    db = SQLDatabase.from_uri(db_uri)
-    logger.info("✅ Conexão ao banco de dados PostgreSQL bem-sucedida!")
-except Exception as e:
-    logger.error(f"❌ Erro ao conectar ao banco de dados PostgreSQL: {e}")
-    db = None  # Garante que a variável 'db' existe mesmo que a conexão falhe
-
-if db:
-    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
-
-    agent_executor = create_sql_agent(
-        llm=llm,
-        db=db,
-        verbose=True,
-    )
-else:
-    logger.error("A variável 'db' está vazia. O agente SQL não será inicializado.")
-    agent_executor = None  
+# Inicializa conexão e agente apenas quando necessário
+db = get_db_connection()
+llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0) if db else None
+agent_executor = create_sql_agent(llm=llm, db=db, verbose=True) if db else None
 
 SAUDACOES = ["olá", "oi", "bom dia", "boa tarde", "boa noite", "e aí"]
 
 def chatbot(request):
-    """ Renderiza a interface do Chatbot """
+    """Renderiza a interface do Chatbot."""
     return render(request, 'chat.html')
 
+@require_GET
 @login_required
 def ask_chatbot(request):
-    """ Processa perguntas enviadas pelo usuário e retorna respostas formatadas """
-    if request.method != "GET":
-        return JsonResponse({"error": "Método não permitido."}, status=405)
-
-    if not agent_executor:
-        return JsonResponse({"response": "O chatbot está temporariamente indisponível devido a problemas de conexão com o banco de dados."})
+    """Processa perguntas enviadas pelo usuário e retorna respostas formatadas."""
+    if not db or not agent_executor:
+        return JsonResponse({"response": "O chatbot está indisponível devido a problemas de conexão com o banco."})
 
     question = request.GET.get("question", "").strip().lower()
-    
     if not question:
         return JsonResponse({"response": "Por favor, faça uma pergunta válida."})
 
     user = request.user
-    username = f"{user.first_name} {user.last_name}".strip() or user.username 
-
+    username = f"{user.first_name} {user.last_name}".strip() or user.username
     question = question.replace("eu", username)
 
     if question in SAUDACOES:
         return JsonResponse({"response": f"Olá, {username}! Como posso ajudar você hoje?"})
 
+    # Dicionário de consultas pré-definidas
+    queries = {
+        f"quantos processos {username} tem": {
+            "query": "SELECT COUNT(*) FROM processos_processo WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);",
+            "params": [user.username],
+            "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos."
+        },
+        "quantos processos entraram hoje": {
+            "query": "SELECT COUNT(*) FROM processos_processo WHERE DATE(data_dist) = DATE(%s);",
+            "params": [now().date()],
+            "custom_response": lambda result: f"Hoje entraram {result[0][0]} processos."
+        },
+        "processos em revisão": {
+            "query": """
+                SELECT p.numero_processo, COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario,
+                       COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
+                FROM processos_processoandamento a
+                JOIN processos_processo p ON a.processo_id = p.id
+                LEFT JOIN auth_user u ON a.usuario_id = u.id
+                JOIN processos_fase f ON a.fase_id = f.id
+                WHERE f.fase = 'Revisão' AND p.concluido = FALSE
+                ORDER BY p.id DESC LIMIT 10;
+            """,
+            "params": [],
+            "custom_response": lambda result: (
+                "**📌 Processos em Revisão:**\n\n" +
+                "\n".join([f"- **Número:** {row[0]}\n- **Responsável:** {row[1]}\n- **Documento:** "
+                          f"{'[🔗 Acessar Documento](' + row[2] + ')' if row[2] and 'http' in row[2] else '🔗 Sem documento disponível'}\n"
+                          for row in result]) if result else "Nenhum processo em revisão encontrado."
+            )
+        },
+        f"quantos processos {username} tem pendentes": {
+            "query": "SELECT COUNT(*) FROM processos_processo WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND concluido = FALSE;",
+            "params": [user.username],
+            "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos pendentes."
+        },
+        # Adicione outros itens do dicionário 'queries' aqui...
+    }
+
+    for key, value in queries.items():
+        if key in question:
+            try:
+                result = db.run(value["query"], value["params"]) or []
+                return JsonResponse({"response": value.get("custom_response", lambda x: "Nenhum registro encontrado.")(result)})
+            except Exception as sql_error:
+                logger.error(f"Erro ao executar consulta SQL: {sql_error}")
+                return JsonResponse({"response": "Erro ao acessar os dados. Tente novamente."})
+
+    # Perguntas gerais para o agente
+    prompt = f"""
+    Você é um assistente especializado em consultas SQL para um sistema de gabinete jurídico.
+    Ajude como assessor de gestão, fornecendo informações sobre produtividade e administração.
+
+    📌 **Base de Dados**: Processos (número, data, status, responsáveis) e Andamentos (fases, documentos, responsáveis).
+    📊 **Perguntas Possíveis**: Quantos processos no total? Quais estão em revisão? Produtividade dos assessores?
+    ⚠️ **Regras**: Responda em português, claro e objetivo. Se não houver dados, informe educadamente.
+
+    📌 **Pergunta:** {question}
+    """
+
     try:
-        queries = {
-            f"quantos processos {username} tem": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);
-                """,
-                "params": [user.username],  
-                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos."
-            },
-            "quantos processos entraram hoje": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE DATE(data_dist) = DATE(%s);
-                """,
-                "params": [now().date()],  
-                "custom_response": lambda result: f"Hoje entraram {result[0][0]} processos."
-            },
-            "processos em revisão": {
-                "query": """
-                    SELECT 
-                        p.numero_processo, 
-                        COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario, 
-                        COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
-                    FROM processos_processoandamento a  -- Agora a busca começa em ProcessoAndamento
-                    JOIN processos_processo p ON a.processo_id = p.id  -- Relaciona cada andamento a um processo
-                    LEFT JOIN auth_user u ON a.usuario_id = u.id  -- Responsável pelo andamento (se houver)
-                    JOIN processos_fase f ON a.fase_id = f.id  -- Relaciona com a tabela de fases
-                    WHERE 
-                        f.fase = 'Revisão'  -- Filtra processos que estão na fase de revisão
-                        AND p.concluido = FALSE  -- Garante que o processo ainda não foi concluído
-                    ORDER BY p.id DESC
-                    LIMIT 10;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    "**📌 Processos em Revisão:**\n\n" +
-                    "\n".join([
-                        f"- **Número:** {row[0]}\n"
-                        f"- **Responsável:** {row[1]}\n"
-                        f"- **Documento:** {'[🔗 Acessar Documento](' + row[2] + ')' if row[2] and 'http' in row[2] else '🔗 Sem documento disponível'}\n"
-                        for row in result
-                    ])
-                    if result else "Nenhum processo em revisão encontrado."
-                )
-            },
-            f"quantos processos {username} tem pendentes": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND concluido = FALSE;
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos pendentes."
-            },
-            f"quantos processos {username} tem concluídos": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND concluido = TRUE;
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos concluídos."
-            },
-            f"quantos processos {username} tem no total": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos no total."
-            },
-            "qual o processo mais antigo": {
-                "query": """
-                    SELECT numero_processo, data_dist
-                    FROM processos_processo 
-                    ORDER BY data_dist ASC 
-                    LIMIT 1;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    f"O processo mais antigo foi distribuído no dia {result[0][1].strftime('%d/%m/%Y')}."
-                    if result else "Nenhum processo encontrado."
-                )
-            },
-            "o que tem no meu dia": {
-                "query": """
-                    SELECT processo 
-                    FROM TareadaDoDia 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND data = %s;
-                """,
-                "params": [user.username, now().date()],
-                "custom_response": lambda result: (
-                    "**📅 Tarefas do dia:**\n\n" +
-                    "\n".join([f"- {row[0]}" for row in result])
-                    if result else "Nenhuma tarefa encontrada para hoje."
-                )
-            },
-            "minha meta é fazer 3 processos por dia": {
-                "query": """
-                    SELECT numero_processo, data_dist 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND concluido = FALSE 
-                    ORDER BY dt_criacao ASC 
-                    LIMIT 3;
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: (
-                    "**📌 Processos selecionados para hoje:**\n\n" +
-                    "\n".join([f"- Processo {row[0]} distribuído no dia {row[1].strftime('%d/%m/%Y')}" for row in result])
-                    if result else "Nenhum processo pendente encontrado."
-                )
-            },
-            "tempo médio para concluir um processo": {
-                "query": """
-                    SELECT AVG(EXTRACT(EPOCH FROM (dt_conclusao - data_dist)) / 86400) 
-                    FROM processos_processo 
-                    WHERE dt_conclusao IS NOT NULL;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    f"O tempo médio para concluir um processo é de aproximadamente {round(result[0][0], 1)} dias."
-                    if result and result[0][0] else "Ainda não há processos concluídos para calcular o tempo médio."
-                )
-            },
-            "quantos processos estão atrasados": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
-                """,
-                "params": [],
-                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos atrasados."
-            },
-            "quantos processos tenho atrasados": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
-                    AND dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos atrasados."
-            },
-            "quais são meus processos atrasados": {
-                "query": """
-                    SELECT numero_processo, dt_prazo 
-                    FROM processos_processo 
-                    WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
-                    AND dt_prazo IS NOT NULL AND dt_prazo < NOW() AND concluido = FALSE;
-                """,
-                "params": [user.username],
-                "custom_response": lambda result: (
-                    "**⚠️ Processos Atrasados:**\n\n" +
-                    "\n".join([f"- **Número:** {row[0]}, **Prazo:** {row[1].strftime('%d/%m/%Y')}" for row in result])
-                    if result else "Nenhum processo atrasado encontrado."
-                )
-            },
-            "quantos processos estão em cada fase": {
-                "query": """
-                    SELECT f.fase, COUNT(p.id) 
-                    FROM processos_processo p
-                    JOIN processos_fase f ON p.fase_id = f.id
-                    GROUP BY f.fase
-                    ORDER BY COUNT(p.id) DESC;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    "**📌 Processos por Fase:**\n\n" +
-                    "\n".join([f"- **{row[0]}:** {row[1]} processos" for row in result])
-                    if result else "Nenhum processo encontrado."
-                )
-            },
-            "quantos processos estão na fase de correção": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo p
-                    JOIN processos_fase f ON p.fase_id = f.id
-                    WHERE f.fase = 'Correção';
-                """,
-                "params": [],
-                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos na fase de Correção."
-            },
-            "quantos processos estão na fase de julgamento": {
-                "query": """
-                    SELECT COUNT(*) 
-                    FROM processos_processo p
-                    JOIN processos_fase f ON p.fase_id = f.id
-                    WHERE f.fase = 'Julgamento';
-                """,
-                "params": [],
-                "custom_response": lambda result: f"Atualmente, existem {result[0][0]} processos na fase de Julgamento."
-            },
-            "quem tem mais processos pendentes": {
-                "query": """
-                    SELECT u.username, COUNT(*) 
-                    FROM processos_processo p
-                    JOIN auth_user u ON p.usuario_id = u.id
-                    WHERE p.concluido = FALSE
-                    GROUP BY u.username
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 1;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    f"O usuário com mais processos pendentes é {result[0][0]} com {result[0][1]} processos."
-                    if result else "Nenhum usuário com processos pendentes encontrado."
-                )
-            },
-            "quem tem mais processos concluídos": {
-                "query": """
-                    SELECT u.username, COUNT(*) 
-                    FROM processos_processo p
-                    JOIN auth_user u ON p.usuario_id = u.id
-                    WHERE p.concluido = TRUE
-                    GROUP BY u.username
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 1;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    f"O usuário com mais processos concluídos é {result[0][0]} com {result[0][1]} processos."
-                    if result else "Nenhum usuário com processos concluídos encontrado."
-                )
-            },
-            "qual foi o último processo concluído": {
-                "query": """
-                    SELECT numero_processo, dt_conclusao 
-                    FROM processos_processo 
-                    WHERE concluido = TRUE
-                    ORDER BY dt_conclusao DESC 
-                    LIMIT 1;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    f"O último processo concluído foi o {result[0][0]} no dia {result[0][1].strftime('%d/%m/%Y')}."
-                    if result else "Nenhum processo concluído encontrado."
-                )
-            },
-            "quais são os processos que estão há mais tempo em andamento": {
-                "query": """
-                    SELECT p.numero_processo, f.fase, a.dt_inicio 
-                    FROM processos_processoandamento a
-                    JOIN processos_processo p ON a.processo_id = p.id
-                    JOIN processos_fase f ON a.fase_id = f.id
-                    WHERE a.dt_inicio IS NOT NULL AND p.concluido = FALSE
-                    ORDER BY a.dt_inicio ASC 
-                    LIMIT 5;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    "**📌 Processos em Andamento Há Mais Tempo:**\n\n" +
-                    "\n".join([f"- **Número:** {row[0]}, **Fase:** {row[1]}, **Início:** {row[2].strftime('%d/%m/%Y')}" for row in result])
-                    if result else "Nenhum processo em andamento há muito tempo encontrado."
-                )
-            },
-            "qual foi a produtividade dos assessores hoje": {
-                "query": """
-                        SELECT 
-                            u.first_name AS assessor,  -- Apenas o primeiro nome do assessor
-                            COUNT(p.id) AS total_concluidos,
-                            STRING_AGG(DISTINCT e.sigla || ' (' || COUNT(e.sigla) OVER (PARTITION BY u.id, e.sigla) || ')', ', ') AS especies
-                        FROM processos_processo p
-                        JOIN auth_user u ON p.usuario_id = u.id
-                        JOIN processos_especie e ON p.especie_id = e.id
-                        WHERE p.concluido = TRUE 
-                        AND DATE(p.dt_conclusao) = CURRENT_DATE
-                        GROUP BY u.id, u.first_name
-                        ORDER BY total_concluidos DESC;
-                """,
-                "params": [],
-                "custom_response": lambda result: (
-                    "**📊 Produtividade dos Assessores Hoje:**\n\n" +
-                    "\n".join([
-                        f"- **{row[0]}:** {row[1]} processos concluídos ({row[2]})"
-                        for row in result
-                    ])
-                    if result else "Nenhum assessor concluiu processos hoje."
-                )
-            }
-        }
-
-        for key, value in queries.items():
-            if key in question:
-                try:
-                    result = db.run(value["query"], value["params"]) or []
-
-                    if "custom_response" in value and result:
-                        response = value["custom_response"](result)
-                        return JsonResponse({"response": response})
-
-                    return JsonResponse({"response": "Nenhum registro encontrado."})
-
-                except Exception as sql_error:
-                    logger.error(f"Erro ao executar consulta SQL: {sql_error}")
-                    return JsonResponse({"response": "Erro ao acessar os dados do banco. Verifique a conexão e tente novamente."})
-
-        prompt = f"""
-        Você é um assistente especializado em consultas SQL para um sistema de **gabinete de desembargador jurídico**.  
-        Seu papel é atuar como um **assessor de gestão**, fornecendo informações detalhadas sobre a produtividade dos assessores e auxiliando na administração do gabinete.
-
-        📌 **Base de Dados**:
-        O banco de dados contém **duas tabelas principais**:
-        1️⃣ **Processos** → Contém informações sobre os processos judiciais, incluindo número do processo, data de entrada, status atual e responsáveis.  
-        2️⃣ **Andamentos** → Registra todas as movimentações dos processos, incluindo as fases *Elaboração, Revisão, Correção e L. PJE*, links de documentos e responsáveis.
-
-        📊 **Tipos de Perguntas que você pode responder**:
-        - Quantos processos estão no gabinete total?
-        - Quantos processos entraram, saíram ou estão pendentes?
-        - Quais processos estão **em elaboração, revisão, correção ou na fase L. PJE**?
-        - Comparação da **produtividade dos assessores** com base no número de processos atribuídos/concluídos.
-        - Qual é o **tempo médio de tramitação** dos processos?
-
-        ⚠️ **Regras Específicas**:
-        ✅ **Se não houver dados no banco para a pergunta**, informe educadamente que **não há registros disponíveis**.  
-        ✅ Sempre responda em **português brasileiro**, de forma **clara e objetiva**.  
-
-        📌 **Pergunta do usuário:** {question}
-        """
-
-        try:
-            response = agent_executor.invoke({"input": prompt})
-            resposta_final = response.get("output", "").strip()
-
-            if not resposta_final:
-                return JsonResponse({"response": "Não encontrei informações relevantes para essa pergunta."})
-
-            return JsonResponse({"response": resposta_final})
-        except Exception as gpt_error:
-            logger.error(f"Erro na API OpenAI: {gpt_error}")
-            return JsonResponse({"response": "Erro ao processar sua pergunta. Tente novamente mais tarde."})
-
+        response = agent_executor.invoke({"input": prompt})
+        resposta_final = response.get("output", "").strip()
+        return JsonResponse({"response": resposta_final or "Não encontrei informações relevantes."})
     except Exception as e:
-        logger.error(f"Erro inesperado: {e}")
-        return JsonResponse({"error": "Ocorreu um erro ao processar sua pergunta. Tente novamente mais tarde."})
+        logger.error(f"Erro na API OpenAI: {e}")
+        return JsonResponse({"response": "Erro ao processar. Tente novamente."})

@@ -1,0 +1,13 @@
+<form method="get">
+    <input type="text" name="q" value="{{ query }}" placeholder="Pesquisar por número do processo...">
+    <button type="submit">Buscar</button>
+  </form>
+  {% if results %}
+    <ul>
+      {% for result in results %}
+        <li>{{ result.numero_processo }} - {{ result.especie }} - {{ result.data_dist }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nenhum resultado encontrado.</p>
+  {% endif %}

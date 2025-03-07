@@ -1,0 +1,172 @@
+<!-- Visão do Revisor(a) -->
+<div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%;">
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAndamentos" aria-expanded="true">
+        <span style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #CFE2FF; border-radius: 2px;"></span> <!-- Substituído #083464 por #808000 -->
+        <i class="bi bi-list-task me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+        Processos em Revisão
+      </button>
+    </h2>
+    <div id="collapseAndamentos" class="accordion-collapse collapse show">
+      <div class="accordion-body">
+        {% if andamento_metrics %}
+          <div class="list-group">
+            {% for andamento in andamento_metrics %}
+              <div id="processo-{{ andamento.pk }}"
+                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative"
+                   style="display: flex; flex-direction: column; gap: 10px; background-color: rgba(223, 222, 222, 0.062);">
+                <!-- Listras verticais para destaque -->
+                <span style="
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 5px;
+                  height: 100%;
+                  background-color: {% if andamento.especie == 'Liminar' %}#EF4444{% else %}#808000{% endif %}; /* Substituído #083464 por #808000 */
+                  border-radius: 2px;">
+                </span>
+
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <!-- Informações à esquerda -->
+                  <div class="flex-grow-1">
+                    <p class="mb-1 d-flex align-items-center" style="color: #1F2937;">
+                      <i class="bi bi-file-earmark-text me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                      <strong style="color: #1F2937;">Processo:</strong>
+                      <span id="numeroProcesso-{{ andamento.pk }}" class="ms-1" style="color: #1F2937;">{{ andamento.numero_processo }}</span>
+                      <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
+                         onclick="copiarNumero('{{ andamento.pk }}')"
+                         title="Copiar Número"
+                         style="cursor: pointer; color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                    </p>
+                    <p class="mb-1" style="color: #1F2937;">
+                      <i class="bi bi-person-circle me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                      <strong style="color: #1F2937;">Responsável:</strong>
+                      <span class="ms-1" style="color: #1F2937;">{{ andamento.usuario_processo }}</span>
+                    </p>
+                    <p class="mb-1" style="color: #1F2937;">
+                      <i class="bi bi-box-seam me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                      <strong style="color: #1F2937;">Espécie:</strong>
+                      <span class="ms-1 {% if andamento.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
+                        {{ andamento.especie }}
+                      </span>
+                    </p>
+                    <p class="mb-1" style="color: #1F2937;">
+                      <i class="bi bi-calendar2-date me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                      <strong style="color: #1F2937;">Data Distribuição:</strong>
+                      <span class="ms-1" style="color: #1F2937;">{{ andamento.data_dist|date:"d/m/Y" }}</span>
+                    </p>
+                    <p class="mb-1" style="color: #1F2937;">
+                      <i class="bi bi-clock me-2" style="color: #0b3370;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                      <strong style="color: #1F2937;">Dias no Gabinete:</strong>
+                      <span class="ms-1" style="color: #1F2937;">{{ andamento.dias_no_gabinete }}</span>
+                    </p>
+                  </div>
+                  <!-- Botões à direita -->
+                  <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
+                    <!-- Botão Lembrete -->
+                    <button type="button" class="btn btn-sm toggle-comments shadow-sm"
+                            data-processo-id="{{ andamento.pk|default_if_none:'' }}"
+                            style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                      <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
+                    </button>
+                  </div>
+                </div>
+                <!-- Ações na base -->
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                  <div class="d-flex gap-2">
+                    <!-- Link do Documento (se existir) -->
+                    {% if andamento.link_doc %}
+                      <a href="{{ andamento.link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
+                         style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;"> <!-- Mantido #083464 -->
+                        <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
+                      </a>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex gap-2 align-items-center">
+                    <!-- Botões condicionais com base na fase atual -->
+                    {% if andamento.fase == 'Revisão' %}
+                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="nova_fase" value="Correção">
+                        <input type="hidden" name="origem" value="home">
+                        <button type="submit" class="btn btn-sm shadow-sm"
+                                onclick="return confirm('Tem certeza que deseja enviar para Correção?');"
+                                style="background: linear-gradient(135deg, #c08301, #c08301); color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                          <i class="bi bi-arrow-left me-1" style="color: white;"></i> Correção
+                        </button>
+                      </form>
+                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="nova_fase" value="Revisão Desa">
+                        <input type="hidden" name="origem" value="home">
+                        <button type="submit" class="btn btn-sm shadow-sm"
+                                onclick="return confirm('Tem certeza que deseja enviar para Revisão Desa?');"
+                                style="background: linear-gradient(135deg, #016606, #016606); color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;"> <!-- Mantido #083464 -->
+                          <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Desa
+                        </button>
+                      </form>
+                    {% endif %}
+                    <!-- Link para detalhes -->
+                    <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}"
+                      title="Ver detalhes"
+                      class="text-decoration-none"
+                      style="color: #1F2937;">
+                      <i class="bi bi-arrow-right {% if andamento.especie == 'Liminar' %}text-danger{% else %}text-primary{% endif %}"
+                        style="font-size: 1.5rem; color: #1F2937;"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dentro do loop de andamento_metrics, na caixa de comentários -->
+              <div id="comment-box-{{ andamento.pk }}"
+                   class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+                   style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #808000; background-color: rgba(0, 0, 0, 0.05);"> <!-- Substituído #083464 por #808000 -->
+                <!-- Cabeçalho -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold m-0" style="color: #1F2937;">
+                    <i class="bi bi-chat-dots me-2" style="color: #CFE2FF;"></i> <!-- Substituído #083464 por #CFE2FF -->
+                    Lembrete - {{ andamento.numero_processo }}
+                  </h6>
+                  <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
+                          data-processo-id="{{ andamento.pk }}"
+                          style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
+                </div>
+
+                <!-- Histórico de Comentários -->
+                <div id="comentarios-{{ andamento.pk }}"
+                     class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
+                     style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #808000;"> <!-- Substituído #083464 por #808000 -->
+                  {% for comentario in andamento.comentarios %}
+                    <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #808000;"> <!-- Substituído #083464 por #808000 -->
+                      <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
+                           alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; border: 2px solid #808000;"> <!-- Substituído #083464 por #808000 -->
+                      <div class="w-100">
+                        <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
+                        <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                        <p class="mb-0 small bg-light p-2 rounded" style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
+                  {% endfor %}
+                </div>
+
+                <!-- Formulário de Novo Comentário -->
+                <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ andamento.pk }}" style="border-color: #808000;"> <!-- Substituído #083464 por #808000 -->
+                  {% csrf_token %}
+                  <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+                          placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #808000; background-color: #F9FAFB; color: #1F2937;" required></textarea> <!-- Substituído #083464 por #808000 -->
+                  <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button> <!-- Mantido #083464 -->
+                </form>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-center" style="font-style: italic;">Nenhum processo em revisão no momento.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
