@@ -19,7 +19,6 @@ urlpatterns = [
     path('', include('processos.urls')),
     path('', include('publico.urls')),
     path('chatbot/', include('chatbot.urls')),
-    path('IA/', include('IA.urls')),
 
 
     # Alteração de senha
