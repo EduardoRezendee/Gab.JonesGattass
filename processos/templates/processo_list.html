@@ -268,11 +268,52 @@ Distribuição de Processos
                     </h1>
                     <hr style="height: 2px; background: linear-gradient(to right, #bea066, #808000); border: none; width: 30%; opacity: 0.8;">
                 </div>
-                <!-- Botão para gerar relatório diário -->
-                <a href="{% url 'gerar_pdf' %}" class="btn btn-success btn-sm shadow-sm d-flex align-items-center gap-2"
-                   style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
-                    <i class="bi bi-file-earmark-text"></i> Produtividade Diária
-                </a>
+                <!-- Botão que abre o modal -->
+                <button type="button" class="btn btn-success btn-sm shadow-sm d-flex align-items-center gap-2"
+                        style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: all 0.2s ease;"
+                        data-bs-toggle="modal" data-bs-target="#relatorioModal">
+                    <i class="bi bi-file-earmark-text"></i> Produtividade
+                </button>
+
+                <!-- Modal com os filtros -->
+                <div class="modal fade" id="relatorioModal" tabindex="-1" aria-labelledby="relatorioModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="relatorioModalLabel">
+                                    <i class="bi bi-file-earmark-text me-2"></i> Gerar Relatório de Produtividade
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="relatorioForm" method="get" action="{% url 'gerar_pdf' %}">
+                                    <div class="mb-3">
+                                        <label for="dataInicio" class="form-label">Data de Início</label>
+                                        <input type="date" name="data_inicio" id="dataInicio" class="form-control"
+                                            value="{{ now|date:'Y-m-d' }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dataFim" class="form-label">Data de Fim</label>
+                                        <input type="date" name="data_fim" id="dataFim" class="form-control"
+                                            value="{{ now|date:'Y-m-d' }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="assessor" class="form-label">Assessor</label>
+                                        <select name="assessor" id="assessor" class="form-select">
+                                            <option value="">Todos os Assessores</option>
+                                            {% for user in users %}
+                                                <option value="{{ user.username }}">{{ user.get_full_name|default:user.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-download me-2"></i> Gerar Relatório
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Exibir mensagens de sucesso ou erro -->

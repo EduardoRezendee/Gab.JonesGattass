@@ -60,41 +60,117 @@ def ask_chatbot(request):
 
     # Dicionário de consultas pré-definidas
     queries = {
-        f"quantos processos {username} tem": {
-            "query": "SELECT COUNT(*) FROM processos_processo WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s);",
-            "params": [user.username],
-            "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos."
-        },
-        "quantos processos entraram hoje": {
-            "query": "SELECT COUNT(*) FROM processos_processo WHERE DATE(data_dist) = DATE(%s);",
-            "params": [now().date()],
-            "custom_response": lambda result: f"Hoje entraram {result[0][0]} processos."
-        },
-        "processos em revisão": {
+        # Desembargador
+        f"quantos processos estão aguardando meu julgamento {username}": {
             "query": """
-                SELECT p.numero_processo, COALESCE(u.first_name || ' ' || u.last_name, 'Não atribuído') AS usuario,
-                       COALESCE(NULLIF(a.link_doc, ''), 'Sem documento disponível') AS link_doc
-                FROM processos_processoandamento a
-                JOIN processos_processo p ON a.processo_id = p.id
-                LEFT JOIN auth_user u ON a.usuario_id = u.id
-                JOIN processos_fase f ON a.fase_id = f.id
-                WHERE f.fase = 'Revisão' AND p.concluido = FALSE
-                ORDER BY p.id DESC LIMIT 10;
+                SELECT COUNT(*) 
+                FROM processos_processo 
+                WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                AND concluido = FALSE 
+                AND dt_julgamento IS NULL;
             """,
-            "params": [],
+            "params": [user.username],
+            "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos aguardando julgamento."
+        },
+        "quais processos têm prazo vencendo hoje": {
+            "query": """
+                SELECT numero_processo, especie_id 
+                FROM processos_processo 
+                WHERE dt_prazo = %s AND concluido = FALSE;
+            """,
+            "params": [now().date()],
             "custom_response": lambda result: (
-                "**📌 Processos em Revisão:**\n\n" +
-                "\n".join([f"- **Número:** {row[0]}\n- **Responsável:** {row[1]}\n- **Documento:** "
-                          f"{'[🔗 Acessar Documento](' + row[2] + ')' if row[2] and 'http' in row[2] else '🔗 Sem documento disponível'}\n"
-                          for row in result]) if result else "Nenhum processo em revisão encontrado."
+                "**📅 Processos com Prazo Hoje:**\n\n" +
+                "\n".join([f"- {row[0]} ({Especie.objects.get(id=row[1]).sigla})" for row in result]) 
+                if result else "Nenhum processo com prazo vencendo hoje."
             )
         },
+
+        # Assessor
         f"quantos processos {username} tem pendentes": {
-            "query": "SELECT COUNT(*) FROM processos_processo WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) AND concluido = FALSE;",
+            "query": """
+                SELECT COUNT(*) 
+                FROM processos_processo 
+                WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                AND concluido = FALSE;
+            """,
             "params": [user.username],
             "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos pendentes."
         },
-        # Adicione outros itens do dicionário 'queries' aqui...
+        f"quantos processos {username} concluiu esta semana": {
+            "query": """
+                SELECT COUNT(*) 
+                FROM processos_processo 
+                WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                AND concluido = TRUE 
+                AND dt_conclusao >= %s;
+            """,
+            "params": [user.username, now() - timedelta(days=7)],
+            "custom_response": lambda result: f"Você, {username}, concluiu {result[0][0]} processos esta semana."
+        },
+
+        # Revisor
+        f"quantos processos estão em revisão comigo {username}": {
+            "query": """
+                SELECT COUNT(*) 
+                FROM processos_processoandamento 
+                WHERE usuario_id = (SELECT id FROM auth_user WHERE username = %s) 
+                AND fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão') 
+                AND dt_conclusao IS NULL;
+            """,
+            "params": [user.username],
+            "custom_response": lambda result: f"Você, {username}, tem {result[0][0]} processos em revisão."
+        },
+        "quais processos em revisão estão próximos do prazo": {
+            "query": """
+                SELECT p.numero_processo, p.dt_prazo 
+                FROM processos_processoandamento a 
+                JOIN processos_processo p ON a.processo_id = p.id 
+                WHERE a.fase_id = (SELECT id FROM processos_fase WHERE fase = 'Revisão') 
+                AND p.dt_prazo <= %s 
+                AND a.dt_conclusao IS NULL;
+            """,
+            "params": [now().date() + timedelta(days=3)],
+            "custom_response": lambda result: (
+                "**📅 Processos em Revisão Próximos do Prazo:**\n\n" +
+                "\n".join([f"- {row[0]} (Prazo: {row[1]})" for row in result]) 
+                if result else "Nenhum processo em revisão próximo do prazo."
+            )
+        },
+
+        # Chefe de Gabinete
+        "qual é a produtividade dos assessores este mês": {
+            "query": """
+                SELECT COALESCE(u.first_name || ' ' || u.last_name, u.username), 
+                       COUNT(p.id) FILTER (WHERE p.concluido = TRUE) as concluidos 
+                FROM auth_user u 
+                LEFT JOIN processos_processo p ON p.usuario_id = u.id 
+                WHERE p.dt_conclusao >= %s 
+                GROUP BY u.id, u.username, u.first_name, u.last_name 
+                HAVING COUNT(p.id) FILTER (WHERE p.concluido = TRUE) > 0;
+            """,
+            "params": [now().replace(day=1)],
+            "custom_response": lambda result: (
+                "**📊 Produtividade dos Assessores Este Mês:**\n\n" +
+                "\n".join([f"- {row[0]}: {row[1]} processos concluídos" for row in result])
+            )
+        },
+        "quantos processos estão parados em cada fase": {
+            "query": """
+                SELECT f.fase, COUNT(p.id) 
+                FROM processos_processoandamento a 
+                JOIN processos_fase f ON a.fase_id = f.id 
+                JOIN processos_processo p ON a.processo_id = p.id 
+                WHERE a.dt_conclusao IS NULL 
+                GROUP BY f.fase;
+            """,
+            "params": [],
+            "custom_response": lambda result: (
+                "**📌 Processos Parados por Fase:**\n\n" +
+                "\n".join([f"- {row[0]}: {row[1]} processos" for row in result]) 
+                if result else "Nenhum processo parado."
+            )
+        },
     }
 
     for key, value in queries.items():

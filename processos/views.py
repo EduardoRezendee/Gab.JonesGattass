@@ -786,72 +786,241 @@ def importar_processos(request):
 from django.http import HttpResponse
 from django.utils.timezone import now
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Spacer, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from processos.models import Processo
+from processos.models import Processo, ProcessoAndamento, Fase, Especie, Status
+from datetime import datetime
 
 @login_required
 def gerar_pdf_produtividade(request):
     """
-    Gera um PDF com o relatório diário de produtividade, com um layout mais refinado.
+    Gera um PDF com o relatório diário de produtividade, com filtros e layout refinado.
     """
+    # Filtros via GET
+    data_inicio = request.GET.get("data_inicio", "")
+    data_fim = request.GET.get("data_fim", "")
+    assessor_username = request.GET.get("assessor", "")
+
+    # Definir datas padrão (hoje, se não especificado)
+    try:
+        data_inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date() if data_inicio else now().date()
+        data_fim = datetime.strptime(data_fim, '%Y-%m-%d').date() if data_fim else now().date()
+    except ValueError:
+        return HttpResponse("Formato de data inválido. Use YYYY-MM-DD.", status=400)
+
+    # Validação: data_fim não pode ser anterior a data_inicio
+    if data_fim < data_inicio:
+        return HttpResponse("Data de fim não pode ser anterior à data de início.", status=400)
+
+    # Filtrar assessor, se especificado
+    assessores = User.objects.filter(processo__isnull=False).distinct()
+    assessor = User.objects.filter(username=assessor_username).first() if assessor_username else None
+
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'inline; filename="relatorio_produtividade_{now().date()}.pdf"'
+    response["Content-Disposition"] = f'inline; filename="relatorio_produtividade_{data_inicio}_a_{data_fim}.pdf"'
 
     buffer = response
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=60, bottomMargin=40)
     elements = []
     styles = getSampleStyleSheet()
 
     # 🔹 Título do relatório
-    title = Paragraph(f"<b>📊 Relatório de Produtividade - {now().date()}</b>", styles["Title"])
+    title = Paragraph(f"<b>📊 Relatório de Produtividade - {data_inicio} a {data_fim}</b>", styles["Title"])
     elements.append(title)
-    elements.append(Spacer(1, 15))  # Espaçamento abaixo do título
+    elements.append(Spacer(1, 20))
 
-    # 🔹 Buscar dados dos assessores
-    produtividade = []
-    assessores = User.objects.filter(processo__isnull=False).distinct()
+    # 🔹 Filtros aplicados
+    filter_text = f"<i>Filtros: Data Início: {data_inicio}, Data Fim: {data_fim}, Assessor: {assessor.get_full_name() if assessor else 'Todos'}</i>"
+    elements.append(Paragraph(filter_text, styles["Italic"]))
+    elements.append(Spacer(1, 15))
 
-    for assessor in assessores:
-        processos_entrada = Processo.objects.filter(usuario=assessor, data_dist__date=now().date()).count()
-        processos_concluidos = Processo.objects.filter(usuario=assessor, concluido=True, dt_conclusao__date=now().date()).count()
-        produtividade.append([assessor.get_full_name() or assessor.username, processos_entrada, processos_concluidos])
+    # 🔹 Resumo Inicial
+    processos_entradas = Processo.objects.filter(data_dist__date__range=[data_inicio, data_fim])
+    if assessor:
+        processos_entradas = processos_entradas.filter(usuario=assessor)
+    total_entradas = processos_entradas.count()
 
-    # 🔹 Criar a tabela de produtividade
-    data = [["Assessor", "Entrada", "Concluído"]] + produtividade  # Cabeçalho + Dados
-    table = Table(data, colWidths=[260, 100, 100])  # Ajustando largura das colunas
+    processos_saidas = Processo.objects.filter(concluido=True, dt_conclusao__date__range=[data_inicio, data_fim])
+    if assessor:
+        processos_saidas = processos_saidas.filter(usuario=assessor)
+    total_saidas = processos_saidas.count()
 
-    # 🔹 Estilizar a tabela
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),  # Cabeçalho azul escuro
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),  # Texto branco no cabeçalho
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),  # Centralizar texto
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),  # Fonte do cabeçalho
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),  # Espaçamento no cabeçalho
-        ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),  # Fundo dos dados
-        ("GRID", (0, 0), (-1, -1), 1, colors.black),  # Adicionar bordas
-        ("ROWBACKGROUNDS", (1, -1), (-1, -1), [colors.white, colors.lightgrey]),  # Alternar cores de linhas
-    ]))
+    processos_revisao_fim = ProcessoAndamento.objects.filter(
+        fase__fase='Revisão', 
+        dt_conclusao__date__range=[data_inicio, data_fim],
+        status__status="Concluído"
+    )
+    if assessor:
+        processos_revisao_fim = processos_revisao_fim.filter(usuario=assessor)
+    total_revisao_fim = processos_revisao_fim.count()
 
-    # 🔹 Adicionar a tabela ao PDF
-    elements.append(table)
-    elements.append(Spacer(1, 20))  # Espaçamento abaixo da tabela
-
-    # 🔹 Total Geral - Melhorando layout e alinhamento
-    total_entrada = Processo.objects.filter(data_dist__date=now().date()).count()
-    total_concluido = Processo.objects.filter(concluido=True, dt_conclusao__date=now().date()).count()
-
-    total_section = Paragraph(f"""
-        <font size=13><b>📌 Total Geral</b></font><br/><br/>
-        ✅ <b>Processos Recebidos Hoje:</b> {total_entrada}<br/>
-        ✅ <b>Processos Concluídos Hoje:</b> {total_concluido}
+    resumo_text = Paragraph(f"""
+        <b>📌 Resumo Geral</b><br/>
+        - Período: {data_inicio} a {data_fim}<br/>
+        - Total de Processos Distribuídos: {total_entradas}<br/>
+        - Total de Processos Concluídos: {total_saidas}<br/>
+        - Total de Processos Revisados: {total_revisao_fim}
     """, styles["Normal"])
+    elements.append(resumo_text)
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 20))
 
-    elements.append(total_section)
+    # 🔹 1. Produtividade por Assessor
+    produtividade_assessor = []
+    for a in assessores:
+        if not assessor or a == assessor:
+            entradas = Processo.objects.filter(usuario=a, data_dist__date__range=[data_inicio, data_fim]).count()
+            concluidos = Processo.objects.filter(usuario=a, concluido=True, dt_conclusao__date__range=[data_inicio, data_fim]).count()
+            if entradas > 0 or concluidos > 0:
+                produtividade_assessor.append([a.get_full_name() or a.username, entradas, concluidos])
+
+    if produtividade_assessor:
+        data_assessor = [["Assessor", "Entradas", "Concluídos"]] + produtividade_assessor
+        table_assessor = Table(data_assessor, colWidths=[200, 100, 100])
+        table_assessor.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.aliceblue]),
+        ]))
+        elements.append(Paragraph("<b>📋 Produtividade por Assessor</b>", styles["Heading2"]))
+        elements.append(table_assessor)
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+        elements.append(Spacer(1, 20))
+
+    # 🔹 2. Quantidade Total de Entrada e Saída + Espécies de Saída
+    especies_saida = Especie.objects.filter(processo__in=processos_saidas).values('sigla').distinct()
+    especies_text = ", ".join([f"{e['sigla']} ({Especie.objects.filter(processo__in=processos_saidas, sigla=e['sigla']).count()})" for e in especies_saida])
+    entrada_saida_text = Paragraph(f"""
+        <b>📈 Entrada e Saída</b><br/>
+        - Entradas: {total_entradas}<br/>
+        - Saídas: {total_saidas}<br/>
+        - Espécies de Saída: {especies_text if especies_text else 'Nenhuma'}
+    """, styles["Normal"])
+    elements.append(entrada_saida_text)
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 20))
+
+    # 🔹 3. Relatório Analítico do que Saiu
+    analitico_saida = [[p.numero_processo, p.usuario.get_full_name() if p.usuario else "Não atribuído", 
+                       p.dias_no_gabinete() or 0] for p in processos_saidas]
+
+    if analitico_saida:
+        total_saidas_analitico = len(analitico_saida)
+        analitico_saida.append(["Total", "", f"{total_saidas_analitico} processos"])
+        data_analitico_saida = [["Número", "Assessor", "Dias no Gabinete"]] + analitico_saida
+        table_analitico_saida = Table(data_analitico_saida, colWidths=[150, 150, 100])
+        table_analitico_saida.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+            ("BACKGROUND", (0, 1), (-1, -2), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -2), 0.5, colors.black),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.aliceblue]),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.grey),
+            ("TEXTCOLOR", (0, -1), (-1, -1), colors.white),
+        ]))
+        elements.append(Paragraph("<b>📋 Relatório Analítico do que Saiu</b>", styles["Heading2"]))
+        elements.append(table_analitico_saida)
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+        elements.append(Spacer(1, 20))
+
+    # 🔹 4. Produtividade dos Revisores
+    revisores = User.objects.filter(processoandamento__fase__fase='Revisão').distinct()
+    produtividade_revisor = []
+    for r in revisores:
+        if not assessor or r == assessor:
+            revisados = ProcessoAndamento.objects.filter(
+                fase__fase='Revisão', 
+                usuario=r, 
+                dt_conclusao__date__range=[data_inicio, data_fim],
+                status__status="Concluído"
+            ).count()
+            if revisados > 0:
+                produtividade_revisor.append([r.get_full_name() or r.username, revisados])
+
+    if produtividade_revisor:
+        data_revisor = [["Revisor", "Revisados"]] + produtividade_revisor
+        table_revisor = Table(data_revisor, colWidths=[250, 100])
+        table_revisor.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.aliceblue]),
+        ]))
+        elements.append(Paragraph("<b>📝 Produtividade dos Revisores</b>", styles["Heading2"]))
+        elements.append(table_revisor)
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+        elements.append(Spacer(1, 20))
+
+    # 🔹 5. Quantidade Total de Processos Colocados em Revisão
+    processos_revisao_inicio = ProcessoAndamento.objects.filter(
+        fase__fase='Revisão', 
+        dt_inicio__date__range=[data_inicio, data_fim]
+    )
+    if assessor:
+        processos_revisao_inicio = processos_revisao_inicio.filter(usuario=assessor)
+    total_revisao_inicio = processos_revisao_inicio.count()
+    elements.append(Paragraph(f"<b>📌 Processos Colocados em Revisão:</b> {total_revisao_inicio}", styles["Normal"]))
+    elements.append(Spacer(1, 15))
+
+    # 🔹 6. Quantidade Total de Processos Revisados
+    total_revisao_fim = processos_revisao_fim.count()
+    elements.append(Paragraph(f"<b>✅ Processos Revisados:</b> {total_revisao_fim}", styles["Normal"]))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 20))
+
+    # 🔹 7. Detalhamento Analítico do que Foi Revisado
+    analitico_revisao = [[p.processo.numero_processo, p.usuario.get_full_name() if p.usuario else "Não atribuído", 
+                         (p.dt_conclusao - p.processo.data_dist).days if p.dt_conclusao and p.processo.data_dist else 0] 
+                        for p in processos_revisao_fim]
+
+    if analitico_revisao:
+        total_revisados = len(analitico_revisao)
+        analitico_revisao.append(["Total", "", f"{total_revisados} processos"])
+        data_analitico_revisao = [["Número", "Responsável", "Dias no Gabinete"]] + analitico_revisao
+        table_analitico_revisao = Table(data_analitico_revisao, colWidths=[150, 150, 100])
+        table_analitico_revisao.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+            ("BACKGROUND", (0, 1), (-1, -2), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -2), 0.5, colors.black),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.aliceblue]),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.grey),
+            ("TEXTCOLOR", (0, -1), (-1, -1), colors.white),
+        ]))
+        elements.append(Paragraph("<b>📊 Detalhamento Analítico dos Revisados</b>", styles["Heading2"]))
+        elements.append(table_analitico_revisao)
+        elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+        elements.append(Spacer(1, 20))
+
+    # 🔹 8. Produtividade Geral com Detalhamento Analítico
+    total_distribuidos = Processo.objects.filter(data_dist__date__range=[data_inicio, data_fim]).count()
+    total_concluidos = Processo.objects.filter(concluido=True, dt_conclusao__date__range=[data_inicio, data_fim]).count()
+    geral_text = Paragraph(f"""
+        <b>🌐 Produtividade Geral</b><br/>
+        - Distribuídos: {total_distribuidos}<br/>
+        - Concluídos: {total_concluidos}
+    """, styles["Normal"])
+    elements.append(geral_text)
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 15))
 
     # 🔹 Construir e salvar o PDF
     doc.build(elements)
