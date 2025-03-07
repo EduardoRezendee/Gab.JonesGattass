@@ -366,13 +366,20 @@ class AndamentoUpdateView(LoginRequiredMixin, UpdateView):
     model = ProcessoAndamento
     form_class = AndamentoForm
     template_name = 'andamento_form_update.html'
-    success_url = reverse_lazy('andamento_list')
 
     def get_success_url(self):
+        # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'andamento_list')
+        origem = self.request.POST.get('origem', 'andamento_list')  # Default para 'andamento_list'
+
         # Obtém o processo associado ao andamento
         processo_id = self.object.processo.id
-        # Redireciona para a URL da lista de andamentos, incluindo o parâmetro 'processo'
-        return f"{reverse('andamento_list')}?processo={processo_id}"
+
+        # Define a URL de redirecionamento com base na origem
+        if origem == 'home':
+            return reverse('home')
+        else:
+            # Redireciona para a URL da lista de andamentos, incluindo o parâmetro 'processo'
+            return f"{reverse('andamento_list')}?processo={processo_id}"
 
     def get_context_data(self, **kwargs):
         # Adiciona o objeto andamento ao contexto para evitar erro no template
@@ -406,7 +413,9 @@ class AndamentoUpdateView(LoginRequiredMixin, UpdateView):
                 )
             return redirect(self.get_success_url())
         
-        return super().post(request, *args, **kwargs)
+        # Processa o formulário padrão (atualização via UpdateView)
+        response = super().post(request, *args, **kwargs)
+        return response
 
 
 
@@ -493,14 +502,23 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
         novo_andamento = ProcessoAndamento.objects.create(
             processo=processo,
             andamento="Processo concluído",
-            fase=fase_concluido,  # 🔥 Ajustado para a fase correta
+            fase=fase_concluido, 
             usuario=request.user,
             status=Status.objects.get(status="Concluído"),
             dt_inicio=now(),
             dt_conclusao=now()
         )
 
-        return redirect(reverse('andamento_list') + f"?processo={andamento.processo.pk}")
+        # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'andamento_list')
+        origem = request.POST.get('origem', 'andamento_list')  # Default para 'andamento_list' se não especificado
+
+        # Define a URL de redirecionamento com base na origem
+        if origem == 'home':
+            url = reverse('home')
+        else:
+            url = reverse('andamento_list') + f"?processo={andamento.processo.pk}"
+
+        return redirect(url)
 
 
 

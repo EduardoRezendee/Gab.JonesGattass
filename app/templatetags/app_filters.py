@@ -24,3 +24,11 @@ def groupby(value, arg):
     except Exception as e:
         print(f"Erro no groupby: {e}")
         return []
+
+@register.filter
+def is_integer(value):
+    try:
+        int(value)
+        return True
+    except (ValueError, TypeError):
+        return False
