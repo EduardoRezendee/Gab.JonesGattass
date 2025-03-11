@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'processos',
     'accounts',
     'publico',
-    'chatbot',
 ]
 
 LOGIN_URL = 'login'
@@ -103,7 +102,6 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

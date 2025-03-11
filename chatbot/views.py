@@ -1,3 +1,4 @@
+"""
 import os
 import logging
 from django.shortcuts import render
@@ -201,3 +202,4 @@ def ask_chatbot(request):
     except Exception as e:
         logger.error(f"Erro na API OpenAI: {e}")
         return JsonResponse({"response": "Erro ao processar. Tente novamente."})
+"""
