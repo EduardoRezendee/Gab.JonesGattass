@@ -18,17 +18,30 @@ from .metrics import (
 # IMPORTAMOS BIBLIOTECAS DO PLOTLY
 import plotly.offline as pyo
 import plotly.graph_objs as go
+from django.core.cache import cache
+from django.utils import timezone
 
 
 @login_required(login_url='login')
 def home(request):
     user = request.user
 
-    # Verificar roles do usuário
-    is_revisor = UserProfile.objects.filter(user=user, funcao="revisor(a)").exists()
-    is_desembargadora = UserProfile.objects.filter(user=user, funcao="Desembargadora").exists()
-    is_chefe = UserProfile.objects.filter(user=user, funcao="Chefe de Gabinete").exists()
-    is_assessor = UserProfile.objects.filter(user=user, funcao="Assessor(a)").exists()
+    # Verificar roles do usuário (cache simples)
+    cache_key_roles = f'user_roles_{user.id}'
+    roles = cache.get(cache_key_roles)
+    if not roles:
+        roles = {
+            'is_revisor': UserProfile.objects.filter(user=user, funcao="revisor(a)").exists(),
+            'is_desembargadora': UserProfile.objects.filter(user=user, funcao="Desembargadora").exists(),
+            'is_chefe': UserProfile.objects.filter(user=user, funcao="Chefe de Gabinete").exists(),
+            'is_assessor': UserProfile.objects.filter(user=user, funcao="Assessor(a)").exists(),
+        }
+        cache.set(cache_key_roles, roles, timeout=3600)
+
+    is_revisor = roles['is_revisor']
+    is_desembargadora = roles['is_desembargadora']
+    is_chefe = roles['is_chefe']
+    is_assessor = roles['is_assessor']
 
     # Inicializar variáveis
     andamento_metrics = []
@@ -41,62 +54,66 @@ def home(request):
     active_tab = None
     fases = None
 
-    # Data atual para cálculos diários
-    hoje = timezone.now().date()
+    # Usar datetime aware completo
+    hoje = timezone.now()  # Mantém o fuso horário
 
-    # Função auxiliar para gerar gráficos gerais
+    # Função auxiliar para gerar gráficos gerais (com cache)
     def generate_performance_charts():
-        data_list = get_pending_and_concluded_by_assessor()
-        if data_list:
-            assessores = [item['assessor'] for item in data_list]
-            pendentes = [item['pendentes'] for item in data_list]
-            concluidos = [item['concluidos'] for item in data_list]
-            trace_pend = go.Bar(x=assessores, y=pendentes, name='Pendentes', marker_color='#EF4444')
-            trace_conc = go.Bar(x=assessores, y=concluidos, name='Concluídos', marker_color='#10B981')
-            layout_pc = go.Layout(
-                title='Pendentes vs. Concluídos por Assessor',
-                xaxis=dict(title='Assessor', tickangle=-45),
-                yaxis=dict(title='Quantidade'),
-                barmode='group',
-                template='plotly_white',
-                height=400
-            )
-            fig_pc = go.Figure(data=[trace_pend, trace_conc], layout=layout_pc)
-            plot_div_pc = pyo.plot(fig_pc, auto_open=False, output_type='div')
-        else:
-            plot_div_pc = "<p class='text-muted text-center'>Nenhum dado disponível para Pendentes x Concluídos.</p>"
+        cache_key_pc = 'plot_div_pc'
+        cache_key_es = 'plot_div_es'
+        plot_div_pc = cache.get(cache_key_pc)
+        plot_div_es = cache.get(cache_key_es)
 
-        es_data = get_daily_entries_and_exits_by_assessor()
-        if es_data['dias']:
-            dias = [d.strftime("%d/%m/%Y") for d in es_data['dias']]
-            entradas_totais = [sum(es_data['entradas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
-            saidas_totais = [sum(es_data['saidas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
-            trace_ent = go.Bar(x=dias, y=entradas_totais, name='Entradas', marker_color='#3B82F6')
-            trace_sai = go.Bar(x=dias, y=saidas_totais, name='Saídas', marker_color='#F59E0B')
-            layout_es = go.Layout(
-                title='Entradas vs. Saídas (Últimos 7 Dias)',
-                xaxis=dict(title='Data', tickangle=-45),
-                yaxis=dict(title='Quantidade'),
-                barmode='group',
-                template='plotly_white',
-                height=400
-            )
-            fig_es = go.Figure(data=[trace_ent, trace_sai], layout=layout_es)
-            plot_div_es = pyo.plot(fig_es, auto_open=False, output_type='div')
-        else:
-            plot_div_es = "<p class='text-muted text-center'>Nenhum dado disponível para Entradas x Saídas.</p>"
+        if not plot_div_pc or not plot_div_es:
+            data_list = get_pending_and_concluded_by_assessor()
+            if data_list:
+                assessores = [item['assessor'] for item in data_list]
+                pendentes = [item['pendentes'] for item in data_list]
+                concluidos = [item['concluidos'] for item in data_list]
+                trace_pend = go.Bar(x=assessores, y=pendentes, name='Pendentes', marker_color='#EF4444')
+                trace_conc = go.Bar(x=assessores, y=concluidos, name='Concluídos', marker_color='#10B981')
+                layout_pc = go.Layout(
+                    title='Pendentes vs. Concluídos por Assessor',
+                    xaxis=dict(title='Assessor', tickangle=-45),
+                    yaxis=dict(title='Quantidade'),
+                    barmode='group',
+                    template='plotly_white',
+                    height=400
+                )
+                fig_pc = go.Figure(data=[trace_pend, trace_conc], layout=layout_pc)
+                plot_div_pc = pyo.plot(fig_pc, auto_open=False, output_type='div')
+                cache.set(cache_key_pc, plot_div_pc, timeout=3600)
+
+            es_data = get_daily_entries_and_exits_by_assessor()
+            if es_data['dias']:
+                dias = [d.strftime("%d/%m/%Y") for d in es_data['dias']]
+                entradas_totais = [sum(es_data['entradas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
+                saidas_totais = [sum(es_data['saidas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
+                trace_ent = go.Bar(x=dias, y=entradas_totais, name='Entradas', marker_color='#3B82F6')
+                trace_sai = go.Bar(x=dias, y=saidas_totais, name='Saídas', marker_color='#F59E0B')
+                layout_es = go.Layout(
+                    title='Entradas vs. Saídas (Últimos 7 Dias)',
+                    xaxis=dict(title='Data', tickangle=-45),
+                    yaxis=dict(title='Quantidade'),
+                    barmode='group',
+                    template='plotly_white',
+                    height=400
+                )
+                fig_es = go.Figure(data=[trace_ent, trace_sai], layout=layout_es)
+                plot_div_es = pyo.plot(fig_es, auto_open=False, output_type='div')
+                cache.set(cache_key_es, plot_div_es, timeout=3600)
 
         return plot_div_pc, plot_div_es
 
     # Métricas diárias
     revisoes_hoje = ProcessoAndamento.objects.filter(
         fase__fase__in=["Revisão", "Revisão Desa"],
-        dt_criacao__date=hoje
+        dt_criacao__date=hoje.date()  # Extrai apenas a data no banco
     ).values('processo').distinct().count()
 
     concluidos_revisao_hoje = ProcessoAndamento.objects.filter(
         fase__fase__in=["Revisão", "Revisão Desa"],
-        dt_conclusao__date=hoje,
+        dt_conclusao__date=hoje.date(),  # Extrai apenas a data no banco
         status__status="Concluído"
     ).values('processo').distinct().count()
 
@@ -118,37 +135,34 @@ def home(request):
     fig_revisoes_hoje = go.Figure(data=[trace_revisoes_hoje], layout=layout_revisoes_hoje)
     plot_div_revisoes_hoje = pyo.plot(fig_revisoes_hoje, auto_open=False, output_type='div')
 
-    # Métricas gerais
-    total_pendentes = Processo.objects.filter(concluido=False).count()
-    processos_por_fase = (
-        ProcessoAndamento.objects.filter(
-            processo__concluido=False,
-            status__status__in=["Não iniciado", "Em andamento"]
+    # Métricas gerais (com cache)
+    cache_key_metrics = 'general_metrics'
+    general_metrics = cache.get(cache_key_metrics)
+    if not general_metrics:
+        total_pendentes = Processo.objects.filter(concluido=False).count()
+        processos_por_fase = (
+            ProcessoAndamento.objects.filter(
+                processo__concluido=False,
+                status__status__in=["Não iniciado", "Em andamento"]
+            )
+            .values('fase__fase')
+            .annotate(quantidade=Count('processo', distinct=True))
+            .order_by('fase__fase')
         )
-        .values('fase__fase')
-        .annotate(quantidade=Count('processo', distinct=True))
-        .order_by('fase__fase')
-    )
+        general_metrics = {
+            'total_pendentes': total_pendentes,
+            'processos_por_fase': processos_por_fase
+        }
+        cache.set(cache_key_metrics, general_metrics, timeout=3600)
+
+    total_pendentes = general_metrics['total_pendentes']
+    processos_por_fase = general_metrics['processos_por_fase']
 
     # Gráfico de Total Pendentes e Por Fase
     fases_nomes = [f['fase__fase'] for f in processos_por_fase]
     fases_quantidades = [f['quantidade'] for f in processos_por_fase]
-    trace_fases = go.Bar(
-        x=fases_nomes,
-        y=fases_quantidades,
-        name='Por Fase',
-        marker_color='#3B82F6',
-        text=fases_quantidades,
-        textposition='auto'
-    )
-    trace_total = go.Bar(
-        x=['Total Pendentes'],
-        y=[total_pendentes],
-        name='Total Pendentes',
-        marker_color='#EF4444',
-        text=[total_pendentes],
-        textposition='auto'
-    )
+    trace_fases = go.Bar(x=fases_nomes, y=fases_quantidades, name='Por Fase', marker_color='#3B82F6', text=fases_quantidades, textposition='auto')
+    trace_total = go.Bar(x=['Total Pendentes'], y=[total_pendentes], name='Total Pendentes', marker_color='#EF4444', text=[total_pendentes], textposition='auto')
     layout_fases = go.Layout(
         title='Total de Processos Pendentes e Por Fase',
         yaxis=dict(title='Quantidade'),
@@ -159,15 +173,15 @@ def home(request):
     fig_fases = go.Figure(data=[trace_fases, trace_total], layout=layout_fases)
     plot_div_fases = pyo.plot(fig_fases, auto_open=False, output_type='div')
 
-    # Gráfico: Entradas e Saídas por Assessor Hoje (Corrigido)
+    # Gráfico: Entradas e Saídas por Assessor Hoje
     entradas_hoje = (
-        Processo.objects.filter(data_dist__date=hoje)
-        .values('usuario__first_name', 'usuario__last_name')  # Corrigido: removido 'userprofile'
+        Processo.objects.filter(data_dist__date=hoje.date())  # Extrai apenas a data no banco
+        .values('usuario__first_name', 'usuario__last_name')
         .annotate(quantidade=Count('id'))
     )
     saidas_hoje = (
-        Processo.objects.filter(dt_conclusao__date=hoje, concluido=True)
-        .values('usuario__first_name', 'usuario__last_name')  # Corrigido: removido 'userprofile'
+        Processo.objects.filter(dt_conclusao__date=hoje.date(), concluido=True)  # Extrai apenas a data no banco
+        .values('usuario__first_name', 'usuario__last_name')
         .annotate(quantidade=Count('id'))
     )
     assessores = UserProfile.objects.filter(funcao="Assessor(a)").select_related('user')
@@ -177,22 +191,8 @@ def home(request):
     entradas_vals = [entradas_dict.get(nome, 0) for nome in assessores_nomes]
     saidas_vals = [saidas_dict.get(nome, 0) for nome in assessores_nomes]
 
-    trace_ent_assessor = go.Bar(
-        x=assessores_nomes,
-        y=entradas_vals,
-        name='Entradas',
-        marker_color='#3B82F6',
-        text=entradas_vals,
-        textposition='auto'
-    )
-    trace_sai_assessor = go.Bar(
-        x=assessores_nomes,
-        y=saidas_vals,
-        name='Saídas',
-        marker_color='#F59E0B',
-        text=saidas_vals,
-        textposition='auto'
-    )
+    trace_ent_assessor = go.Bar(x=assessores_nomes, y=entradas_vals, name='Entradas', marker_color='#3B82F6', text=entradas_vals, textposition='auto')
+    trace_sai_assessor = go.Bar(x=assessores_nomes, y=saidas_vals, name='Saídas', marker_color='#F59E0B', text=saidas_vals, textposition='auto')
     layout_es_assessor = go.Layout(
         title=f'Entradas e Saídas por Assessor Hoje ({hoje.strftime("%d/%m/%Y")})',
         xaxis=dict(title='Assessor', tickangle=-45),
@@ -204,22 +204,21 @@ def home(request):
     fig_es_assessor = go.Figure(data=[trace_ent_assessor, trace_sai_assessor], layout=layout_es_assessor)
     plot_div_es_assessor_hoje = pyo.plot(fig_es_assessor, auto_open=False, output_type='div')
 
-    # Gráfico: Quantidade de Processos por Espécie
-    processos_por_especie = (
-        Processo.objects.filter(concluido=False)
-        .values('especie__especie')
-        .annotate(quantidade=Count('id'))
-        .order_by('especie__especie')
-    )
+    # Gráfico: Quantidade de Processos por Espécie (com cache)
+    cache_key_especies = 'processos_por_especie'
+    processos_por_especie = cache.get(cache_key_especies)
+    if not processos_por_especie:
+        processos_por_especie = (
+            Processo.objects.filter(concluido=False)
+            .values('especie__especie')
+            .annotate(quantidade=Count('id'))
+            .order_by('especie__especie')
+        )
+        cache.set(cache_key_especies, processos_por_especie, timeout=3600)
+
     especies_nomes = [e['especie__especie'] if e['especie__especie'] else "Sem Espécie" for e in processos_por_especie]
     especies_quantidades = [e['quantidade'] for e in processos_por_especie]
-    trace_especies = go.Bar(
-        x=especies_nomes,
-        y=especies_quantidades,
-        marker_color='#10B981',
-        text=especies_quantidades,
-        textposition='auto'
-    )
+    trace_especies = go.Bar(x=especies_nomes, y=especies_quantidades, marker_color='#10B981', text=especies_quantidades, textposition='auto')
     layout_especies = go.Layout(
         title='Quantidade de Processos Pendentes por Espécie',
         xaxis=dict(title='Espécie', tickangle=-45),
@@ -230,16 +229,22 @@ def home(request):
     fig_especies = go.Figure(data=[trace_especies], layout=layout_especies)
     plot_div_especies = pyo.plot(fig_especies, auto_open=False, output_type='div')
 
-    # 1) VISÃO DO REVISOR(A)
+    # VISÃO DO REVISOR(A)
     if is_revisor:
         numero_processo = request.GET.get('numero_processo', '').strip()
         processos_em_revisao = Processo.objects.filter(
             andamentos__fase__fase="Revisão",
             andamentos__usuario=user,
             concluido=False
-        ).distinct().select_related('especie', 'usuario')
+        ).distinct().select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status', 'andamentos__usuario')
         if numero_processo:
             processos_em_revisao = processos_em_revisao.filter(numero_processo__icontains=numero_processo)
+        
+        comentarios_dict = {
+            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
+            for p in processos_em_revisao
+        }
+
         for processo in processos_em_revisao:
             ultimo_andamento = processo.andamentos.filter(
                 fase__fase="Revisão",
@@ -248,19 +253,19 @@ def home(request):
             ).order_by('-dt_criacao').first()
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
-                comentarios = ComentarioProcesso.objects.filter(processo=processo).select_related('usuario')
+                comentarios = comentarios_dict.get(processo.pk, [])
                 andamento_metrics.append({
                     'pk': ultimo_andamento.pk,
                     'processo_pk': processo.pk,
                     'numero_processo': processo.numero_processo,
                     'data_dist': processo.data_dist,
                     'dias_no_gabinete': processo.dias_no_gabinete() or 0,
-                    'fase': ultimo_andamento.fase.fase if ultimo_andamento else "Sem fase",
-                    'descricao': ultimo_andamento.andamento if ultimo_andamento else "Sem descrição",
-                    'status': ultimo_andamento.status.status if ultimo_andamento and ultimo_andamento.status else "Sem status",
-                    'data_inicio': ultimo_andamento.dt_inicio if ultimo_andamento else None,
-                    'data_conclusao': ultimo_andamento.dt_conclusao if ultimo_andamento else None,
-                    'link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
+                    'fase': ultimo_andamento.fase.fase,
+                    'descricao': ultimo_andamento.andamento,
+                    'status': ultimo_andamento.status.status,
+                    'data_inicio': ultimo_andamento.dt_inicio,
+                    'data_conclusao': ultimo_andamento.dt_conclusao,
+                    'link_doc': ultimo_andamento.link_doc,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                     'especie': especie_nome,
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
@@ -269,16 +274,22 @@ def home(request):
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, p['data_dist']))
 
-    # 2) VISÃO DA DESEMBARGADORA
+    # VISÃO DA DESEMBARGADORA
     elif is_desembargadora:
         numero_processo = request.GET.get('numero_processo', '').strip()
         processos_em_revisao_desa = Processo.objects.filter(
             andamentos__fase__fase="Revisão Desa",
             andamentos__usuario=user,
             concluido=False
-        ).distinct().select_related('especie', 'usuario')
+        ).distinct().select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status', 'andamentos__usuario')
         if numero_processo:
             processos_em_revisao_desa = processos_em_revisao_desa.filter(numero_processo__icontains=numero_processo)
+        
+        comentarios_dict = {
+            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
+            for p in processos_em_revisao_desa
+        }
+
         for processo in processos_em_revisao_desa:
             ultimo_andamento = processo.andamentos.filter(
                 fase__fase="Revisão Desa",
@@ -287,7 +298,7 @@ def home(request):
             ).order_by('-dt_criacao').first()
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
-                comentarios = ComentarioProcesso.objects.filter(processo=processo).select_related('usuario')
+                comentarios = comentarios_dict.get(processo.pk, [])
                 revisoes_desa_count = processo.andamentos.filter(fase__fase="Revisão Desa").count()
                 andamento_metrics.append({
                     'pk': ultimo_andamento.pk,
@@ -295,22 +306,23 @@ def home(request):
                     'numero_processo': processo.numero_processo,
                     'data_dist': processo.data_dist,
                     'dias_no_gabinete': processo.dias_no_gabinete() or 0,
-                    'fase': ultimo_andamento.fase.fase if ultimo_andamento else "Sem fase",
-                    'descricao': ultimo_andamento.andamento if ultimo_andamento else "Sem descrição",
-                    'status': ultimo_andamento.status.status if ultimo_andamento and ultimo_andamento.status else "Sem status",
-                    'data_inicio': ultimo_andamento.dt_inicio if ultimo_andamento else None,
-                    'data_conclusao': ultimo_andamento.dt_conclusao if ultimo_andamento else None,
-                    'link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
+                    'fase': ultimo_andamento.fase.fase,
+                    'descricao': ultimo_andamento.andamento,
+                    'status': ultimo_andamento.status.status,
+                    'data_inicio': ultimo_andamento.dt_inicio,
+                    'data_conclusao': ultimo_andamento.dt_conclusao,
+                    'link_doc': ultimo_andamento.link_doc,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                     'especie': especie_nome,
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios],
-                    'revisoes_desa': revisoes_desa_count
+                    'revisoes_desa': revisoes_desa_count,
+                    'data_envio_revisao_desa': ultimo_andamento.dt_criacao,
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
         plot_div_pc, plot_div_es = generate_performance_charts()
 
-    # 3) VISÃO DO CHEFE DE GABINETE
+    # VISÃO DO CHEFE DE GABINETE
     elif is_chefe:
         processos_pendentes = Processo.objects.filter(concluido=False).count()
         processos_concluidos = Processo.objects.filter(concluido=True).count()
@@ -321,15 +333,21 @@ def home(request):
         })
         plot_div_pc, plot_div_es = generate_performance_charts()
 
-    # 4) VISÃO DO ASSESSOR/USUÁRIO COMUM
+    # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
         numero_processo = request.GET.get('numero_processo', '').strip()
         processos_nao_concluidos = Processo.objects.filter(
             usuario=user,
             concluido=False
-        ).select_related('especie', 'usuario')
+        ).select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
         if numero_processo:
             processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
+        
+        comentarios_dict = {
+            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
+            for p in processos_nao_concluidos
+        }
+
         processos_detalhados = []
         for processo in processos_nao_concluidos:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
@@ -337,37 +355,30 @@ def home(request):
                 processos_detalhados.append({
                     'pk': processo.pk,
                     'andamento_pk': ultimo_andamento.pk,
-                    'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
+                    'andamento_link_doc': ultimo_andamento.link_doc,
                     'numero_processo': processo.numero_processo,
                     'especie': processo.especie.especie if processo.especie else "Sem espécie",
                     'sigla': processo.especie.sigla if processo.especie else "Sem sigla",
-                    'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento.fase else "Sem fase",
-                    'status_atual': ultimo_andamento.status.status if ultimo_andamento.status else "Sem status",
+                    'fase_atual': ultimo_andamento.fase.fase,
+                    'status_atual': ultimo_andamento.status.status,
                     'data_prazo': processo.dt_prazo,
                     'data_dist': processo.data_dist,
                     'dias_no_gabinete': processo.dias_no_gabinete() or 0,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
-                    'comentarios': ComentarioProcesso.objects.filter(processo=processo).values(
-                        'texto', 'data_criacao', 'usuario__first_name', 'usuario__last_name'
-                    )
+                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios_dict.get(processo.pk, [])]
                 })
         processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
         fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Desa', 'Devolvido', 'L. PJE']
-        phase_dict = {}
-        for processo in processos_detalhados:
-            phase_dict.setdefault(processo['fase_atual'], []).append(processo)
+        phase_dict = {p['fase_atual']: p for p in processos_detalhados}
         fases = [(phase, phase_dict.get(phase, [])) for phase in fixed_phase_order if phase in phase_dict]
-        fase_param = request.GET.get('fase', None)
-        if fase_param and fase_param in fixed_phase_order and fase_param in phase_dict:
-            active_tab = fase_param
-        elif fases:
-            active_tab = fases[0][0]
+        fase_param = request.GET.get('fase')
+        active_tab = fase_param if fase_param in fixed_phase_order and fase_param in phase_dict else (fases[0][0] if fases else None)
         if is_assessor:
             plot_div_pc, plot_div_es = generate_performance_charts()
 
     # Tarefas do Dia
-    tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo')
+    tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo', 'processo__especie', 'processo__usuario').prefetch_related('processo__andamentos', 'processo__andamentos__fase')
     tarefas_detalhadas = []
     for tarefa in tarefas_do_dia:
         ultimo_andamento = tarefa.processo.andamentos.order_by('-dt_criacao').first() if tarefa.processo else None
