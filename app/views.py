@@ -348,37 +348,64 @@ def home(request):
             for p in processos_nao_concluidos
         }
 
-        processos_detalhados = []
+    # Processos detalhados para usuários comuns
+    processos_detalhados = []
+    active_tab = None
+    if not is_revisor and not is_desembargadora:
+        # Capturar o filtro de número de processo
+        numero_processo = request.GET.get('numero_processo', '').strip()
+
+        # Filtrar processos não concluídos do usuário
+        processos_nao_concluidos = Processo.objects.filter(
+            usuario=user,
+            concluido=False
+        ).select_related('especie', 'usuario')
+
+        # Aplicar filtro por número de processo, se fornecido
+        if numero_processo:
+            processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
+
         for processo in processos_nao_concluidos:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
-            if ultimo_andamento:
+            if ultimo_andamento and processo.pk:
                 processos_detalhados.append({
                     'pk': processo.pk,
                     'andamento_pk': ultimo_andamento.pk,
-                    'andamento_link_doc': ultimo_andamento.link_doc,
+                    'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
                     'numero_processo': processo.numero_processo,
                     'especie': processo.especie.especie if processo.especie else "Sem espécie",
                     'sigla': processo.especie.sigla if processo.especie else "Sem sigla",
-                    'fase_atual': ultimo_andamento.fase.fase,
-                    'status_atual': ultimo_andamento.status.status,
+                    'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
+                    'status_atual': ultimo_andamento.status.status if ultimo_andamento and ultimo_andamento.status else "Sem status",
                     'data_prazo': processo.dt_prazo,
                     'data_dist': processo.data_dist,
                     'dias_no_gabinete': processo.dias_no_gabinete() or 0,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
-                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios_dict.get(processo.pk, [])]
+                    'comentarios': ComentarioProcesso.objects.filter(processo=processo).values(
+                        'texto', 'data_criacao', 'usuario__first_name', 'usuario__last_name'
+                    )
                 })
+
         processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
+        # Definir ordem fixa das fases
         fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Desa', 'Devolvido', 'L. PJE']
-        phase_dict = {p['fase_atual']: p for p in processos_detalhados}
-        fases = [(phase, phase_dict.get(phase, [])) for phase in fixed_phase_order if phase in phase_dict]
-        fase_param = request.GET.get('fase')
-        active_tab = fase_param if fase_param in fixed_phase_order and fase_param in phase_dict else (fases[0][0] if fases else None)
-        if is_assessor:
-            plot_div_pc, plot_div_es = generate_performance_charts()
+        phase_dict = {}
+        for processo in processos_detalhados:
+            phase_dict.setdefault(processo['fase_atual'], []).append(processo)
 
-    # Tarefas do Dia
-    tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo', 'processo__especie', 'processo__usuario').prefetch_related('processo__andamentos', 'processo__andamentos__fase')
+        # Ordenar as fases de acordo com a ordem fixa
+        fases = [(phase, phase_dict.get(phase, [])) for phase in fixed_phase_order if phase in phase_dict]
+
+        # Determinar a aba ativa
+        fase_param = request.GET.get('fase', None)
+        if fase_param and fase_param in fixed_phase_order and fase_param in phase_dict:
+            active_tab = fase_param
+        elif fases:
+            active_tab = fases[0][0]  # Primeira fase com processos
+
+    # Ajuste para Tarefas do Dia (Meu Dia)
+    tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo')
     tarefas_detalhadas = []
     for tarefa in tarefas_do_dia:
         ultimo_andamento = tarefa.processo.andamentos.order_by('-dt_criacao').first() if tarefa.processo else None
@@ -403,10 +430,13 @@ def home(request):
 
     # Métricas e Gamificação
     process_metrics = get_process_metrics(user)
-    if not (is_revisor or is_desembargadora or is_chefe):
+    if not is_revisor and not is_desembargadora:
         process_metrics['detalhes_processos'] = processos_detalhados
 
+    # Foto do usuário
     photo_url = user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo else '/static/default-profile.png'
+
+    # Gamificação
     process_gamification = get_process_gamification_metrics(user)
     top_users = get_top_users_by_xp()
 

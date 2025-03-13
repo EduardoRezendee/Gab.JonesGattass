@@ -381,6 +381,7 @@
                         </div>
 
                         <!-- Modal de Edição para este Andamento -->
+                        {% if processo.andamento_pk %}
                         <div class="modal fade" id="editAndamentoModal{{ processo.andamento_pk }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ processo.andamento_pk }}" aria-hidden="true">
                           <div class="modal-dialog">
                             <div class="modal-content" style="border: 2px solid #807d6b;">
@@ -409,7 +410,7 @@
                             </div>
                           </div>
                         </div>
-
+                        {% endif %}
                         <!-- Caixa de Comentários Flutuante -->
                         <div id="comment-box-{{ processo.pk }}"
                              class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
