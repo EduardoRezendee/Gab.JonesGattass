@@ -107,3 +107,92 @@ def get_top_users_by_xp():
         })
 
     return sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
+
+
+from django.db.models import Count
+from accounts.models import UserProfile
+from processos.models import Processo
+
+def get_pending_and_concluded_by_assessor():
+    """
+    Retorna processos pendentes e concluídos por assessor.
+    Inclui apenas assessores com processos atribuídos.
+    """
+    data_list = []
+    assessores = UserProfile.objects.filter(funcao="Assessor(a)").select_related('user')
+
+    for perfil in assessores:
+        user = perfil.user
+        processos = Processo.objects.filter(usuario=user).aggregate(
+            total=Count('id'),
+            concluidos=Count('id', filter=Q(concluido=True))
+        )
+        total_processos = processos['total'] or 0
+        concluidos = processos['concluidos'] or 0
+        pendentes = total_processos - concluidos
+
+        if total_processos > 0:  # Só inclui assessores com processos
+            data_list.append({
+                'assessor_id': user.id,
+                'assessor': user.get_full_name(),
+                'pendentes': pendentes,
+                'concluidos': concluidos,
+                'total': total_processos
+            })
+
+    return data_list
+
+
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDay
+from django.utils import timezone
+from datetime import timedelta
+
+def get_daily_entries_and_exits_by_assessor(days=7):
+    """
+    Retorna entradas e saídas dos últimos 'days' dias, agregadas por dia e assessor.
+    """
+    hoje = timezone.now().date()
+    data_inicio = hoje - timedelta(days=days)
+
+    # Entradas
+    entradas_qs = (
+        Processo.objects.filter(data_dist__gte=data_inicio)
+        .annotate(dia=TruncDay('data_dist'))
+        .values('usuario', 'dia')
+        .annotate(quantidade=Count('id'))
+        .order_by('dia')
+    )
+
+    # Saídas
+    saidas_qs = (
+        Processo.objects.filter(dt_conclusao__gte=data_inicio)
+        .annotate(dia=TruncDay('dt_conclusao'))
+        .values('usuario', 'dia')
+        .annotate(quantidade=Count('id'))
+        .order_by('dia')
+    )
+
+    # Agregar por dia e assessor
+    entradas_dict = {}
+    saidas_dict = {}
+    assessores = set()
+
+    for e in entradas_qs:
+        usuario_id = e['usuario']
+        dia = e['dia']
+        entradas_dict[(usuario_id, dia)] = e['quantidade']
+        assessores.add(usuario_id)
+
+    for s in saidas_qs:
+        usuario_id = s['usuario']
+        dia = s['dia']
+        saidas_dict[(usuario_id, dia)] = s['quantidade']
+        assessores.add(usuario_id)
+
+    return {
+        'entradas': entradas_dict,
+        'saidas': saidas_dict,
+        'assessores': list(assessores),
+        'dias': sorted(set([d for (_, d) in entradas_dict.keys()] + [d for (_, d) in saidas_dict.keys()]))
+    }

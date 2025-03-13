@@ -172,20 +172,40 @@
         </h2>
         <div id="collapseProcessos" class="accordion-collapse collapse show">
           <div class="accordion-body">
+            <!-- Campo de Pesquisa -->
+            <div class="mb-4">
+              <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center">
+                <div class="input-group" style="max-width: 500px;">
+                  <input type="text" name="numero_processo" class="form-control shadow-sm" 
+                         placeholder="Digite o número do processo..." 
+                         value="{{ request.GET.numero_processo|default:'' }}"
+                         style="border-radius: 20px 0 0 20px; border-color: #083464; color: #1F2937;">
+                  <button type="submit" class="btn shadow-sm" 
+                          style="background-color: #083464; color: white; border: none; border-radius: 0;">
+                    <i class="bi bi-search" style="color: white;"></i>
+                  </button>
+                  <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm" 
+                     style="border-radius: 0 20px 20px 0; margin-left: -1px; border-left: none;">
+                    Limpar
+                  </a>
+                </div>
+              </form>
+            </div>
+          
             {% if fases and fases|length > 0 %}
               <!-- Nav Tabs por Fase Atual -->
               <ul class="nav nav-tabs mb-4" id="faseTabs" role="tablist" style="justify-content: center;">
                 {% for fase, processos in fases %}
                   <li class="nav-item" role="presentation">
-                    <button class="nav-link {% if forloop.first %}active{% endif %} text-dark"
+                    <button class="nav-link {% if fase == active_tab %}active{% endif %} text-dark"
                             id="tab-{{ fase|slugify }}"
                             data-bs-toggle="tab"
                             data-bs-target="#pane-{{ fase|slugify }}"
                             type="button"
                             role="tab"
                             aria-controls="pane-{{ fase|slugify }}"
-                            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                            style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: {% if forloop.first %}rgba(0, 0, 0, 0.00){% endif %}; border-radius: 0.25rem 0.25rem 0 0; color: #1F2937;">
+                            aria-selected="{% if fase == active_tab %}true{% else %}false{% endif %}"
+                            style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: {% if fase == active_tab %}rgba(0, 0, 0, 0.00){% endif %}; border-radius: 0.25rem 0.25rem 0 0; color: #1F2937;">
                       {{ fase }} <span class="badge" style="background-color: #808000; color: white;">{{ processos|length }}</span>
                     </button>
                   </li>
@@ -735,4 +755,3 @@
     }
   </style>
 </div>
-    </style>

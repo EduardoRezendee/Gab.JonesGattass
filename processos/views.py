@@ -99,8 +99,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             if valor:
                 queryset = queryset.filter(**{f"{field}__date": datetime.strptime(valor, '%Y-%m-%d').date()})
 
-        # 🔹 Captura o parâmetro de ordenação da URL
-        order_by = self.request.GET.get("ordenar", "data_dist")
+        # 🔹 Captura o parâmetro de ordenação da URL, com padrão "mais_recente"
+        order_by = self.request.GET.get("ordenar", "mais_recente")
 
         # 🔹 Aplica ordenação segura
         ordering_dict = {

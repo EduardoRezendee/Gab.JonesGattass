@@ -150,10 +150,6 @@ Distribuição de Processos
                        style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
                         <i class="bi bi-plus-lg"></i> Novo Processo
                     </a>
-                    <a href="{% url 'importar_processos' %}" class="btn btn-success btn-sm shadow-sm d-flex align-items-center justify-content-center"
-                       style="border-radius: 20px; padding: 0.5rem 1rem; transition: transform 0.2s ease;">
-                        <i class="bi bi-upload"></i>
-                    </a>
                 </div>
             </div>
 
@@ -350,11 +346,13 @@ Distribuição de Processos
                                    class="text-black text-decoration-none">
                                     Data Distribuição 
                                     {% if request.GET.ordenar == "mais_recente" %}
-                                        <i class="bi bi-arrow-up"></i>
+                                        <i class="bi bi-arrow-down"></i> <!-- Mais recente: decrescente -->
                                     {% elif request.GET.ordenar == "mais_antigo" %}
-                                        <i class="bi bi-arrow-down"></i>
+                                        <i class="bi bi-arrow-up"></i> <!-- Mais antigo: crescente -->
+                                    {% elif not request.GET.ordenar %}
+                                        <i class="bi bi-arrow-down"></i> <!-- Padrão da view: mais recente -->
                                     {% else %}
-                                        <i class="bi bi-arrow-up-down"></i>
+                                        <i class="bi bi-arrow-up-down"></i> <!-- Outras ordenações -->
                                     {% endif %}
                                 </a>
                             </th>
