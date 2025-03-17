@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-3mry0!qt@k&!dvic0r!$!w55**(jg@3^1srfsaby-jxuk#3db!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "gestaogabineteccs.com",  # Domínio principal
@@ -91,7 +91,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-"""
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -100,13 +100,6 @@ DATABASES = {
         'PASSWORD': '03010315SSp@@#',
         'HOST': 'localhost',
         'PORT': '5432',
-    }
-}
-"""
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
