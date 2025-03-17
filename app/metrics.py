@@ -109,48 +109,73 @@ def get_top_users_by_xp():
     return sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
 
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from accounts.models import UserProfile
 from processos.models import Processo
 
 def get_pending_and_concluded_by_assessor():
     """
-    Retorna processos pendentes e concluídos por assessor.
+    Retorna processos pendentes e concluídos por assessor em formato para Chart.js.
     Inclui apenas assessores com processos atribuídos.
     """
-    data_list = []
     assessores = UserProfile.objects.filter(funcao="Assessor(a)").select_related('user')
+    usuario_ids = assessores.values_list('user_id', flat=True)
 
-    for perfil in assessores:
-        user = perfil.user
-        processos = Processo.objects.filter(usuario=user).aggregate(
+    # Agregar processos por usuário em uma única consulta
+    processos_por_assessor = (
+        Processo.objects.filter(usuario__in=usuario_ids)
+        .values('usuario')
+        .annotate(
             total=Count('id'),
             concluidos=Count('id', filter=Q(concluido=True))
         )
-        total_processos = processos['total'] or 0
-        concluidos = processos['concluidos'] or 0
+        .order_by('usuario')
+    )
+
+    # Mapear IDs para nomes
+    usuario_nome_map = {perfil.user.id: perfil.user.get_full_name() for perfil in assessores}
+
+    # Preparar dados para Chart.js
+    labels = []
+    pendentes_data = []
+    concluidos_data = []
+
+    for processo in processos_por_assessor:
+        usuario_id = processo['usuario']
+        total_processos = processo['total'] or 0
+        concluidos = processo['concluidos'] or 0
         pendentes = total_processos - concluidos
 
         if total_processos > 0:  # Só inclui assessores com processos
-            data_list.append({
-                'assessor_id': user.id,
-                'assessor': user.get_full_name(),
-                'pendentes': pendentes,
-                'concluidos': concluidos,
-                'total': total_processos
-            })
+            labels.append(usuario_nome_map.get(usuario_id, "Desconhecido"))
+            pendentes_data.append(pendentes)
+            concluidos_data.append(concluidos)
 
-    return data_list
-
+    return {
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Pendentes',
+                'data': pendentes_data,
+                'backgroundColor': '#EF4444',
+            },
+            {
+                'label': 'Concluídos',
+                'data': concluidos_data,
+                'backgroundColor': '#10B981',
+            }
+        ]
+    }
 
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 from datetime import timedelta
+from accounts.models import UserProfile
 
 def get_daily_entries_and_exits_by_assessor(days=7):
     """
-    Retorna entradas e saídas dos últimos 'days' dias, agregadas por dia e assessor.
+    Retorna entradas e saídas dos últimos 'days' dias em formato para Chart.js.
     """
     hoje = timezone.now().date()
     data_inicio = hoje - timedelta(days=days)
@@ -159,7 +184,7 @@ def get_daily_entries_and_exits_by_assessor(days=7):
     entradas_qs = (
         Processo.objects.filter(data_dist__gte=data_inicio)
         .annotate(dia=TruncDay('data_dist'))
-        .values('usuario', 'dia')
+        .values('dia')
         .annotate(quantidade=Count('id'))
         .order_by('dia')
     )
@@ -168,31 +193,32 @@ def get_daily_entries_and_exits_by_assessor(days=7):
     saidas_qs = (
         Processo.objects.filter(dt_conclusao__gte=data_inicio)
         .annotate(dia=TruncDay('dt_conclusao'))
-        .values('usuario', 'dia')
+        .values('dia')
         .annotate(quantidade=Count('id'))
         .order_by('dia')
     )
 
-    # Agregar por dia e assessor
-    entradas_dict = {}
-    saidas_dict = {}
-    assessores = set()
+    # Preparar dados para Chart.js
+    dias = sorted(set([e['dia'] for e in entradas_qs] + [s['dia'] for s in saidas_qs]))
+    entradas_dict = {e['dia']: e['quantidade'] for e in entradas_qs}
+    saidas_dict = {s['dia']: s['quantidade'] for s in saidas_qs}
 
-    for e in entradas_qs:
-        usuario_id = e['usuario']
-        dia = e['dia']
-        entradas_dict[(usuario_id, dia)] = e['quantidade']
-        assessores.add(usuario_id)
-
-    for s in saidas_qs:
-        usuario_id = s['usuario']
-        dia = s['dia']
-        saidas_dict[(usuario_id, dia)] = s['quantidade']
-        assessores.add(usuario_id)
+    labels = [d.strftime("%d/%m/%Y") for d in dias]
+    entradas_data = [entradas_dict.get(d, 0) for d in dias]
+    saidas_data = [saidas_dict.get(d, 0) for d in dias]
 
     return {
-        'entradas': entradas_dict,
-        'saidas': saidas_dict,
-        'assessores': list(assessores),
-        'dias': sorted(set([d for (_, d) in entradas_dict.keys()] + [d for (_, d) in saidas_dict.keys()]))
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Entradas',
+                'data': entradas_data,
+                'backgroundColor': '#3B82F6',
+            },
+            {
+                'label': 'Saídas',
+                'data': saidas_data,
+                'backgroundColor': '#F59E0B',
+            }
+        ]
     }

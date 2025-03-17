@@ -523,9 +523,7 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
 
 
 def process_metrics_view(request):
-    """
-    View para renderizar métricas avançadas com filtros opcionais, incluindo data inicial e final.
-    """
+
     # Obtém os filtros da URL
     assessor = request.GET.get('assessor')
     mes_distribuicao = request.GET.get('mes_distribuicao')

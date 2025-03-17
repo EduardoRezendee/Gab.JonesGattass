@@ -9,7 +9,6 @@
     </h2>
     <div id="collapseRevisaoDesa" class="accordion-collapse collapse show">
       <div class="accordion-body">
-
         <!-- Filtro por número de processo -->
         <div class="mb-4">
           <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center">
@@ -197,81 +196,151 @@
     </div>
   </div>
 </div>
-<!-- Seção de Métricas e Gráficos -->
-<div class="mt-4 mb-4 p-3 shadow-sm bg-white rounded">
-  <h4 class="mb-3 text-center" style="color: #083464;">
-    <i class="bi bi-graph-up me-2"></i> Métricas e Desempenho
-  </h4>
 
-  <!-- Gráficos de Revisões Hoje e Entradas/Saídas por Assessor Hoje (Lado a Lado) -->
-  <div class="row mb-4">
-    {% if plot_div_revisoes_hoje %}
-    <div class="col-12 col-md-6 mb-3 mb-md-0">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_revisoes_hoje|safe }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% if plot_div_es_assessor_hoje %}
+<!-- Seção de Gráficos -->
+<div class="container mt-5">
+  <div class="row g-4">
+    <!-- Revisões Hoje (Barra simples) -->
     <div class="col-12 col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_es_assessor_hoje|safe }}
-        </div>
+      <div class="chart-container">
+        <canvas id="revisoesHojeChart" style="max-height: 250px;"></canvas>
       </div>
     </div>
-    {% endif %}
-  </div>
 
-  <!-- Gráfico de Total Pendentes e Por Fase -->
-  {% if plot_div_fases %}
-  <div class="row mb-4">
+    <!-- Entradas e Saídas por Assessor Hoje (Barras agrupadas) -->
+    <div class="col-12 col-md-6">
+      <div class="chart-container">
+        <canvas id="esAssessorHojeChart" style="max-height: 250px;"></canvas>
+      </div>
+    </div>
+
+
+    <!-- Entradas vs. Saídas (Últimos 7 Dias) (Linhas) -->
     <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_fases|safe }}
-        </div>
+      <div class="chart-container">
+        <canvas id="entriesExitsChart" style="max-height: 300px;"></canvas>
       </div>
     </div>
   </div>
-  {% endif %}
-
-  <!-- Gráfico de Quantidade por Espécie -->
-  {% if plot_div_especies %}
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_especies|safe }}
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Gráficos de Desempenho Gerais -->
-  {% if plot_div_pc or plot_div_es %}
-  <div class="row">
-    {% if plot_div_pc %}
-    <div class="col-12 col-lg-6 mb-3">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_pc|safe }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% if plot_div_es %}
-    <div class="col-12 col-lg-6 mb-3">
-      <div class="card shadow-sm">
-        <div class="card-body p-2">
-          {{ plot_div_es|safe }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
 </div>
+
+<!-- No cabeçalho ou antes dos scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+<script>
+Chart.register(ChartDataLabels);
+
+// Gráfico Revisões Hoje (Colunas)
+fetch("{% url 'get_revisoes_hoje_data' %}")
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // gráfico de colunas
+            data: {
+                labels: data.labels,
+                datasets: data.datasets
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#000',
+                        font: { weight: 'bold' },
+                        formatter: (value) => value || ''
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        // Removido o título do eixo y
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+
+// Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
+fetch("{% url 'get_entries_exits_data' %}")
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('entriesExitsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // alterado de 'line' para 'bar'
+            data: {
+                labels: data.labels,
+                datasets: data.datasets
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
+                    legend: { display: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#000',
+                        font: { weight: 'bold' },
+                        formatter: (value) => value || ''
+                    }
+                },
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Data' },
+                        ticks: { maxRotation: 45, minRotation: 45 },
+                        grid: { display: false }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        // Removido o título do eixo y
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+
+// Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
+fetch("{% url 'get_es_assessor_hoje_data' %}")
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // gráfico de colunas
+            data: {
+                labels: data.labels,
+                datasets: data.datasets
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
+                    legend: { display: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#000',
+                        font: { weight: 'bold' },
+                        formatter: (value) => value || ''
+                    }
+                },
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Assessor' },
+                        ticks: { maxRotation: 45, minRotation: 45 },
+                        grid: { display: false }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        // Removido o título do eixo y
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+
+</script>

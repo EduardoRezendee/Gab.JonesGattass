@@ -4,6 +4,15 @@ from django.contrib.auth import views as auth_views
 from . import views
 from django.conf.urls.static import static
 from django.conf import settings
+from .views import (
+    home,
+    get_pending_concluded_data,
+    get_entries_exits_data,
+    get_revisoes_hoje_data,
+    get_es_assessor_hoje_data,
+    get_especies_data,
+    get_fases_data
+)
 
 
 urlpatterns = [
@@ -11,8 +20,13 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
-        # Rota para a página inicial
-    path('', views.home, name='home'),
+    path('', home, name='home'),
+    path('pending-concluded-data/', get_pending_concluded_data, name='get_pending_concluded_data'),
+    path('entries-exits-data/', get_entries_exits_data, name='get_entries_exits_data'),
+    path('revisoes-hoje-data/', get_revisoes_hoje_data, name='get_revisoes_hoje_data'),
+    path('es-assessor-hoje-data/', get_es_assessor_hoje_data, name='get_es_assessor_hoje_data'),
+    path('especies-data/', get_especies_data, name='get_especies_data'),
+    path('fases-data/', get_fases_data, name='get_fases_data'),
 
 
 

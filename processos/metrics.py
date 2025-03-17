@@ -1,10 +1,10 @@
+
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Subquery, OuterRef, Q
+
 from processos.models import Processo, ProcessoAndamento
 
 def get_advanced_metrics(assessor=None, mes_distribuicao=None, data_inicio=None, data_fim=None, status=None, numero_processo=None):
-    """
-    Calcula métricas avançadas sobre processos e andamentos.
-    """
+
     queryset = Processo.objects.all()
 
     # Aplica filtros opcionais

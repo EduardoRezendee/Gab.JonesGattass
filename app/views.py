@@ -1,26 +1,22 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
+from django.core.cache import cache
+from django.db.models import Count, Q
+from django.http import JsonResponse
 
 # MODELS
 from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento
 from accounts.models import UserProfile
-from django.db.models import Count
-# MÉTRICAS E GAMIFICAÇÃO (exemplos, ajuste se seus imports forem diferentes)
+
+# MÉTRICAS E GAMIFICAÇÃO
 from .metrics import (
     get_process_metrics,
     get_process_gamification_metrics,
     get_top_users_by_xp,
-    get_pending_and_concluded_by_assessor,         # <- Funções de exemplo
+    get_pending_and_concluded_by_assessor,
     get_daily_entries_and_exits_by_assessor
 )
-
-# IMPORTAMOS BIBLIOTECAS DO PLOTLY
-import plotly.offline as pyo
-import plotly.graph_objs as go
-from django.core.cache import cache
-from django.utils import timezone
-
 
 @login_required(login_url='login')
 def home(request):
@@ -57,54 +53,6 @@ def home(request):
     # Usar datetime aware completo
     hoje = timezone.now()  # Mantém o fuso horário
 
-    # Função auxiliar para gerar gráficos gerais (com cache)
-    def generate_performance_charts():
-        cache_key_pc = 'plot_div_pc'
-        cache_key_es = 'plot_div_es'
-        plot_div_pc = cache.get(cache_key_pc)
-        plot_div_es = cache.get(cache_key_es)
-
-        if not plot_div_pc or not plot_div_es:
-            data_list = get_pending_and_concluded_by_assessor()
-            if data_list:
-                assessores = [item['assessor'] for item in data_list]
-                pendentes = [item['pendentes'] for item in data_list]
-                concluidos = [item['concluidos'] for item in data_list]
-                trace_pend = go.Bar(x=assessores, y=pendentes, name='Pendentes', marker_color='#EF4444')
-                trace_conc = go.Bar(x=assessores, y=concluidos, name='Concluídos', marker_color='#10B981')
-                layout_pc = go.Layout(
-                    title='Pendentes vs. Concluídos por Assessor',
-                    xaxis=dict(title='Assessor', tickangle=-45),
-                    yaxis=dict(title='Quantidade'),
-                    barmode='group',
-                    template='plotly_white',
-                    height=400
-                )
-                fig_pc = go.Figure(data=[trace_pend, trace_conc], layout=layout_pc)
-                plot_div_pc = pyo.plot(fig_pc, auto_open=False, output_type='div')
-                cache.set(cache_key_pc, plot_div_pc, timeout=3600)
-
-            es_data = get_daily_entries_and_exits_by_assessor()
-            if es_data['dias']:
-                dias = [d.strftime("%d/%m/%Y") for d in es_data['dias']]
-                entradas_totais = [sum(es_data['entradas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
-                saidas_totais = [sum(es_data['saidas'].get((u, d), 0) for u in es_data['assessores']) for d in es_data['dias']]
-                trace_ent = go.Bar(x=dias, y=entradas_totais, name='Entradas', marker_color='#3B82F6')
-                trace_sai = go.Bar(x=dias, y=saidas_totais, name='Saídas', marker_color='#F59E0B')
-                layout_es = go.Layout(
-                    title='Entradas vs. Saídas (Últimos 7 Dias)',
-                    xaxis=dict(title='Data', tickangle=-45),
-                    yaxis=dict(title='Quantidade'),
-                    barmode='group',
-                    template='plotly_white',
-                    height=400
-                )
-                fig_es = go.Figure(data=[trace_ent, trace_sai], layout=layout_es)
-                plot_div_es = pyo.plot(fig_es, auto_open=False, output_type='div')
-                cache.set(cache_key_es, plot_div_es, timeout=3600)
-
-        return plot_div_pc, plot_div_es
-
     # Métricas diárias
     revisoes_hoje = ProcessoAndamento.objects.filter(
         fase__fase__in=["Revisão", "Revisão Desa"],
@@ -116,24 +64,6 @@ def home(request):
         dt_conclusao__date=hoje.date(),  # Extrai apenas a data no banco
         status__status="Concluído"
     ).values('processo').distinct().count()
-
-    # Gráfico de Revisões Hoje
-    trace_revisoes_hoje = go.Bar(
-        x=["Colocados em Revisão", "Concluídos Revisão"],
-        y=[revisoes_hoje, concluidos_revisao_hoje],
-        marker_color=['#3B82F6', '#10B981'],
-        text=[revisoes_hoje, concluidos_revisao_hoje],
-        textposition='auto'
-    )
-    layout_revisoes_hoje = go.Layout(
-        title=f'Revisões Hoje ({hoje.strftime("%d/%m/%Y")})',
-        yaxis=dict(title='Quantidade'),
-        barmode='group',
-        template='plotly_white',
-        height=300
-    )
-    fig_revisoes_hoje = go.Figure(data=[trace_revisoes_hoje], layout=layout_revisoes_hoje)
-    plot_div_revisoes_hoje = pyo.plot(fig_revisoes_hoje, auto_open=False, output_type='div')
 
     # Métricas gerais (com cache)
     cache_key_metrics = 'general_metrics'
@@ -157,77 +87,6 @@ def home(request):
 
     total_pendentes = general_metrics['total_pendentes']
     processos_por_fase = general_metrics['processos_por_fase']
-
-    # Gráfico de Total Pendentes e Por Fase
-    fases_nomes = [f['fase__fase'] for f in processos_por_fase]
-    fases_quantidades = [f['quantidade'] for f in processos_por_fase]
-    trace_fases = go.Bar(x=fases_nomes, y=fases_quantidades, name='Por Fase', marker_color='#3B82F6', text=fases_quantidades, textposition='auto')
-    trace_total = go.Bar(x=['Total Pendentes'], y=[total_pendentes], name='Total Pendentes', marker_color='#EF4444', text=[total_pendentes], textposition='auto')
-    layout_fases = go.Layout(
-        title='Total de Processos Pendentes e Por Fase',
-        yaxis=dict(title='Quantidade'),
-        barmode='group',
-        template='plotly_white',
-        height=400
-    )
-    fig_fases = go.Figure(data=[trace_fases, trace_total], layout=layout_fases)
-    plot_div_fases = pyo.plot(fig_fases, auto_open=False, output_type='div')
-
-    # Gráfico: Entradas e Saídas por Assessor Hoje
-    entradas_hoje = (
-        Processo.objects.filter(data_dist__date=hoje.date())  # Extrai apenas a data no banco
-        .values('usuario__first_name', 'usuario__last_name')
-        .annotate(quantidade=Count('id'))
-    )
-    saidas_hoje = (
-        Processo.objects.filter(dt_conclusao__date=hoje.date(), concluido=True)  # Extrai apenas a data no banco
-        .values('usuario__first_name', 'usuario__last_name')
-        .annotate(quantidade=Count('id'))
-    )
-    assessores = UserProfile.objects.filter(funcao="Assessor(a)").select_related('user')
-    assessores_nomes = [f"{a.user.first_name} {a.user.last_name}" for a in assessores]
-    entradas_dict = {f"{e['usuario__first_name']} {e['usuario__last_name']}": e['quantidade'] for e in entradas_hoje}
-    saidas_dict = {f"{s['usuario__first_name']} {s['usuario__last_name']}": s['quantidade'] for s in saidas_hoje}
-    entradas_vals = [entradas_dict.get(nome, 0) for nome in assessores_nomes]
-    saidas_vals = [saidas_dict.get(nome, 0) for nome in assessores_nomes]
-
-    trace_ent_assessor = go.Bar(x=assessores_nomes, y=entradas_vals, name='Entradas', marker_color='#3B82F6', text=entradas_vals, textposition='auto')
-    trace_sai_assessor = go.Bar(x=assessores_nomes, y=saidas_vals, name='Saídas', marker_color='#F59E0B', text=saidas_vals, textposition='auto')
-    layout_es_assessor = go.Layout(
-        title=f'Entradas e Saídas por Assessor Hoje ({hoje.strftime("%d/%m/%Y")})',
-        xaxis=dict(title='Assessor', tickangle=-45),
-        yaxis=dict(title='Quantidade'),
-        barmode='group',
-        template='plotly_white',
-        height=400
-    )
-    fig_es_assessor = go.Figure(data=[trace_ent_assessor, trace_sai_assessor], layout=layout_es_assessor)
-    plot_div_es_assessor_hoje = pyo.plot(fig_es_assessor, auto_open=False, output_type='div')
-
-    # Gráfico: Quantidade de Processos por Espécie (com cache)
-    cache_key_especies = 'processos_por_especie'
-    processos_por_especie = cache.get(cache_key_especies)
-    if not processos_por_especie:
-        processos_por_especie = (
-            Processo.objects.filter(concluido=False)
-            .values('especie__especie')
-            .annotate(quantidade=Count('id'))
-            .order_by('especie__especie')
-        )
-        cache.set(cache_key_especies, processos_por_especie, timeout=3600)
-
-    especies_nomes = [e['especie__especie'] if e['especie__especie'] else "Sem Espécie" for e in processos_por_especie]
-    especies_quantidades = [e['quantidade'] for e in processos_por_especie]
-    trace_especies = go.Bar(x=especies_nomes, y=especies_quantidades, marker_color='#10B981', text=especies_quantidades, textposition='auto')
-    layout_especies = go.Layout(
-        title='Quantidade de Processos Pendentes por Espécie',
-        xaxis=dict(title='Espécie', tickangle=-45),
-        yaxis=dict(title='Quantidade'),
-        template='plotly_white',
-        height=400
-    )
-    fig_especies = go.Figure(data=[trace_especies], layout=layout_especies)
-    plot_div_especies = pyo.plot(fig_especies, auto_open=False, output_type='div')
 
     # VISÃO DO REVISOR(A)
     if is_revisor:
@@ -320,7 +179,6 @@ def home(request):
                     'data_envio_revisao_desa': ultimo_andamento.dt_criacao,
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
-        plot_div_pc, plot_div_es = generate_performance_charts()
 
     # VISÃO DO CHEFE DE GABINETE
     elif is_chefe:
@@ -331,7 +189,6 @@ def home(request):
             'processos_pendentes': processos_pendentes,
             'processos_concluidos': processos_concluidos
         })
-        plot_div_pc, plot_div_es = generate_performance_charts()
 
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
@@ -342,11 +199,6 @@ def home(request):
         ).select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
         if numero_processo:
             processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
-        
-        comentarios_dict = {
-            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
-            for p in processos_nao_concluidos
-        }
 
     # Processos detalhados para usuários comuns
     processos_detalhados = []
@@ -365,6 +217,11 @@ def home(request):
         if numero_processo:
             processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
 
+        comentarios_dict = {
+            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
+            for p in processos_nao_concluidos
+        }
+
         for processo in processos_nao_concluidos:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
             if ultimo_andamento and processo.pk:
@@ -381,9 +238,7 @@ def home(request):
                     'data_dist': processo.data_dist,
                     'dias_no_gabinete': processo.dias_no_gabinete() or 0,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
-                    'comentarios': ComentarioProcesso.objects.filter(processo=processo).values(
-                        'texto', 'data_criacao', 'usuario__first_name', 'usuario__last_name'
-                    )
+                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios_dict.get(processo.pk, [])]
                 })
 
         processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
@@ -470,3 +325,123 @@ def home(request):
     }
 
     return render(request, 'home.html', context)
+
+# Endpoints para Chart.js
+def get_pending_concluded_data(request):
+    data = get_pending_and_concluded_by_assessor()
+    return JsonResponse(data)
+
+def get_entries_exits_data(request):
+    data = get_daily_entries_and_exits_by_assessor()
+    return JsonResponse(data)
+
+def get_revisoes_hoje_data(request):
+    hoje = timezone.now().date()
+    revisoes_hoje = ProcessoAndamento.objects.filter(
+        fase__fase__in=["Revisão", "Revisão Desa"],
+        dt_criacao__date=hoje
+    ).values('processo').distinct().count()
+
+    concluidos_revisao_hoje = ProcessoAndamento.objects.filter(
+        fase__fase__in=["Revisão", "Revisão Desa"],
+        dt_conclusao__date=hoje,
+        status__status="Concluído"
+    ).values('processo').distinct().count()
+
+    data = {
+        'labels': ["Colocados em Revisão", "Concluídos Revisão"],
+        'datasets': [{
+            'label': 'Revisões Hoje',
+            'data': [revisoes_hoje, concluidos_revisao_hoje],
+            'backgroundColor': ['#3B82F6', '#10B981']
+        }]
+    }
+    return JsonResponse(data)
+
+def get_fases_data(request):
+    total_pendentes = Processo.objects.filter(concluido=False).count()
+    processos_por_fase = (
+        ProcessoAndamento.objects.filter(
+            processo__concluido=False,
+            status__status__in=["Não iniciado", "Em andamento"]
+        )
+        .values('fase__fase')
+        .annotate(quantidade=Count('processo', distinct=True))
+        .order_by('fase__fase')
+    )
+
+    fases_nomes = [f['fase__fase'] for f in processos_por_fase]
+    fases_quantidades = [f['quantidade'] for f in processos_por_fase]
+
+    data = {
+        'labels': fases_nomes + ['Total Pendentes'],
+        'datasets': [
+            {
+                'label': 'Por Fase',
+                'data': fases_quantidades + [total_pendentes],
+                'backgroundColor': ['#3B82F6'] * len(fases_nomes) + ['#EF4444']
+            }
+        ]
+    }
+    return JsonResponse(data)
+
+def get_es_assessor_hoje_data(request):
+    hoje = timezone.now().date()
+    entradas_hoje = (
+        Processo.objects.filter(data_dist__date=hoje)
+        .values('usuario__first_name', 'usuario__last_name')
+        .annotate(quantidade=Count('id'))
+    )
+    saidas_hoje = (
+        Processo.objects.filter(dt_conclusao__date=hoje, concluido=True)
+        .values('usuario__first_name', 'usuario__last_name')
+        .annotate(quantidade=Count('id'))
+    )
+    assessores = UserProfile.objects.filter(funcao="Assessor(a)").select_related('user')
+    assessores_nomes = [f"{a.user.first_name} {a.user.last_name}" for a in assessores]
+    entradas_dict = {f"{e['usuario__first_name']} {e['usuario__last_name']}": e['quantidade'] for e in entradas_hoje}
+    saidas_dict = {f"{s['usuario__first_name']} {s['usuario__last_name']}": s['quantidade'] for s in saidas_hoje}
+    entradas_vals = [entradas_dict.get(nome, 0) for nome in assessores_nomes]
+    saidas_vals = [saidas_dict.get(nome, 0) for nome in assessores_nomes]
+
+    data = {
+        'labels': assessores_nomes,
+        'datasets': [
+            {
+                'label': 'Entradas',
+                'data': entradas_vals,
+                'backgroundColor': '#3B82F6'
+            },
+            {
+                'label': 'Saídas',
+                'data': saidas_vals,
+                'backgroundColor': '#F59E0B'
+            }
+        ]
+    }
+    return JsonResponse(data)
+
+def get_especies_data(request):
+    cache_key_especies = 'processos_por_especie'
+    processos_por_especie = cache.get(cache_key_especies)
+    if not processos_por_especie:
+        processos_por_especie = (
+            Processo.objects.filter(concluido=False)
+            .values('especie__especie')
+            .annotate(quantidade=Count('id'))
+            .order_by('especie__especie')
+        )
+        cache.set(cache_key_especies, processos_por_especie, timeout=3600)
+
+    especies_nomes = [e['especie__especie'] if e['especie__especie'] else "Sem Espécie" for e in processos_por_especie]
+    especies_quantidades = [e['quantidade'] for e in processos_por_especie]
+
+    data = {
+        'labels': especies_nomes,
+        'datasets': [{
+            'label': 'Processos por Espécie',
+            'data': especies_quantidades,
+            'backgroundColor': '#10B981'
+        }]
+    }
+    return JsonResponse(data)
