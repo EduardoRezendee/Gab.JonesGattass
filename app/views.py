@@ -182,14 +182,47 @@ def home(request):
 
     # VISÃO DO CHEFE DE GABINETE
     elif is_chefe:
-        processos_pendentes = Processo.objects.filter(concluido=False).count()
-        processos_concluidos = Processo.objects.filter(concluido=True).count()
-        andamento_metrics.append({
-            'info': "Visão do Chefe de Gabinete",
-            'processos_pendentes': processos_pendentes,
-            'processos_concluidos': processos_concluidos
-        })
+        # Não é necessário calcular dados aqui para os gráficos, pois são alimentados por endpoints AJAX
+        andamento_metrics = []  # Mantido vazio para consistência, caso seja usado em outro lugar
 
+        # Buscar os 10 processos mais antigos não concluídos com base no campo 'antigo'
+        processos_mais_antigos = Processo.objects.filter(
+            concluido=False,  # Garante que apenas processos não concluídos sejam considerados
+            antigo__isnull=False  # Garante que só pegamos processos com 'antigo' preenchido
+        ).select_related('especie', 'usuario').order_by('antigo')[:10]  # Ordena por 'antigo' (mais antigo primeiro)
+
+        # Preparar lista detalhada dos processos mais antigos
+        processos_antigos_detalhados = []
+        for processo in processos_mais_antigos:
+            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            dias_no_gabinete = (hoje - processo.antigo).days if processo.antigo else 0
+            processos_antigos_detalhados.append({
+                'numero_processo': processo.numero_processo,
+                'especie': processo.especie.especie if processo.especie else "Sem espécie",
+                'data_entrada_gabinete': processo.antigo,
+                'dias_no_gabinete': dias_no_gabinete,
+                'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
+                'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
+            })
+
+        # Buscar todos os processos não concluídos com espécie "Liminar"
+        processos_liminares = Processo.objects.filter(
+            concluido=False,
+            especie__especie="Liminar"  # Filtra por espécie "Liminar"
+        ).select_related('especie', 'usuario').order_by('antigo')  # Ordena por 'antigo'
+
+        # Preparar lista detalhada dos processos liminares
+        processos_liminares_detalhados = []
+        for processo in processos_liminares:
+            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            dias_no_gabinete = (hoje - processo.data_dist).days if processo.data_dist else 0
+            processos_liminares_detalhados.append({
+                'numero_processo': processo.numero_processo,
+                'data_entrada_gabinete': processo.data_dist,
+                'dias_no_gabinete': dias_no_gabinete,
+                'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
+                'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
+            })
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
         numero_processo = request.GET.get('numero_processo', '').strip()
@@ -322,6 +355,8 @@ def home(request):
         'concluidos_revisao_hoje': concluidos_revisao_hoje,
         'total_pendentes': total_pendentes,
         'processos_por_fase': processos_por_fase,
+        'processos_antigos_detalhados': processos_antigos_detalhados if is_chefe else [],
+        'processos_liminares_detalhados': processos_liminares_detalhados if is_chefe else [],  # Adicionado aqui
     }
 
     return render(request, 'home.html', context)
@@ -445,3 +480,25 @@ def get_especies_data(request):
         }]
     }
     return JsonResponse(data)
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+import os
+
+@login_required
+def change_profile_photo(request):
+    if request.method == 'POST':
+        if 'photo' in request.FILES:
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            # Deletar a foto antiga, se existir
+            if user_profile.photo and os.path.isfile(user_profile.photo.path):
+                os.remove(user_profile.photo.path)
+            # Salvar a nova foto
+            user_profile.photo = request.FILES['photo']
+            user_profile.save()
+            messages.success(request, 'Foto de perfil atualizada com sucesso!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Por favor, selecione uma imagem.')
+    return render(request, 'change_profile_photo.html', {'user_profile': request.user.profile})

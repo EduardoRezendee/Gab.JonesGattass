@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %} <!-- Adicionado para caso você use static files no futuro -->
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white text-center">
+            <h2 class="mb-0">Trocar Foto de Perfil</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="profilePhotoForm">
+                {% csrf_token %}
+
+                <!-- Preview da Foto Atual (se existir) -->
+                <div class="text-center mb-4">
+                    {% if user_profile.photo %}
+                        <img src="{{ user_profile.photo.url }}" alt="Foto Atual" class="rounded-circle img-thumbnail" id="currentPhoto" style="max-width: 150px; max-height: 150px;">
+                        <p class="text-muted mt-2">Foto atual do perfil</p>
+                    {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                            <i class="bi bi-person-circle text-white fs-1"></i>
+                        </div>
+                        <p class="text-muted mt-2">Nenhuma foto atual</p>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Upload -->
+                <div class="mb-3">
+                    <label for="photo" class="form-label fw-bold">Nova Foto</label>
+                    <input type="file" class="form-control" id="photo" name="photo" accept="image/*" required>
+                    <small class="form-text text-muted">Formato suportado: JPG, PNG, GIF. Tamanho máximo: 5MB.</small>
+                </div>
+
+                <!-- Preview da Nova Foto -->
+                <div class="text-center mb-4" id="previewContainer" style="display: none;">
+                    <img src="" alt="Pré-visualização" class="rounded-circle img-thumbnail" id="photoPreview" style="max-width: 150px; max-height: 150px;">
+                    <p class="text-muted mt-2">Pré-visualização da nova foto</p>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary" id="saveButton">Salvar</button>
+                    <a href="{% url 'home' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+
+            <!-- Mensagens de Feedback -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Script para Preview da Imagem -->
+<script>
+    document.getElementById('photo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('photoPreview');
+        const previewContainer = document.getElementById('previewContainer');
+        const saveButton = document.getElementById('saveButton');
+
+        if (file) {
+            // Verifica o tamanho do arquivo (5MB = 5 * 1024 * 1024 bytes)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('O arquivo excede o limite de 5MB. Por favor, escolha uma imagem menor.');
+                e.target.value = ''; // Limpa o input
+                return;
+            }
+
+            // Verifica o tipo de arquivo
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Por favor, selecione um arquivo de imagem válido (JPG, PNG ou GIF).');
+                e.target.value = ''; // Limpa o input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.style.display = 'none';
+            preview.src = '';
+        }
+    });
+</script>
+
+<style>
+    /* Estilo adicional para melhor aparência */
+    .card-header {
+        border-bottom: none;
+    }
+    .img-thumbnail {
+        border: 2px solid #dee2e6;
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+</style>
+{% endblock %}

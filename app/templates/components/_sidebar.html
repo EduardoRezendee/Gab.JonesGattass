@@ -26,26 +26,27 @@
           </a>
       </li>  
 
-      <!-- Perfil e Configurações -->
-      <li class="nav-item mt-auto">
-          <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              {% if request.user.profile.photo %}
-              <img src="{{ request.user.profile.photo.url }}" alt="Perfil" class="rounded-circle" style="width: 30px; height: 30px;">
-              {% else %}
-              <i class="bi bi-person-circle fs-4"></i>
-              {% endif %}
-              <span class="nav-text">{{ request.user.first_name }}</span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><a class="dropdown-item" href="{% url 'password_change' %}">Trocar Senha</a></li>
-              <li>
-                  <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-link text-decoration-none w-100 text-start">Sair</button>
-                  </form>
-              </li>
-          </ul>
-      </li>
+    <!-- Perfil e Configurações -->
+    <li class="nav-item mt-auto">
+      <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          {% if request.user.profile.photo %}
+          <img src="{{ request.user.profile.photo.url }}" alt="Perfil" class="rounded-circle" style="width: 30px; height: 30px;">
+          {% else %}
+          <i class="bi bi-person-circle fs-4"></i>
+          {% endif %}
+          <span class="nav-text">{{ request.user.first_name }}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+          <li><a class="dropdown-item" href="{% url 'change_profile_photo' %}">Trocar Foto</a></li>
+          <li><a class="dropdown-item" href="{% url 'password_change' %}">Trocar Senha</a></li>
+          <li>
+              <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-link text-decoration-none w-100 text-start">Sair</button>
+              </form>
+          </li>
+      </ul>
+    </li>
   </ul>
 </div>
 

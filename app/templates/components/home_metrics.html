@@ -151,320 +151,245 @@
     </div>
   </div>
 
-    {% include 'components/meudia.html' %}
+  {% include 'components/meudia.html' %}
 
-    <!-- Visão da Desembargadora -->
-    {% if is_desembargadora %}
+  <!-- Visão da Desembargadora -->
+  {% if is_desembargadora %}
     {% include 'components/desa.html' %} 
-    {% elif is_revisor %}
+  {% elif is_revisor %}
     {% include 'components/revisor.html' %} 
+  <!-- Visão do Chefe de Gabinete -->
+  {% elif is_chefe %}
+  <div class="container mt-5">
+    <h2 class="mb-4 text-center" style="color: #083464; font-weight: 700; position: relative;">
+      <i class="bi bi-graph-up me-2" style="color: #083464;"></i>
+      Chefe de Gabinete
+      <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
+    </h2>
 
-    <!-- Visão de Usuários Comuns -->
-    {% else %}
-    <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%; background-color: #CFE2FF;">
-      <div class="accordion-item">
-        <h2 class="accordion-header">
-          <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProcessos" aria-expanded="true"
-                  style="background-color: #F9FAFB; color: #1F2937;">
-            <span style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #CFE2FF; border-radius: 2px;"></span>
-            <i class="bi bi-list-task me-2" style="color: #083464;"></i> Meus Processos
-          </button>
-        </h2>
-        <div id="collapseProcessos" class="accordion-collapse collapse show">
-          <div class="accordion-body">
-            <!-- Campo de Pesquisa -->
-            <div class="mb-4">
-              <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center">
-                <div class="input-group" style="max-width: 500px;">
-                  <input type="text" name="numero_processo" class="form-control shadow-sm" 
-                         placeholder="Digite o número do processo..." 
-                         value="{{ request.GET.numero_processo|default:'' }}"
-                         style="border-radius: 20px 0 0 20px; border-color: #083464; color: #1F2937;">
-                  <button type="submit" class="btn shadow-sm" 
-                          style="background-color: #083464; color: white; border: none; border-radius: 0;">
-                    <i class="bi bi-search" style="color: white;"></i>
-                  </button>
-                  <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm" 
-                     style="border-radius: 0 20px 20px 0; margin-left: -1px; border-left: none;">
-                    Limpar
-                  </a>
-                </div>
-              </form>
-            </div>
-          
-            {% if fases and fases|length > 0 %}
-              <!-- Nav Tabs por Fase Atual -->
-              <ul class="nav nav-tabs mb-4" id="faseTabs" role="tablist" style="justify-content: center;">
-                {% for fase, processos in fases %}
-                  <li class="nav-item" role="presentation">
-                    <button class="nav-link {% if fase == active_tab %}active{% endif %} text-dark"
-                            id="tab-{{ fase|slugify }}"
-                            data-bs-toggle="tab"
-                            data-bs-target="#pane-{{ fase|slugify }}"
-                            type="button"
-                            role="tab"
-                            aria-controls="pane-{{ fase|slugify }}"
-                            aria-selected="{% if fase == active_tab %}true{% else %}false{% endif %}"
-                            style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: {% if fase == active_tab %}rgba(0, 0, 0, 0.00){% endif %}; border-radius: 0.25rem 0.25rem 0 0; color: #1F2937;">
-                      {{ fase }} <span class="badge" style="background-color: #808000; color: white;">{{ processos|length }}</span>
-                    </button>
-                  </li>
-                {% endfor %}
-              </ul>
+    <!-- Seção de Gráficos -->
+    <div class="row g-4">
+      <!-- Revisões Hoje (Barra simples) -->
+      <div class="col-12 col-md-6">
+        <div class="card shadow-lg chart-container">
+          <canvas id="revisoesHojeChart" style="max-height: 250px;"></canvas>
+        </div>
+      </div>
 
-              <!-- Conteúdo das Abas -->
-              <div class="tab-content" id="faseTabContent">
-                {% for fase, processos in fases %}
-                  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
-                       id="pane-{{ fase|slugify }}"
-                       role="tabpanel"
-                       aria-labelledby="tab-{{ fase|slugify }}"
-                       style="background-color: #ffffff00;">
-                    <div class="list-group">
-                      {% for processo in processos %}
-                        <div id="processo-{{ processo.pk }}"
-                             class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative"
-                             style="display: flex; flex-direction: column; gap: 10px; background-color: rgba(223, 222, 222, 0);">
-                          <!-- Listras verticais para destaque -->
-                          <span style="
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            width: 5px;
-                            height: 100%;
-                            background-color: {% if processo.especie == 'Liminar' %}#EF4444{% else %}#083464{% endif %};
-                            border-radius: 2px;">
-                          </span>
+      <!-- Entradas e Saídas por Assessor Hoje (Barras agrupadas) -->
+      <div class="col-12 col-md-6">
+        <div class="card shadow-lg chart-container">
+          <canvas id="esAssessorHojeChart" style="max-height: 250px;"></canvas>
+        </div>
+      </div>
 
-                          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                            <!-- Informações à esquerda -->
-                            <div class="flex-grow-1">
-                              <p class="mb-1 d-flex align-items-center" style="color: #1F2937;">
-                                <i class="bi bi-file-earmark-text me-2" style="color: #808000;"></i>
-                                <strong style="color: #1F2937;">Processo:</strong>
-                                <span id="numeroProcesso-{{ processo.pk }}" class="ms-1" style="color: #1F2937;">{{ processo.numero_processo }}</span>
-                                <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
-                                   onclick="copiarNumero('{{ processo.pk }}')"
-                                   title="Copiar Número"
-                                   style="cursor: pointer; color: #083464;"></i>
-                                {% if processo.pk in tarefas_ids %}
-                                  <i class="bi bi-sun-fill text-warning ms-3"
-                                     title="Adicionado ao Meu Dia"
-                                     style="font-size: 1.3rem; color: #F59E0B;"></i>
-                                {% endif %}
-                              </p>
-                              <p class="mb-1" style="color: #1F2937;">
-                                <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
-                                <strong style="color: #1F2937;">Espécie:</strong>
-                                <span class="ms-1 {% if processo.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
-                                  {{ processo.especie }}
-                                </span>
-                              </p>
-                              <p class="mb-1" style="color: #1F2937;">
-                                <i class="bi bi-calendar2-date me-2" style="color: #083464;"></i>
-                                <strong style="color: #1F2937;">Data Distribuição:</strong>
-                                <span class="ms-1" style="color: #1F2937;">{{ processo.data_dist|date:"d/m/Y" }}</span>
-                              </p>
-                              <p class="mb-1" style="color: #1F2937;">
-                                <i class="bi bi-clock me-2" style="color: #083464;"></i>
-                                <strong style="color: #1F2937;">Dias no Gabinete:</strong>
-                                <span class="ms-1" style="color: #1F2937;">{{ processo.dias_no_gabinete }}</span>
-                              </p>
-                            </div>
-                            <!-- Botões à direita -->
-                            <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
-                              <!-- Botão Lembrete -->
-                              <button type="button" class="btn btn-sm toggle-comments shadow-sm"
-                                      data-processo-id="{{ processo.pk|default_if_none:'' }}"
-                                      style="background-color: #02448a; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
-                              </button>
-                              <!-- Botão Remover/Adicionar do Meu Dia -->
-                              {% if processo.pk and processo.pk|is_integer and processo.pk in tarefas_ids %}
-                                <form method="post" action="{% url 'remover_tarefa' processo.pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm shadow-sm d-flex align-items-center gap-1 px-3"
-                                          style="background-color: #F59E0B; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                    <i class="bi bi-dash me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1" style="color: white;"></i>
-                                  </button>
-                                </form>
-                              {% elif processo.pk and processo.pk|is_integer %}
-                                <form method="post" action="{% url 'adicionar_tarefa' processo.pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm shadow-sm"
-                                          title="Adicionar ao Meu Dia"
-                                          style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                    <i class="bi bi-plus me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1" style="color: white;"></i>
-                                  </button>
-                                </form>
-                              {% else %}
-                                <button class="btn btn-sm btn-secondary" disabled title="Processo inválido ou não encontrado">
-                                  <i class="bi bi-exclamation-triangle"></i>
-                                </button>
-                              {% endif %}
-                            </div>
-                          </div>
-                          <!-- Ações na base -->
-                          <div class="d-flex justify-content-between align-items-center mt-auto">
-                            <div class="d-flex gap-2">
-                              <!-- Link do Documento (se existir) -->
-                              {% if processo.andamento_link_doc %}
-                                <a href="{{ processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
-                                   style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
-                                  <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
-                                </a>
-                              {% endif %}
-                              <button type="button" class="btn btn-sm shadow-sm"
-                                      data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ processo.andamento_pk }}"
-                                      title="Editar" style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-pencil" style="color: white;"></i>
-                              </button>
-                            </div>
-                            <div class="d-flex gap-2 align-items-center">
-                              <!-- Botões condicionais com base na fase atual -->
-                              {% if processo.fase_atual == 'Elaboração' %}
-                                <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="nova_fase" value="Revisão">
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                          onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
-                                          style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                    <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
-                                  </button>
-                                </form>
-                              {% elif processo.fase_atual == 'Correção' %}
-                                <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="nova_fase" value="Revisão">
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                          onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
-                                          style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                    <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
-                                  </button>
-                                </form>
-                              {% elif processo.fase_atual == 'Devolvido' %}
-                                <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="nova_fase" value="Revisão Desa">
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm shadow-sm"
-                                          onclick="return confirm('Tem certeza que deseja enviar para Revisão Desa?');"
-                                          style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                                    <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Desa
-                                  </button>
-                                </form>
-                              {% elif processo.fase_atual == 'L. PJE' %}
-                                <form method="post" action="{% url 'andamento_concluir' processo.andamento_pk %}" class="d-inline">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="origem" value="home">
-                                  <button type="submit" class="btn btn-sm shadow-sm"
-                                          onclick="return confirm('Tem certeza que deseja concluir este processo?');"
-                                          style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                                    <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
-                                  </button>
-                                </form>
-                              {% endif %}
-                              <!-- Link para detalhes -->
-                              <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}"
-                                 title="Ver detalhes"
-                                 class="text-decoration-none"
-                                 style="color: #1F2937;">
-                                <i class="bi bi-arrow-right {% if processo.especie == 'Liminar' %}text-danger{% else %}text-primary{% endif %}"
-                                   style="font-size: 1.5rem; color: #1F2937;"></i>
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Modal de Edição para este Andamento -->
-                        {% if processo.andamento_pk %}
-                        <div class="modal fade" id="editAndamentoModal{{ processo.andamento_pk }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ processo.andamento_pk }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content" style="border: 2px solid #807d6b;">
-                              <div class="modal-header" style="background: linear-gradient(135deg, #083464, #1E3A8A); color: white;">
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                              </div>
-                              <div class="modal-body" style="background-color: rgba(0, 0, 0, 0.05);">
-                                <form method="POST" action="{% url 'andamento_update' processo.andamento_pk %}">
-                                  {% csrf_token %}
-                                  <input type="hidden" name="origem" value="home">
-                                  <div class="mb-3">
-                                    <label for="link_doc_{{ processo.andamento_pk }}" class="form-label fw-semibold" style="color: #1F2937;">Link do Documento</label>
-                                    <input type="url" id="link_doc_{{ processo.andamento_pk }}" name="link_doc" class="form-control shadow-sm"
-                                           value="{{ processo.andamento_link_doc|default:'' }}" style="border-radius: 10px; border-color: #083464; color: #1F2937;">
-                                  </div>
-                                  <div class="modal-footer">
-                                    <button type="button" class="btn btn-outline-secondary shadow-sm"
-                                            data-bs-dismiss="modal" style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Cancelar</button>
-                                    <button type="submit" class="btn shadow-sm"
-                                            style="background: linear-gradient(135deg, #083464, #6B7280); color: white; border: none; border-radius: 20px;">
-                                      <i class="bi bi-save me-2" style="color: white;"></i> Salvar
-                                    </button>
-                                  </div>
-                                </form>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {% endif %}
-                        <!-- Caixa de Comentários Flutuante -->
-                        <div id="comment-box-{{ processo.pk }}"
-                             class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-                             style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
-                          <!-- Cabeçalho -->
-                          <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold m-0" style="color: #1F2937;">
-                              <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ processo.numero_processo }}
-                            </h6>
-                            <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
-                                    data-processo-id="{{ processo.pk }}"
-                                    style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
-                          </div>
-
-                          <!-- Histórico de Comentários -->
-                          <div id="comentarios-{{ processo.pk }}"
-                               class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
-                               style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
-                            {% for comentario in processo.comentarios %}
-                              <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #6B7280;">
-                                <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; border: 2px solid #083464;">
-                                <div class="w-100">
-                                  <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
-                                  <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                                  <p class="mb-0 small bg-light p-2 rounded" style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
-                                </div>
-                              </div>
-                            {% empty %}
-                              <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
-                            {% endfor %}
-                          </div>
-
-                          <!-- Formulário de Novo Comentário -->
-                          <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.pk }}" style="border-color: #6B7280;">
-                            {% csrf_token %}
-                            <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                                      placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
-                            <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
-                          </form>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <p class="text-muted text-center" style="font-style: italic; color: #4B5563;">Nenhum processo não concluído no momento.</p>
-            {% endif %}
-          </div>
+      <!-- Entradas vs. Saídas (Últimos 7 Dias) (Barras) -->
+      <div class="col-12">
+        <div class="card shadow-lg chart-container">
+          <canvas id="entriesExitsChart" style="max-height: 300px;"></canvas>
         </div>
       </div>
     </div>
+
+    <!-- Seção dos 10 Processos Mais Antigos -->
+    <div class="mt-5">
+      <h3 class="text-center" style="color: #083464; font-weight: 700;">10 Processos Mais Antigos no Gabinete</h3>
+      <div class="card shadow-lg mt-3">
+        <div class="card-body">
+          {% if processos_antigos_detalhados %}
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Número do Processo</th>
+                    <th>Espécie</th>
+                    <th>Data de Entrada no Gabinete</th>
+                    <th>Dias no Gabinete</th>
+                    <th>Fase Atual</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for processo in processos_antigos_detalhados %}
+                    <tr>
+                      <td>{{ processo.numero_processo }}</td>
+                      <td>{{ processo.especie }}</td>
+                      <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
+                      <td>{{ processo.dias_no_gabinete }}</td>
+                      <td>{{ processo.fase_atual }}</td>
+                      <td>{{ processo.usuario }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center">Nenhum processo antigo encontrado.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção de Todos os Processos Liminares -->
+    <div class="mt-5">
+      <h3 class="text-center" style="color: #083464; font-weight: 700;">Todos os Processos Liminares Não Concluídos</h3>
+      <div class="card shadow-lg mt-3">
+        <div class="card-body">
+          {% if processos_liminares_detalhados %}
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Número do Processo</th>
+                    <th>Data de Entrada no Gabinete</th>
+                    <th>Dias no Gabinete</th>
+                    <th>Fase Atual</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for processo in processos_liminares_detalhados %}
+                    <tr>
+                      <td>{{ processo.numero_processo }}</td>
+                      <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
+                      <td>{{ processo.dias_no_gabinete }}</td>
+                      <td>{{ processo.fase_atual }}</td>
+                      <td>{{ processo.usuario }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center">Nenhum processo liminar não concluído encontrado.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+    {% include 'components/comum.html' %} 
   {% endif %}
+
+  <!-- Dependências do Chart.js (adicione no final do template, antes do </body>) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+  <!-- Scripts dos Gráficos -->
+  <script>
+    Chart.register(ChartDataLabels);
+
+    // Gráfico Revisões Hoje (Colunas)
+    fetch("{% url 'get_revisoes_hoje_data' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
+    fetch("{% url 'get_entries_exits_data' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('entriesExitsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
+                        legend: { display: true },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Data' },
+                            ticks: { maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
+    fetch("{% url 'get_es_assessor_hoje_data' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
+                        legend: { display: true },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Assessor' },
+                            ticks: { maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        });
+  </script>
+</div>
 
   <!-- Script para Comentários e Depuração das Abas -->
   <script>

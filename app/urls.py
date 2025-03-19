@@ -27,6 +27,7 @@ urlpatterns = [
     path('es-assessor-hoje-data/', get_es_assessor_hoje_data, name='get_es_assessor_hoje_data'),
     path('especies-data/', get_especies_data, name='get_especies_data'),
     path('fases-data/', get_fases_data, name='get_fases_data'),
+    path('change-profile-photo/', views.change_profile_photo, name='change_profile_photo'),
 
 
 
