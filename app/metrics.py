@@ -222,3 +222,91 @@ def get_daily_entries_and_exits_by_assessor(days=7):
             }
         ]
     }
+
+
+from django.db.models import Count
+from django.utils import timezone
+from datetime import timedelta
+
+def get_user_weekly_productivity(user):
+    hoje = timezone.now().date()
+    inicio_semana = hoje - timedelta(days=6)
+
+    # Processos distribuídos por dia
+    distribuídos_qs = (
+        Processo.objects.filter(usuario=user, data_dist__gte=inicio_semana)
+        .annotate(dia=TruncDay('data_dist'))
+        .values('dia')
+        .annotate(quantidade=Count('id'))
+        .order_by('dia')
+    )
+    
+    # Processos concluídos por dia
+    concluídos_qs = (
+        Processo.objects.filter(usuario=user, concluido=True, dt_conclusao__gte=inicio_semana)
+        .annotate(dia=TruncDay('dt_conclusao'))
+        .values('dia')
+        .annotate(quantidade=Count('id'))
+        .order_by('dia')
+    )
+
+    dias = [inicio_semana + timedelta(days=x) for x in range(7)]
+    distribuídos_dict = {d['dia']: d['quantidade'] for d in distribuídos_qs}
+    concluídos_dict = {d['dia']: d['quantidade'] for d in concluídos_qs}
+
+    labels = [d.strftime("%d/%m") for d in dias]
+    distribuídos_data = [distribuídos_dict.get(d, 0) for d in dias]
+    concluídos_data = [concluídos_dict.get(d, 0) for d in dias]
+
+    # Soma total
+    total_distribuidos = sum(distribuídos_data)
+    total_concluidos = sum(concluídos_data)
+    saldo_semana = total_distribuidos - total_concluidos
+
+    return {
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Distribuídos',
+                'data': distribuídos_data,
+                'backgroundColor': '#3B82F6',
+            },
+            {
+                'label': 'Concluídos',
+                'data': concluídos_data,
+                'backgroundColor': '#10B981',
+            }
+        ],
+        # Adicionamos extras para exibir no front
+        'total_distribuidos': total_distribuidos,
+        'total_concluidos': total_concluidos,
+        'saldo_semana': saldo_semana
+    }
+
+
+def get_user_daily_productivity(user):
+    """
+    Retorna a produtividade diária do usuário (processos distribuídos e concluídos hoje) em formato para Chart.js.
+    """
+    hoje = timezone.now().date()
+
+    # Processos distribuídos hoje
+    distribuídos_hoje = Processo.objects.filter(
+        usuario=user, data_dist__date=hoje
+    ).count()
+
+    # Processos concluídos hoje
+    concluídos_hoje = Processo.objects.filter(
+        usuario=user, concluido=True, dt_conclusao__date=hoje
+    ).count()
+
+    return {
+        'labels': ['Distribuídos', 'Concluídos'],
+        'datasets': [
+            {
+                'label': 'Produtividade Hoje',
+                'data': [distribuídos_hoje, concluídos_hoje],
+                'backgroundColor': ['#3B82F6', '#10B981'],
+            }
+        ]
+    }

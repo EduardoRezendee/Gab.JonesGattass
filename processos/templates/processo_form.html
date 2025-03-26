@@ -1,78 +1,158 @@
-<!-- processo_form.html -->
-{% extends 'base.html' %}
+<!-- processo_create.html (template para Create) -->
+<form method="post" id="processoForm">
+    {% csrf_token %}
 
-{% block content %}
-<div class="container mt-4">
-    <!-- Título e Divisor -->
-    <div class="mb-4">
-        <h1 class="fw-bold" style="color: #083464; font-size: 1.5rem;">
-            <i class="bi bi-pencil-square me-2"></i> 
-            {% if form.instance.pk %}Editar Processo{% else %}Cadastrar Processo{% endif %}
-        </h1>
-        <hr style="height: 2px; background-color: #bea066; border: none; width: 50%;">
-    </div>
-
-    <!-- Card do Formulário -->
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
-            <form method="post" class="form">
-                {% csrf_token %}
-                <div class="row g-3">
-                    {% for field in form %}
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                            <div class="text-danger small mt-1">
-                                {{ field.errors }}
-                            </div>
-                            {% endif %}
-                        </div>
+    <div class="row g-3">
+        <!-- Número do Processo -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.numero_processo.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.numero_processo.label }}
+                </label>
+                {{ form.numero_processo }}
+                {% if form.numero_processo.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.numero_processo.errors }}
                     </div>
-                    {% endfor %}
-                </div>
-                <div class="mt-4 text-end">
-                    <button type="submit" class="btn text-white shadow-sm" style="background-color: #083464; border-color: #083464;">
-                        <i class="bi bi-save me-1"></i> 
-                        {% if form.instance.pk %}Atualizar{% else %}Cadastrar{% endif %} Processo
-                    </button>
-                </div>
-            </form>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    <!-- Botão Cancelar -->
-    <div class="mt-3 text-end">
-        <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm">
-            <i class="bi bi-arrow-left-circle me-1"></i> Cancelar e voltar para a lista
-        </a>
+        <!-- Data de Distribuição -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.data_dist.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.data_dist.label }}
+                </label>
+                {{ form.data_dist }}
+                {% if form.data_dist.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.data_dist.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Espécie -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.especie.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.especie.label }}
+                </label>
+                {{ form.especie }}
+                {% if form.especie.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.especie.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Usuário -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.usuario.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.usuario.label }}
+                </label>
+                {{ form.usuario }}
+                {% if form.usuario.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.usuario.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prazo -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.dt_prazo.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.dt_prazo.label }}
+                </label>
+                {{ form.dt_prazo }}
+                {% if form.dt_prazo.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.dt_prazo.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tipo -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.tipo.label }}
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.tipo.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Câmara -->
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="{{ form.camara.id_for_label }}" class="form-label fw-semibold" style="color: #083464;">
+                    {{ form.camara.label }}
+                </label>
+                {{ form.camara }}
+                {% if form.camara.errors %}
+                    <div class="text-danger small mt-1">
+                        {{ form.camara.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-check form-switch mb-3">
+              {{ form.despacho }}
+              <label class="form-check-label fw-semibold" for="{{ form.despacho.id_for_label }}" style="color: #083464;">
+                {{ form.despacho.label }}
+              </label>
+              {% if form.despacho.errors %}
+                <div class="text-danger small mt-1">
+                  {{ form.despacho.errors }}
+                </div>
+              {% endif %}
+            </div>
+
+        <!-- Prioridade Urgente (switch) -->
+        <div class="col-md-6">
+            <div class="form-check form-switch mb-3">
+            {{ form.prioridade_urgente }}
+            <label class="form-check-label fw-semibold" for="{{ form.prioridade_urgente.id_for_label }}" style="color: #083464;">
+                {{ form.prioridade_urgente.label }}
+            </label>
+            {% if form.prioridade_urgente.errors %}
+                <div class="text-danger small mt-1">
+                {{ form.prioridade_urgente.errors }}
+                </div>
+            {% endif %}
+            </div>
+        </div>
+    </div> <!-- row -->
+
+    <div class="mt-4 text-end">
+        <button type="submit" class="btn text-white shadow-sm"
+                style="background-color: #808000; border-color: #808000;">
+            <i class="bi bi-save me-1"></i> Cadastrar Processo
+        </button>
     </div>
-</div>
-<!-- Inicialização do Select2 -->
+</form>
+
 <script>
     $(document).ready(function() {
-        $('#id_usuario').select2({
-            placeholder: "Selecione os responsáveis",
-            allowClear: true
-        }); 
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
         var dataDistInput = document.getElementById("data_dist");
         if (dataDistInput) {
             var now = new Date();
-            
-            // Ajusta a hora para o fuso local corretamente
-            var offset = now.getTimezoneOffset() * 60000; 
+            var offset = now.getTimezoneOffset() * 60000;
             var localTime = new Date(now - offset);
-    
-            var formattedDateTime = localTime.toISOString().slice(0, 16); // Formato compatível com datetime-local
-            dataDistInput.value = formattedDateTime;
+            dataDistInput.value = localTime.toISOString().slice(0, 16);
         }
     });
-    </script>
-    
-    
-{% endblock %}
+</script>

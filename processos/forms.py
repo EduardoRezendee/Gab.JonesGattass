@@ -13,22 +13,26 @@ class ProcessoForm(forms.ModelForm):
     class Meta:
         model = Processo
         fields = [
-            'numero_processo', 'data_dist', 'especie', 'usuario', 'dt_prazo', 
-            'tipo', 'camara', 'dt_julgamento', 'resultado'
+            'numero_processo', 'data_dist', 'especie', 'usuario', 'dt_prazo',
+            'tipo', 'camara', 'dt_julgamento', 'resultado',
+            'despacho',              # <-- adicionado
+            'prioridade_urgente',    # <-- adicionado
         ]
         widgets = {
             'numero_processo': forms.TextInput(attrs={'class': 'form-control'}),
             'data_dist': forms.DateTimeInput(
                 attrs={'class': 'form-control', 'type': 'datetime-local'},
-                format='%Y-%m-%dT%H:%M'  # Formato correto para datetime-local
+                format='%Y-%m-%dT%H:%M'
             ),
             'especie': forms.Select(attrs={'class': 'form-control'}),
-            'usuario': forms.Select(attrs={'class': 'form-control select2'}),
+            'usuario': forms.Select(attrs={'class': 'form-control'}),
             'dt_prazo': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
             'tipo': forms.Select(attrs={'class': 'form-control'}),
             'camara': forms.Select(attrs={'class': 'form-control'}),
             'resultado': forms.Select(attrs={'class': 'form-control'}),
             'dt_julgamento': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
+            'despacho': forms.CheckboxInput(attrs={'class': 'form-check-input'}),           # <-- checkbox
+            'prioridade_urgente': forms.CheckboxInput(attrs={'class': 'form-check-input'}), # <-- checkbox
         }
         labels = {
             'numero_processo': 'Número do Processo',
@@ -40,7 +44,10 @@ class ProcessoForm(forms.ModelForm):
             'camara': 'Câmara',
             'resultado': 'Resultado',
             'dt_julgamento': 'Data do Julgamento',
+            'despacho': 'É despacho?',
+            'prioridade_urgente': 'Prioridade Urgente?',
         }
+
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)  # Recebe o usuário como argumento
@@ -73,9 +80,6 @@ from django import forms
 
 class ExcelUploadForm(forms.Form):
     arquivo = forms.FileField(label="Importar Planilha Excel")
-
-
-
 
 class AndamentoForm(forms.ModelForm):
     class Meta:

@@ -302,3 +302,121 @@
     </div>
   </div>
 </div>
+
+<!-- Gráfico de Produtividade Hoje (Fora do Accordion) -->
+{% if show_productivity_charts %}
+  <div class="charts-container mt-5 mx-auto" style="max-width: 100%;">
+    <h2 class="text-center mb-4 fw-bold" style="color: #083464; font-size: 1.75rem;">
+      <i class="bi bi-graph-up me-2" style="color: #808000;"></i> Minha Produtividade Hoje
+    </h2>
+    <div class="chart-row d-flex justify-content-center">
+      <!-- Gráfico de Produtividade Diária -->
+      <div class="chart shadow-lg p-4 rounded-3" style="max-width: 600px; background-color: #FFFFFF; border: 1px solid #E5E7EB;">
+        <h3 class="text-center mb-4 fw-semibold" style="color: #1F2937; font-size: 1.25rem;">
+          Produtividade Hoje
+        </h3>
+        <canvas id="dailyProductivityChart" style="max-height: 300px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estilos para o Gráfico -->
+  <style>
+    .charts-container {
+      padding: 20px;
+      background-color: #F9FAFB;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .chart {
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .chart:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .chart {
+        max-width: 100%;
+      }
+    }
+  </style>
+
+  <!-- Script para o Gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Configuração global para o gráfico
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#4B5563';
+
+    // Gráfico de Produtividade Diária
+    fetch('/get_user_daily_productivity_data/')
+      .then(response => response.json())
+      .then(data => {
+        // Personalizar as cores e labels
+        data.datasets.forEach(dataset => {
+          dataset.backgroundColor = 'rgba(128, 128, 0, 0.7)';
+          dataset.borderColor = '#808000';
+          dataset.borderWidth = 2;
+          dataset.borderRadius = 5;
+          dataset.barThickness = 20;
+        });
+
+        const ctxDaily = document.getElementById('dailyProductivityChart').getContext('2d');
+        new Chart(ctxDaily, {
+          type: 'bar',
+          data: data,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: '#E5E7EB' },
+                ticks: { color: '#4B5563', font: { size: 12 } }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#4B5563', font: { size: 12 } }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: '#1F2937',
+                  font: { size: 14, weight: 'bold' }
+                }
+              },
+              tooltip: {
+                backgroundColor: '#808000',
+                titleColor: '#FFFFFF',
+                bodyColor: '#FFFFFF',
+                borderColor: '#6B7280',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 10
+              }
+            },
+            animation: {
+              duration: 1500,
+              easing: 'easeOutQuart'
+            }
+          }
+        });
+      })
+      .catch(error => console.error('Erro ao carregar dados de produtividade diária:', error));
+  </script>
+{% endif %}

@@ -79,6 +79,10 @@ class Processo(models.Model):
     dt_conclusao = models.DateTimeField(null=True, blank=True)
     antigo = models.DateTimeField(null=True, blank=True)
 
+    # Novos campos
+    despacho = models.BooleanField(default=False, verbose_name='É despacho?')
+    prioridade_urgente = models.BooleanField(default=False, verbose_name='Prioridade Urgente?')
+
     def dias_no_gabinete(self):
         """Calcula quantos dias o processo está no gabinete"""
         if self.antigo:
@@ -89,8 +93,9 @@ class Processo(models.Model):
         if self.especie and self.especie.especie == "Liminar":
             tipo_liminar, _ = Tipo.objects.get_or_create(tipo="Liminar")
             self.tipo = tipo_liminar
-        
+
         super().save(*args, **kwargs)
+
 
 
 

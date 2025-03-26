@@ -2,8 +2,7 @@ from django.urls import path
 from .views import (
     ProcessoListView, ProcessoCreateView, ProcessoUpdateView, ProcessoDeleteView,
     AndamentoListView, AndamentoCreateView, AndamentoUpdateView, AndamentoDeleteView, ProcessoDetailView, AndamentoIniciarView, AndamentoEnviarParaFaseView, AndamentoConcluirProcessoView
-, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView, gerar_pdf_produtividade)
-from .views import importar_processos
+, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView)
 
 urlpatterns = [
     # URLs para Processo
@@ -33,7 +32,4 @@ urlpatterns = [
 
     path("adicionar-comentario/<int:processo_id>/", adicionar_comentario, name="adicionar_comentario"),
 
-    path("importar_processos/", importar_processos, name="importar_processos"),
-
-    path("gerar-pdf/", gerar_pdf_produtividade, name="gerar_pdf"),
 ]

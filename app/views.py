@@ -15,7 +15,9 @@ from .metrics import (
     get_process_gamification_metrics,
     get_top_users_by_xp,
     get_pending_and_concluded_by_assessor,
-    get_daily_entries_and_exits_by_assessor
+    get_daily_entries_and_exits_by_assessor,
+    get_user_daily_productivity,
+    get_user_weekly_productivity
 )
 
 @login_required(login_url='login')
@@ -41,17 +43,9 @@ def home(request):
 
     # Inicializar variáveis
     andamento_metrics = []
-    plot_div_pc = None
-    plot_div_es = None
-    plot_div_revisoes_hoje = None
-    plot_div_fases = None
-    plot_div_es_assessor_hoje = None
-    plot_div_especies = None
     active_tab = None
     fases = None
-
-    # Usar datetime aware completo
-    hoje = timezone.now()  # Mantém o fuso horário
+    hoje = timezone.now()
 
     # Métricas diárias
     revisoes_hoje = ProcessoAndamento.objects.filter(
@@ -223,6 +217,7 @@ def home(request):
                 'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
             })
+
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
         numero_processo = request.GET.get('numero_processo', '').strip()
@@ -336,12 +331,6 @@ def home(request):
         'is_chefe': is_chefe,
         'is_assessor': is_assessor,
         'andamento_metrics': andamento_metrics,
-        'plot_div_pc': plot_div_pc,
-        'plot_div_es': plot_div_es,
-        'plot_div_revisoes_hoje': plot_div_revisoes_hoje,
-        'plot_div_fases': plot_div_fases,
-        'plot_div_es_assessor_hoje': plot_div_es_assessor_hoje,
-        'plot_div_especies': plot_div_especies,
         'process_metrics': process_metrics,
         'process_gamification': process_gamification,
         'top_users': top_users,
@@ -356,8 +345,12 @@ def home(request):
         'total_pendentes': total_pendentes,
         'processos_por_fase': processos_por_fase,
         'processos_antigos_detalhados': processos_antigos_detalhados if is_chefe else [],
-        'processos_liminares_detalhados': processos_liminares_detalhados if is_chefe else [],  # Adicionado aqui
+        'processos_liminares_detalhados': processos_liminares_detalhados if is_chefe else [],
     }
+
+    # Adicionar flag para exibir gráficos de produtividade apenas para usuários comuns
+    if not is_revisor and not is_desembargadora and not is_chefe:
+        context['show_productivity_charts'] = True
 
     return render(request, 'home.html', context)
 
@@ -502,3 +495,16 @@ def change_profile_photo(request):
         else:
             messages.error(request, 'Por favor, selecione uma imagem.')
     return render(request, 'change_profile_photo.html', {'user_profile': request.user.profile})
+
+
+def get_user_weekly_productivity_data(request):
+    if request.user.is_authenticated:
+        data = get_user_weekly_productivity(request.user)
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Usuário não autenticado'}, status=403)
+
+def get_user_daily_productivity_data(request):
+    if request.user.is_authenticated:
+        data = get_user_daily_productivity(request.user)
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Usuário não autenticado'}, status=403)

@@ -59,52 +59,6 @@ Distribuição de Processos
                     </h1>
                     <hr style="height: 2px; background: linear-gradient(to right, #bea066, #808000); border: none; width: 30%; opacity: 0.8;">
                 </div>
-                <!-- Botão que abre o modal -->
-                <button type="button" class="btn btn-success btn-sm shadow-sm d-flex align-items-center gap-2"
-                        style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: all 0.2s ease;"
-                        data-bs-toggle="modal" data-bs-target="#relatorioModal">
-                    <i class="bi bi-file-earmark-text"></i> Produtividade
-                </button>
-
-                <!-- Modal com os filtros -->
-                <div class="modal fade" id="relatorioModal" tabindex="-1" aria-labelledby="relatorioModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="relatorioModalLabel">
-                                    <i class="bi bi-file-earmark-text me-2"></i> Gerar Relatório de Produtividade
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <form id="relatorioForm" method="get" action="{% url 'gerar_pdf' %}">
-                                    <div class="mb-3">
-                                        <label for="dataInicio" class="form-label">Data de Início</label>
-                                        <input type="date" name="data_inicio" id="dataInicio" class="form-control"
-                                            value="{{ now|date:'Y-m-d' }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="dataFim" class="form-label">Data de Fim</label>
-                                        <input type="date" name="data_fim" id="dataFim" class="form-control"
-                                            value="{{ now|date:'Y-m-d' }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="assessor" class="form-label">Assessor</label>
-                                        <select name="assessor" id="assessor" class="form-select">
-                                            <option value="">Todos os Assessores</option>
-                                            {% for user in users %}
-                                                <option value="{{ user.username }}">{{ user.get_full_name|default:user.username }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-download me-2"></i> Gerar Relatório
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Exibir mensagens de sucesso ou erro -->
@@ -136,23 +90,42 @@ Distribuição de Processos
                     </form>
                 </div>
 
-                <!-- Botões de Ação -->
                 <div class="col-md-6 col-lg-7 d-flex justify-content-end gap-2 flex-wrap">
-                    <a href="{% url 'exportar_excel' %}" class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                    <a href="{% url 'exportar_excel' %}" 
+                       class="btn text-white shadow-sm d-flex align-items-center gap-2"
                        style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
                         <i class="bi bi-file-earmark-excel"></i> Exportar Excel
                     </a>
-                    <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm d-flex align-items-center gap-2"
+                    <a href="{% url 'processo_list' %}" 
+                       class="btn btn-outline-secondary shadow-sm d-flex align-items-center gap-2"
                        style="border-color: #808000; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
                         <i class="bi bi-x-lg"></i> Limpar Filtros
                     </a>
-                    <a href="{% url 'processo_create' %}" class="btn text-white shadow-sm d-flex align-items-center gap-2"
-                       style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+                    <button type="button"
+                            id="btnNovoProcesso" 
+                            class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                            style="background: linear-gradient(135deg, #808000, #bea066); border: none; border-radius: 20px; font-size: 0.95rem; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;"
+                            data-bs-toggle="modal" data-bs-target="#processoModal">
                         <i class="bi bi-plus-lg"></i> Novo Processo
-                    </a>
+                    </button>
+                </div>                
+            </div>
+            <!-- Modal do Bootstrap -->
+            <div class="modal fade" id="processoModal" tabindex="-1" 
+                    aria-labelledby="processoModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="processoModalLabel">Cadastrar Processo</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" 
+                                        aria-label="Close"></button>
+                                </div>
+                                    <div class="modal-body" id="processoModalBody">
+                        </div>
+                    </div>
                 </div>
             </div>
-
             <!-- Meu Dia -->
             <div class="accordion mb-4" id="accordionMeuDia">
                 <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
@@ -466,7 +439,49 @@ Distribuição de Processos
         </div>
     </div>
 </div>
-
+<script>
+    // Quando clicarmos no botão "Novo Processo",
+    // faz um GET na rota /processos/novo/ e injeta o HTML no modal
+    $('#btnNovoProcesso').on('click', function() {
+      $.ajax({
+        url: "{% url 'processo_create' %}",
+        type: "GET",
+        success: function(response) {
+          $('#processoModalBody').html(response);
+        },
+        error: function() {
+          alert("Erro ao carregar formulário.");
+        }
+      });
+    });
+  
+    // Interceptar o submit do form (que está dentro do modal), enviar via Ajax POST
+    $(document).on('submit', '#processoForm', function(e) {
+      e.preventDefault();
+      var form = $(this);
+      $.ajax({
+        url: "{% url 'processo_create' %}",
+        type: "POST",
+        data: form.serialize(),
+        success: function(response, status, xhr) {
+          // Se o status for 204, quer dizer sucesso sem conteúdo
+          if (xhr.status === 204) {
+            // Fechar modal e recarregar a lista ou a página
+            $('#processoModal').modal('hide');
+            location.reload(); // ou atualiza só a parte da tabela se quiser
+          } else {
+            // Caso a view retorne o form (com erros), substitui novamente dentro do modal
+            $('#processoModalBody').html(response);
+          }
+        },
+        error: function(xhr) {
+          // Em caso de erro 400 ou 500, etc.
+          // Se o Django retornar HTML do form, injete de volta
+          $('#processoModalBody').html(xhr.responseText);
+        }
+      });
+    });
+  </script>
 <style>
 /* Ajustes para Responsividade */
 @media (max-width: 767px) {

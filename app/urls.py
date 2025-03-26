@@ -27,6 +27,8 @@ urlpatterns = [
     path('es-assessor-hoje-data/', get_es_assessor_hoje_data, name='get_es_assessor_hoje_data'),
     path('especies-data/', get_especies_data, name='get_especies_data'),
     path('fases-data/', get_fases_data, name='get_fases_data'),
+    path('get_user_weekly_productivity_data/', views.get_user_weekly_productivity_data, name='get_user_weekly_productivity_data'),
+    path('get_user_daily_productivity_data/', views.get_user_daily_productivity_data, name='get_user_daily_productivity_data'),
     path('change-profile-photo/', views.change_profile_photo, name='change_profile_photo'),
 
 
