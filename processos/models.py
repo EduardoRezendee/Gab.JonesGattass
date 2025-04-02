@@ -78,6 +78,7 @@ class Processo(models.Model):
     concluido = models.BooleanField(default=False)
     dt_conclusao = models.DateTimeField(null=True, blank=True)
     antigo = models.DateTimeField(null=True, blank=True)
+    dt_baixa = models.DateTimeField(null=True, blank=True)
 
     # Novos campos
     despacho = models.BooleanField(default=False, verbose_name='É despacho?')
