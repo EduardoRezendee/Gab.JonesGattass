@@ -4,7 +4,7 @@ from .forms import ProcessoForm, AndamentoForm, ComentarioProcessoForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime, timedelta
 from calendar import month_name
-from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase, Resultado
+from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase, Resultado, Tema
 import locale
 from calendar import month_name
 from django.contrib.auth.models import User
@@ -20,10 +20,28 @@ from accounts.models import UserProfile
 from django.urls import reverse
 from django.utils.timezone import now
 from django.views import View
-from django.db.models import Subquery, OuterRef, Exists
+from django.db.models import Subquery, OuterRef
+from django.contrib import messages
 
 
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+
+def definir_tema(request, pk):
+    """Processa o formulário do modal e define/atualiza o Tema do Processo."""
+    processo = get_object_or_404(Processo, pk=pk)
+    
+    if request.method == 'POST':
+        tema_id = request.POST.get('tema_id')
+        if tema_id:
+            tema = get_object_or_404(Tema, pk=tema_id)
+            processo.tema = tema
+            processo.save()
+            messages.success(request, "Tema atualizado com sucesso!")
+        else:
+            messages.error(request, "Selecione um tema válido.")
+        return redirect('processo_list')  # Ajuste para onde você quer voltar
+    
+    return redirect('processo_list')
 
 class ProcessoListView(LoginRequiredMixin, ListView):
     model = Processo
@@ -38,6 +56,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         queryset = Processo.objects.all()
 
         # 🔹 Captura filtros da URL
+        despacho = self.request.GET.get('despacho')
+        prioridade = self.request.GET.get('prioridade')
         status = self.request.GET.get('status', "").strip().lower() or "pendente"
         fase_atual = self.request.GET.get('fase_atual')
         camara = self.request.GET.get('camara')
@@ -46,6 +66,8 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         numero_processo = self.request.GET.get('numero_processo')
         meus_processos = self.request.GET.get('meus_processos', None)
         user_id = self.request.GET.get('user_id')
+
+        tema = self.request.GET.get('tema')
 
         # 🔹 Filtra corretamente o status antes da ordenação
         if status == "concluído":
@@ -71,6 +93,10 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             'especie__especie': especie,
             'numero_processo__icontains': numero_processo,
         }
+        if tema:
+            # Exemplo: filtrar pelo nome do tema
+            filtros['tema__nome'] = tema
+            # Se preferir filtrar por ID, troque por: filtros['tema__id'] = tema
 
         for campo, valor in filtros.items():
             if valor:
@@ -96,6 +122,11 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             if valor:
                 queryset = queryset.filter(**{f"{field}__date": datetime.strptime(valor, '%Y-%m-%d').date()})
 
+         # 🔹 Aplicar os filtros de despacho e prioridade
+        if despacho == 'sim':
+            queryset = queryset.filter(despacho=True)
+        if prioridade == 'sim':
+            queryset = queryset.filter(prioridade_urgente=True)
         # 🔹 Captura o parâmetro de ordenação da URL, com padrão "mais_recente"
         order_by = self.request.GET.get("ordenar", "mais_recente")
 
@@ -146,16 +177,24 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         context['camaras'] = Camara.objects.all()
         context['tipos'] = Tipo.objects.all()
         context['especies'] = Especie.objects.all()
+        context['temas'] = Tema.objects.all()
+
+        # Captura o tema selecionado para manter no dropdown
+        context['tema_selecionado'] = self.request.GET.get('tema', '')
 
         # 🔹 Adiciona tarefas do dia do usuário
         tarefas = TarefaDoDia.objects.filter(usuario=self.request.user)
         context['tarefas_do_dia'] = tarefas
         context['tarefas_do_dia_ids'] = list(tarefas.values_list('processo__id', flat=True))
+        context['despacho_selecionado'] = self.request.GET.get('despacho', 'nao')
+        context['prioridade_selecionada'] = self.request.GET.get('prioridade', 'nao')
 
         # 🔹 Adiciona métricas de processos por usuário
         metrics_data = get_advanced_metrics()
         context["assessor_process_data"] = {
             item["id"]: item for item in metrics_data["assessor_process_data"]
+
+        
         }
 
         return context
@@ -411,8 +450,8 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
         usuario_responsavel = andamento.processo.usuario  # Usuário padrão (do processo)
         if nova_fase == "Revisão":
             usuario_responsavel = UserProfile.objects.filter(funcao="revisor(a)").first().user
-        elif nova_fase == "Revisão Desa":
-            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargadora").first().user
+        elif nova_fase == "Revisão Des":
+            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargador").first().user
 
         # Cria o novo andamento
         nova_fase_obj = get_object_or_404(Fase, fase=nova_fase)

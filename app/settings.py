@@ -28,9 +28,7 @@ SECRET_KEY = 'django-insecure-3mry0!qt@k&!dvic0r!$!w55**(jg@3^1srfsaby-jxuk#3db!
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "gestaogabineteccs.com",  # Domínio principal
-    "127.0.0.1",  
-    "localhost",
+    '*'
 ]
 
 
@@ -96,11 +94,18 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gabinete',
+        'NAME': 'gab.jonesgattass',
         'USER': 'postgres',
-        'PASSWORD': '03010315SSp@@#',
+        'PASSWORD': 'G@b202025',
         'HOST': 'localhost',
         'PORT': '5432',
+    }
+}
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -150,16 +155,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', cast=int, default=587)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='seu_email@gmail.com')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='sua_senha')
-
-
-TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_NUMBER = config("TWILIO_WHATSAPP_NUMBER")

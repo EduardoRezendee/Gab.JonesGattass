@@ -58,6 +58,17 @@ class Status(models.Model):
     def __str__(self):
         return self.status
 
+class Tema(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    ativo = models.BooleanField(default=True)
+    dt_criacao = models.DateTimeField(auto_now_add=True)
+    dt_atualizacao = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nome
+
+
 
 from django.db import models
 from django.utils.timezone import now
@@ -79,7 +90,7 @@ class Processo(models.Model):
     dt_conclusao = models.DateTimeField(null=True, blank=True)
     antigo = models.DateTimeField(null=True, blank=True)
     dt_baixa = models.DateTimeField(null=True, blank=True)
-
+    tema = models.ForeignKey(Tema, on_delete=models.SET_NULL, null=True, blank=True)
     # Novos campos
     despacho = models.BooleanField(default=False, verbose_name='É despacho?')
     prioridade_urgente = models.BooleanField(default=False, verbose_name='Prioridade Urgente?')

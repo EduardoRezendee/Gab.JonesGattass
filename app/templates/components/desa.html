@@ -2,12 +2,12 @@
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDesembargadora" style="max-width: 100%;">
   <div class="accordion-item">
     <h2 class="accordion-header">
-      <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRevisaoDesa" aria-expanded="true">
+      <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRevisaoDes" aria-expanded="true">
         <span style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #083464; border-radius: 2px;"></span>
-        <i class="bi bi-list-task me-2"></i> Processos em Revisão Desa
+        <i class="bi bi-list-task me-2"></i> Processos em Revisão Des
       </button>
     </h2>
-    <div id="collapseRevisaoDesa" class="accordion-collapse collapse show">
+    <div id="collapseRevisaoDes" class="accordion-collapse collapse show">
       <div class="accordion-body">
         <!-- Filtro por número de processo -->
         <div class="mb-4">
@@ -84,9 +84,9 @@
                     <!-- Data Envio p/ Revisão Desa -->
                     <p class="mb-1">
                       <i class="bi bi-calendar2-plus me-2"></i>
-                      <strong>Data Envio p/ Revisão Desa:</strong>
+                      <strong>Data Envio p/ Revisão Des:</strong>
                       <span class="ms-1">
-                        {{ andamento.data_envio_revisao_desa|date:"d/m/Y H:i" }}
+                        {{ andamento.data_envio_revisao_des|date:"d/m/Y H:i" }}
                       </span>
                     </p>
                   </div>
@@ -94,7 +94,7 @@
                   <!-- Revisão e Lembrete no topo direito -->
                   <div class="d-flex align-items-center gap-2">
                     <span class="text-muted" style="font-size: 1rem;">
-                      {{ andamento.revisoes_desa }}ª Revisão
+                      {{ andamento.revisoes_des }}ª Revisão
                     </span>
                     <button type="button" class="btn btn-sm toggle-comments shadow-sm"
                             data-processo-id="{{ andamento.processo_pk }}"
@@ -190,7 +190,7 @@
             {% endfor %}
           </div>
         {% else %}
-          <p class="text-muted text-center" style="font-style: italic;">Nenhum processo em Revisão Desa no momento.</p>
+          <p class="text-muted text-center" style="font-style: italic;">Nenhum processo em Revisão Des no momento.</p>
         {% endif %}
       </div>
     </div>

@@ -1,6 +1,11 @@
 from django.contrib import admin
-from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, ProcessoAndamento, HistoricoAndamento
+from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, ProcessoAndamento, HistoricoAndamento, Tema
 
+@admin.register(Tema)
+class TemaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'ativo', 'dt_criacao', 'dt_atualizacao')
+    search_fields = ('nome', 'descricao')
+    list_filter = ('ativo',)
 # Configuração para modelos simples
 @admin.register(Resultado)
 class ResultadoAdmin(admin.ModelAdmin):

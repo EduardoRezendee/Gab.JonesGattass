@@ -145,12 +145,12 @@
                         {% elif tarefa.processo.fase_atual == 'Devolvido' %}
                           <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
                             {% csrf_token %}
-                            <input type="hidden" name="nova_fase" value="Revisão Desa">
+                            <input type="hidden" name="nova_fase" value="Revisão Des">
                             <input type="hidden" name="origem" value="home">
                             <button type="submit" class="btn btn-sm shadow-sm"
-                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão Desa?');"
+                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
                                     style="background: linear-gradient(135deg, #083464, #6B7280); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Desa
+                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Des
                             </button>
                           </form>
                         {% elif tarefa.processo.fase_atual == 'L. PJE' %}

@@ -3,6 +3,7 @@ from .views import (
     ProcessoListView, ProcessoCreateView, ProcessoUpdateView, ProcessoDeleteView,
     AndamentoListView, AndamentoCreateView, AndamentoUpdateView, AndamentoDeleteView, ProcessoDetailView, AndamentoIniciarView, AndamentoEnviarParaFaseView, AndamentoConcluirProcessoView
 , process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView)
+from . import views
 
 urlpatterns = [
     # URLs para Processo
@@ -22,6 +23,7 @@ urlpatterns = [
     path('andamentos/<int:pk>/iniciar/', AndamentoIniciarView.as_view(), name='andamento_iniciar'),
     path('andamentos/<int:pk>/enviar/', AndamentoEnviarParaFaseView.as_view(), name='andamento_enviar'),
     path('andamentos/<int:pk>/concluir/', AndamentoConcluirProcessoView.as_view(), name='andamento_concluir'),
+    path('definir-tema/<int:pk>/', views.definir_tema, name='definir_tema'),
 
     path('metrics/', process_metrics_view, name='process_metrics'),
 

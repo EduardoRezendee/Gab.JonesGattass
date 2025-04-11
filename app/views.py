@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 
 # MODELS
-from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento
+from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo
 from accounts.models import UserProfile
 
 # MÉTRICAS E GAMIFICAÇÃO
@@ -30,14 +30,14 @@ def home(request):
     if not roles:
         roles = {
             'is_revisor': UserProfile.objects.filter(user=user, funcao="revisor(a)").exists(),
-            'is_desembargadora': UserProfile.objects.filter(user=user, funcao="Desembargadora").exists(),
+            'is_desembargador': UserProfile.objects.filter(user=user, funcao="Desembargador").exists(),
             'is_chefe': UserProfile.objects.filter(user=user, funcao="Chefe de Gabinete").exists(),
             'is_assessor': UserProfile.objects.filter(user=user, funcao="Assessor(a)").exists(),
         }
         cache.set(cache_key_roles, roles, timeout=3600)
 
     is_revisor = roles['is_revisor']
-    is_desembargadora = roles['is_desembargadora']
+    is_desembargador = roles['is_desembargador']
     is_chefe = roles['is_chefe']
     is_assessor = roles['is_assessor']
 
@@ -49,12 +49,12 @@ def home(request):
 
     # Métricas diárias
     revisoes_hoje = ProcessoAndamento.objects.filter(
-        fase__fase__in=["Revisão", "Revisão Desa"],
+        fase__fase__in=["Revisão", "Revisão Des"],
         dt_criacao__date=hoje.date()  # Extrai apenas a data no banco
     ).values('processo').distinct().count()
 
     concluidos_revisao_hoje = ProcessoAndamento.objects.filter(
-        fase__fase__in=["Revisão", "Revisão Desa"],
+        fase__fase__in=["Revisão", "Revisão Des"],
         dt_conclusao__date=hoje.date(),  # Extrai apenas a data no banco
         status__status="Concluído"
     ).values('processo').distinct().count()
@@ -128,31 +128,31 @@ def home(request):
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, p['data_dist']))
 
     # VISÃO DA DESEMBARGADORA
-    elif is_desembargadora:
+    elif is_desembargador:
         numero_processo = request.GET.get('numero_processo', '').strip()
-        processos_em_revisao_desa = Processo.objects.filter(
-            andamentos__fase__fase="Revisão Desa",
+        processos_em_revisao_des = Processo.objects.filter(
+            andamentos__fase__fase="Revisão Des",
             andamentos__usuario=user,
             concluido=False
         ).distinct().select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status', 'andamentos__usuario')
         if numero_processo:
-            processos_em_revisao_desa = processos_em_revisao_desa.filter(numero_processo__icontains=numero_processo)
+            processos_em_revisao_des = processos_em_revisao_des.filter(numero_processo__icontains=numero_processo)
         
         comentarios_dict = {
             p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
-            for p in processos_em_revisao_desa
+            for p in processos_em_revisao_des
         }
 
-        for processo in processos_em_revisao_desa:
+        for processo in processos_em_revisao_des:
             ultimo_andamento = processo.andamentos.filter(
-                fase__fase="Revisão Desa",
+                fase__fase="Revisão Des",
                 usuario=user,
                 status__status__in=["Não iniciado", "Em andamento"]
             ).order_by('-dt_criacao').first()
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
                 comentarios = comentarios_dict.get(processo.pk, [])
-                revisoes_desa_count = processo.andamentos.filter(fase__fase="Revisão Desa").count()
+                revisoes_des_count = processo.andamentos.filter(fase__fase="Revisão Des").count()
                 andamento_metrics.append({
                     'pk': ultimo_andamento.pk,
                     'processo_pk': processo.pk,
@@ -169,8 +169,8 @@ def home(request):
                     'especie': especie_nome,
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios],
-                    'revisoes_desa': revisoes_desa_count,
-                    'data_envio_revisao_desa': ultimo_andamento.dt_criacao,
+                    'revisoes_des': revisoes_des_count,
+                    'data_envio_revisao_des': ultimo_andamento.dt_criacao,
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
@@ -221,6 +221,10 @@ def home(request):
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
         numero_processo = request.GET.get('numero_processo', '').strip()
+        despacho = request.GET.get('despacho', '').strip()
+        prioridade = request.GET.get('prioridade', '').strip()
+        tipo = request.GET.get('tipo', '').strip()
+ 
         processos_nao_concluidos = Processo.objects.filter(
             usuario=user,
             concluido=False
@@ -228,51 +232,64 @@ def home(request):
         if numero_processo:
             processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
 
+         # Filtro para despacho:
+        if despacho:
+            if despacho.lower() == 'sim':
+                processos_nao_concluidos = processos_nao_concluidos.filter(despacho=True)
+            elif despacho.lower() == 'nao':
+                processos_nao_concluidos = processos_nao_concluidos.filter(despacho=False)
+        
+        # Filtro para prioridade:
+        if prioridade:
+            if prioridade.lower() == 'sim':
+                processos_nao_concluidos = processos_nao_concluidos.filter(prioridade_urgente=True)
+            elif prioridade.lower() == 'nao':
+                processos_nao_concluidos = processos_nao_concluidos.filter(prioridade_urgente=False)
+        
+        # Filtro para tipo:
+        if tipo:
+            processos_nao_concluidos = processos_nao_concluidos.filter(tipo__tipo__icontains=tipo)
+        
+        
     # Processos detalhados para usuários comuns
     processos_detalhados = []
     active_tab = None
-    if not is_revisor and not is_desembargadora:
-        # Capturar o filtro de número de processo
-        numero_processo = request.GET.get('numero_processo', '').strip()
-
-        # Filtrar processos não concluídos do usuário
-        processos_nao_concluidos = Processo.objects.filter(
-            usuario=user,
-            concluido=False
-        ).select_related('especie', 'usuario')
-
-        # Aplicar filtro por número de processo, se fornecido
-        if numero_processo:
-            processos_nao_concluidos = processos_nao_concluidos.filter(numero_processo__icontains=numero_processo)
+    if not is_revisor and not is_desembargador:
 
         comentarios_dict = {
             p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
             for p in processos_nao_concluidos
         }
 
-        for processo in processos_nao_concluidos:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
-            if ultimo_andamento and processo.pk:
-                processos_detalhados.append({
-                    'pk': processo.pk,
-                    'andamento_pk': ultimo_andamento.pk,
-                    'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
-                    'numero_processo': processo.numero_processo,
-                    'especie': processo.especie.especie if processo.especie else "Sem espécie",
-                    'sigla': processo.especie.sigla if processo.especie else "Sem sigla",
-                    'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
-                    'status_atual': ultimo_andamento.status.status if ultimo_andamento and ultimo_andamento.status else "Sem status",
-                    'data_prazo': processo.dt_prazo,
-                    'data_dist': processo.data_dist,
-                    'dias_no_gabinete': processo.dias_no_gabinete() or 0,
-                    'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
-                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios_dict.get(processo.pk, [])]
-                })
-
+    for processo in processos_nao_concluidos:
+        ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+        if ultimo_andamento and processo.pk:
+            processos_detalhados.append({
+                'pk': processo.pk,
+                'andamento_pk': ultimo_andamento.pk,
+                'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
+                'numero_processo': processo.numero_processo,
+                'especie': processo.especie.especie if processo.especie else "Sem espécie",
+                'sigla': processo.especie.sigla if processo.especie else "Sem sigla",
+                'tema': processo.tema.nome if processo.tema else None,
+                'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
+                'status_atual': ultimo_andamento.status.status if ultimo_andamento and ultimo_andamento.status else "Sem status",
+                'data_prazo': processo.dt_prazo,
+                'data_dist': processo.data_dist,
+                'despacho': processo.despacho,
+                'prioridade_urgente': processo.prioridade_urgente,
+                'tipo': processo.tipo.tipo if processo.tipo else "Sem tipo",
+                'dias_no_gabinete': processo.dias_no_gabinete() or 0,
+                'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
+                'comentarios': [
+                    {'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()}
+                    for c in comentarios_dict.get(processo.pk, [])
+                ]
+            })
         processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
         # Definir ordem fixa das fases
-        fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Desa', 'Devolvido', 'L. PJE']
+        fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Des', 'Devolvido', 'L. PJE']
         phase_dict = {}
         for processo in processos_detalhados:
             phase_dict.setdefault(processo['fase_atual'], []).append(processo)
@@ -305,6 +322,7 @@ def home(request):
                 'andamento_pk': ultimo_andamento.pk if ultimo_andamento else None,
                 'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
                 'andamento': ultimo_andamento,
+                
                 'comentarios': ComentarioProcesso.objects.filter(processo=tarefa.processo).select_related('usuario') if tarefa.processo else []
             }
         }
@@ -313,7 +331,7 @@ def home(request):
 
     # Métricas e Gamificação
     process_metrics = get_process_metrics(user)
-    if not is_revisor and not is_desembargadora:
+    if not is_revisor and not is_desembargador:
         process_metrics['detalhes_processos'] = processos_detalhados
 
     # Foto do usuário
@@ -327,7 +345,7 @@ def home(request):
     context = {
         'user': user,
         'is_revisor': is_revisor,
-        'is_desembargadora': is_desembargadora,
+        'is_desembargador': is_desembargador,
         'is_chefe': is_chefe,
         'is_assessor': is_assessor,
         'andamento_metrics': andamento_metrics,
@@ -339,7 +357,9 @@ def home(request):
         'tarefas_do_dia': tarefas_detalhadas,
         'fases': fases,
         'active_tab': active_tab,
+        'temas': Tema.objects.all(),
         'today': hoje,
+        'tipos': Tipo.objects.all(),
         'revisoes_hoje': revisoes_hoje,
         'concluidos_revisao_hoje': concluidos_revisao_hoje,
         'total_pendentes': total_pendentes,
@@ -349,7 +369,7 @@ def home(request):
     }
 
     # Adicionar flag para exibir gráficos de produtividade apenas para usuários comuns
-    if not is_revisor and not is_desembargadora and not is_chefe:
+    if not is_revisor and not is_desembargador and not is_chefe:
         context['show_productivity_charts'] = True
 
     return render(request, 'home.html', context)
@@ -366,12 +386,12 @@ def get_entries_exits_data(request):
 def get_revisoes_hoje_data(request):
     hoje = timezone.now().date()
     revisoes_hoje = ProcessoAndamento.objects.filter(
-        fase__fase__in=["Revisão", "Revisão Desa"],
+        fase__fase__in=["Revisão", "Revisão Des"],
         dt_criacao__date=hoje
     ).values('processo').distinct().count()
 
     concluidos_revisao_hoje = ProcessoAndamento.objects.filter(
-        fase__fase__in=["Revisão", "Revisão Desa"],
+        fase__fase__in=["Revisão", "Revisão Des"],
         dt_conclusao__date=hoje,
         status__status="Concluído"
     ).values('processo').distinct().count()
