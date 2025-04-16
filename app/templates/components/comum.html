@@ -1,4 +1,5 @@
 {% load app_filters %}
+{% include 'components/meudia.html' %}
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%; background-color: #CFE2FF;">
   <div class="accordion-item">
     <h2 class="accordion-header">
@@ -12,43 +13,78 @@
       <div class="accordion-body">
         <!-- FILTRO: Pesquisa + Tema -->
         <div class="mb-4">
-          <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center gap-2 flex-wrap">
-            <!-- Pesquisar por número do processo -->
-            <div class="input-group" style="max-width: 400px;">
+          <form method="GET" action="{% url 'home' %}" class="d-flex flex-wrap align-items-center gap-2 justify-content-center">
+            <!-- Grupo 1: Pesquisa por Número do Processo (compacto) -->
+            <div class="input-group input-group-sm" style="max-width: 300px;">
               <input type="text"
                      name="numero_processo"
                      class="form-control shadow-sm"
-                     placeholder="Digite o número do processo..."
+                     placeholder="Nº do processo..."
                      value="{{ request.GET.numero_processo|default:'' }}"
-                     style="border-radius: 20px 0 0 20px; border-color: #2f2f2f; color: #1F2937;">
+                     style="border-radius: 4px 0 0 4px; border-color: #083464; color: #1F2937;">
               <button type="submit"
-                      class="btn shadow-sm"
-                      style="background-color: #2f2f2f; color: white; border: none; border-radius: 0;">
+                      name="action"
+                      value="pesquisar"
+                      class="btn btn-sm shadow-sm"
+                      style="background-color: #083464; color: white; border-radius: 0 4px 4px 0;">
                 <i class="bi bi-search"></i>
               </button>
             </div>
-          
+            
             <!-- Botão Toggle para Prioridade (Importante) -->
-            <button type="submit" name="prioridade" value="{% if request.GET.prioridade == 'sim' %}nao{% else %}sim{% endif %}"
-                    class="btn shadow-sm"
-                    style="border-radius: 20px; border: 1px solid #2f2f2f; background-color: {% if request.GET.prioridade == 'sim' %}#dc3545{% else %}transparent{% endif %}; color: {% if request.GET.prioridade == 'sim' %}white{% else %}#083464{% endif %};">
-              Prioridade
+            <button type="submit"
+                    name="prioridade"
+                    value="{% if request.GET.prioridade == 'sim' %}nao{% else %}sim{% endif %}"
+                    class="btn btn-sm shadow-sm"
+                    style="
+                      border-radius: 20px;
+                      border: 1px solid #dc3545;
+                      background-color: {% if request.GET.prioridade == 'sim' %}#dc3545{% else %}transparent{% endif %};
+                      color: {% if request.GET.prioridade == 'sim' %}white{% else %}#dc3545{% endif %};
+                    ">
+              Importante
             </button>
-          
+            
             <!-- Botão Toggle para Despacho -->
-            <button type="submit" name="despacho" value="{% if request.GET.despacho == 'sim' %}nao{% else %}sim{% endif %}"
-                    class="btn shadow-sm"
-                    style="border-radius: 20px; border: 1px solid #2f2f2f; background-color: {% if request.GET.despacho == 'sim' %}#17a2b8{% else %}transparent{% endif %}; color: {% if request.GET.despacho == 'sim' %}white{% else %}#083464{% endif %};">
+            <button type="submit"
+                    name="despacho"
+                    value="{% if request.GET.despacho == 'sim' %}nao{% else %}sim{% endif %}"
+                    class="btn btn-sm shadow-sm"
+                    style="
+                      border-radius: 20px;
+                      border: 1px solid #17a2b8;
+                      background-color: {% if request.GET.despacho == 'sim' %}#17a2b8{% else %}transparent{% endif %};
+                      color: {% if request.GET.despacho == 'sim' %}white{% else %}#17a2b8{% endif %};
+                    ">
               Despacho
             </button>
+            
+            <!-- Filtro para Tipo -->
+            <div class="input-group input-group-sm" style="max-width: 200px;">
+              <select name="tipo" class="form-select shadow-sm form-select-sm" style="border-radius: 4px; border-color: #083464; color: #1F2937;">
+                <option value="">Tipo: Todos</option>
+                {% for t in tipos %}
+                  <option value="{{ t.tipo }}" {% if request.GET.tipo == t.tipo %}selected{% endif %}>{{ t.tipo }}</option>
+                {% endfor %}
+              </select>
+            </div>
           
-            <!-- Botão "Limpar" para remover filtros -->
+            <!-- Botão para Aplicar Filtro -->
+            <button type="submit"
+                    name="action"
+                    value="aplicar_filtro"
+                    class="btn btn-sm shadow-sm"
+                    style="background-color: #083464; color: white; border-radius: 20px;">
+              Aplicar
+            </button>
+          
+            <!-- Botão "Limpar" para remover todos os filtros -->
             <a href="{% url 'home' %}"
-               class="btn btn-outline-secondary shadow-sm"
-               style="border-radius: 20px; margin-left: -1px; border-color: #2f2f2f;">
+               class="btn btn-sm btn-outline-secondary shadow-sm"
+               style="border-radius: 20px; border-color: #083464;">
               Limpar
             </a>
-          </form>         
+          </form>                          
         </div>
       
         {% if fases and fases|length > 0 %}
@@ -65,7 +101,7 @@
                         aria-controls="pane-{{ fase|slugify }}"
                         aria-selected="{% if fase == active_tab %}true{% else %}false{% endif %}"
                         style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: {% if fase == active_tab %}rgba(0, 0, 0, 0.00){% endif %}; border-radius: 0.25rem 0.25rem 0 0; color: #1F2937;">
-                  {{ fase }} <span class="badge" style="background-color: rgb(19, 118, 29); color: white;">{{ processos|length }}</span>
+                  {{ fase }} <span class="badge" style="background-color: #808000; color: white;">{{ processos|length }}</span>
                 </button>
               </li>
             {% endfor %}
@@ -114,29 +150,45 @@
                           </p>
                           <!-- Novos indicadores: despacho, prioridade e tipo -->
                           {% if processo.despacho or processo.prioridade_urgente or processo.tipo %}
-                          <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
-                            {% if processo.despacho %}
-                              <span class="badge bg-info text-dark rounded-pill me-2" title="Despacho">
-                                <i class="bi bi-file-earmark-text"></i>
-                              </span>
-                            {% endif %}
-                            {% if processo.prioridade_urgente %}
-                              <span class="badge bg-danger rounded-pill me-2" title="Prioridade Urgente">
-                                <i class="bi bi-exclamation-circle"></i>
-                              </span>
-                            {% endif %}
-                            {% if processo.tipo %}
-                              <span class="badge bg-secondary rounded-pill" title="Tipo">
-                                <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
-                              </span>
-                            {% endif %}
-                          </p>
+                            <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
+                              {% if processo.despacho %}
+                                <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
+                                  <i class="bi bi-file-earmark-text"></i>
+                                </span>
+                              {% endif %}
+                              {% if processo.prioridade_urgente %}
+                                <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Sino -->
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    <!-- Ondas -->
+                                    <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
+                                  </svg>
+                                </span>
+                              {% endif %}
+                              {% if processo.tipo %}
+                                <span class="badge bg-secondary rounded-pill d-flex align-items-center" style="font-size: 0.9rem;" title="Tipo">
+                                  <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
+                                  {% if processo.tipo.tipo == "Plantão" %}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Plantão"></i>
+                                  {% endif %}
+                                </span>
+                              {% endif %}
+                            </p>
                           {% endif %}
                           <p class="mb-1" style="color: #1F2937;">
                             <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
                             <strong style="color: #1F2937;">Espécie:</strong>
                             <span class="ms-1 {% if processo.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
                               {{ processo.especie }}
+                            </span>
+                          </p>
+                          <p class="mb-1" style="color: #1F2937;">
+                            <i class="bi bi-tag me-2" style="color: #083464;"></i>
+                            <strong style="color: #1F2937;">Tema:</strong>
+                            <span class="ms-1" style="color: #1F2937;">
+                                {{ processo.tema|default:"Sem tema" }}
                             </span>
                           </p>
                           <p class="mb-1" style="color: #1F2937;">
@@ -191,7 +243,7 @@
                           <!-- Link do Documento (se existir) -->
                           {% if processo.andamento_link_doc %}
                             <a href="{{ processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
-                               style="background-color: #2f2f2f; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
+                               style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
                               <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
                             </a>
                           {% endif %}
@@ -204,16 +256,27 @@
                         <div class="d-flex gap-2 align-items-center">
                           <!-- Botões condicionais com base na fase atual -->
                           {% if processo.fase_atual == 'Elaboração' %}
-                            <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="nova_fase" value="Revisão">
-                              <input type="hidden" name="origem" value="home">
-                              <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                      onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
-                                      style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
-                              </button>
-                            </form>
+                          <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Revisão">
+                            <input type="hidden" name="origem" value="home">
+                            <button type="submit" class="btn btn-sm btn-primary shadow-sm"
+                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
+                                    style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
+                            </button>                    
+                          </form>
+                          <!-- Novo botão para enviar para Revisão Desa -->
+                          <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="nova_fase" value="Revisão Des">
+                            <input type="hidden" name="origem" value="home">
+                            <button type="submit" class="btn btn-sm shadow-sm"
+                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
+                                    style="background: linear-gradient(135deg, #012655, #012655); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                              <i class="bi bi-arrow-right me-1" style="color: white;"></i>Enviar para Revisão Des
+                            </button>
+                          </form>
                           {% elif processo.fase_atual == 'Correção' %}
                             <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
                               {% csrf_token %}
@@ -258,63 +321,30 @@
                         </div>
                       </div>
                     </div>
-                                          <!-- MODAL para Alterar o Tema -->
-                      <div class="modal fade" id="modalTema{{ processo.pk }}" tabindex="-1" aria-labelledby="modalTemaLabel{{ processo.pk }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                          <div class="modal-content">
-                            <div class="modal-header" style="background: #083464;">
-                              <h5 class="modal-title text-white" id="modalTemaLabel{{ processo.pk }}">
-                                Definir Tema - {{ processo.numero_processo }}
-                              </h5>
-                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                              <form method="POST" action="{% url 'definir_tema' processo.pk %}">
-                                {% csrf_token %}
-                                <div class="mb-3">
-                                  <label for="temaSelect{{ processo.pk }}" class="form-label fw-semibold">Selecione o Tema:</label>
-                                  <select class="form-select" id="temaSelect{{ processo.pk }}" name="tema_id">
-                                    <option value="">-- Selecione --</option>
-                                    {% for t in temas %}
-                                      <option value="{{ t.pk }}"
-                                        {% if processo.tema and processo.tema.pk == t.pk %}selected{% endif %}>
-                                        {{ t.nome }}
-                                      </option>
-                                    {% endfor %}
-                                  </select>
-                                </div>
-                                <div class="modal-footer">
-                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                  <button type="submit" class="btn btn-primary">Salvar Tema</button>
-                                </div>
-                              </form>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
                     <!-- Modal de Edição para este Andamento -->
                     {% if processo.andamento_pk %}
                     <div class="modal fade" id="editAndamentoModal{{ processo.andamento_pk }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ processo.andamento_pk }}" aria-hidden="true">
                       <div class="modal-dialog">
                         <div class="modal-content" style="border: 2px solid #807d6b;">
-                          <div class="modal-header" style="background: linear-gradient(135deg, #2f2f2f, #9f9f9f); color: white;">
+                          <div class="modal-header" style="background: linear-gradient(135deg, #083464, #1E3A8A); color: white;">
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                           </div>
                           <div class="modal-body" style="background-color: rgba(0, 0, 0, 0.05);">
                             <form method="POST" action="{% url 'andamento_update' processo.andamento_pk %}">
                               {% csrf_token %}
                               <input type="hidden" name="origem" value="home">
+                              <!-- Campo oculto para manter os filtros -->
+                              <input type="hidden" name="next" value="{{ request.GET.urlencode }}">
                               <div class="mb-3">
                                 <label for="link_doc_{{ processo.andamento_pk }}" class="form-label fw-semibold" style="color: #1F2937;">Link do Documento</label>
                                 <input type="url" id="link_doc_{{ processo.andamento_pk }}" name="link_doc" class="form-control shadow-sm"
-                                       value="{{ processo.andamento_link_doc|default:'' }}" style="border-radius: 10px; border-color: #2f2f2f; color: #1F2937;">
+                                      value="{{ processo.andamento_link_doc|default:'' }}" style="border-radius: 10px; border-color: #083464; color: #1F2937;">
                               </div>
                               <div class="modal-footer">
                                 <button type="button" class="btn btn-outline-secondary shadow-sm"
                                         data-bs-dismiss="modal" style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Cancelar</button>
                                 <button type="submit" class="btn shadow-sm"
-                                        style="background: linear-gradient(135deg, #075a07, #0bb317); color: white; border: none; border-radius: 20px;">
+                                        style="background: linear-gradient(135deg, #083464, #6B7280); color: white; border: none; border-radius: 20px;">
                                   <i class="bi bi-save me-2" style="color: white;"></i> Salvar
                                 </button>
                               </div>
@@ -324,10 +354,11 @@
                       </div>
                     </div>
                     {% endif %}
+
                     <!-- Caixa de Comentários Flutuante -->
                     <div id="comment-box-{{ processo.pk }}"
-                         class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-                         style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #23603b; background-color: rgba(0, 0, 0, 0.05);">
+                         class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate_animated animate_fadeIn"
+                         style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
                       <!-- Cabeçalho -->
                       <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold m-0" style="color: #1F2937;">
@@ -362,7 +393,7 @@
                         {% csrf_token %}
                         <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
                                   placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
-                        <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #0d713a; color: white; border: none; border-radius: 20px;">Enviar</button>
+                        <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
                       </form>
                     </div>
                   {% endfor %}
@@ -381,8 +412,8 @@
 <!-- Gráfico de Produtividade Hoje (Fora do Accordion) -->
 {% if show_productivity_charts %}
   <div class="charts-container mt-5 mx-auto" style="max-width: 100%;">
-    <h2 class="text-center mb-4 fw-bold" style="color: rgb(8, 52, 100); font-size: 1.75rem;">
-      <i class="bi bi-graph-up me-2" style="color: #2f2f2f;"></i> Minha Produtividade Hoje
+    <h2 class="text-center mb-4 fw-bold" style="color: #083464; font-size: 1.75rem;">
+      <i class="bi bi-graph-up me-2" style="color: #808000;"></i> Minha Produtividade Hoje
     </h2>
     <div class="chart-row d-flex justify-content-center">
       <!-- Gráfico de Produtividade Diária -->
@@ -394,6 +425,53 @@
       </div>
     </div>
   </div>
+<!-- Processos Concluídos -->
+<div class="card shadow-sm mb-3 border-0" style="border-radius: 10px;">
+  <div class="card-header bg-success text-white d-flex justify-content-between align-items-center" style="border-radius: 10px 10px 0 0;">
+    <h6 class="mb-0">Concluídos Hoje <span class="badge bg-light text-success ms-2">{{ processos_concluidos_detalhados|length }}</span></h6>
+  </div>
+  <div class="card-body p-3">
+    {% for processo in processos_concluidos_detalhados %}
+      <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background-color: #f8f9fa;">
+        <div>
+          <strong>{{ processo.numero_processo }}</strong> | {{ processo.especie }}<br>
+          <small class="text-muted">Concluído: {{ processo.dt_conclusao|date:"H:i" }}</small>
+        </div>
+        <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}"
+           class="btn btn-sm btn-outline-primary"
+           style="border-radius: 20px; padding: 0.2rem 0.6rem;">
+          <i class="bi bi-list-ul"></i>
+        </a>
+      </div>
+    {% empty %}
+      <p class="text-muted mb-0">Nenhum processo concluído hoje.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Processos Enviados para Revisão Desa -->
+<div class="card shadow-sm mb-3 border-0" style="border-radius: 10px;">
+  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center" style="border-radius: 10px 10px 0 0;">
+    <h6 class="mb-0">Enviados para Revisão Des Hoje <span class="badge bg-light text-info ms-2">{{ processos_revisao_des_detalhados|length }}</span></h6>
+  </div>
+  <div class="card-body p-3">
+    {% for processo in processos_revisao_des_detalhados %}
+      <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background-color: #f8f9fa;">
+        <div>
+          <strong>{{ processo.numero_processo }}</strong> | {{ processo.especie }}<br>
+          <small class="text-muted">Enviado: {{ processo.data_envio_revisao_des|date:"H:i" }}</small>
+        </div>
+        <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}"
+           class="btn btn-sm btn-outline-primary"
+           style="border-radius: 20px; padding: 0.2rem 0.6rem;">
+          <i class="bi bi-list-ul"></i>
+        </a>
+      </div>
+    {% empty %}
+      <p class="text-muted mb-0">Nenhum processo enviado para Revisão Des hoje.</p>
+    {% endfor %}
+  </div>
+</div>
 
   <!-- Estilos para o Gráfico -->
   <style>
@@ -429,69 +507,74 @@
   </style>
 
   <!-- Script para o Gráfico -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    // Configuração global para o gráfico
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.font.size = 12;
-    Chart.defaults.color = '#2f2f2f';
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Configuração global para o gráfico
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#4B5563';
 
-    // Gráfico de Produtividade Diária
-    fetch('/get_user_daily_productivity_data/')
-      .then(response => response.json())
-      .then(data => {
-        // Personalizar as cores e labels
-        data.datasets.forEach(dataset => {
-          dataset.backgroundColor = 'rgba(19, 118, 29, 0.7)';
-          dataset.borderColor = '#2f2f2f';
-          dataset.borderWidth = 2;
-          dataset.borderRadius = 5;
-          dataset.barThickness = 20;
-        });
+  // Gráfico de Produtividade Diária
+  fetch('/get_user_daily_productivity_data/')
+    .then(response => response.json())
+    .then(data => {
+      // Usar as cores definidas no backend ou sobrescrevê-las apenas se necessário
+      data.datasets.forEach(dataset => {
+        // Se quiser manter as cores do backend, remova ou comente essas linhas
+        // dataset.backgroundColor = 'rgba(128, 128, 0, 0.7)';
+        // dataset.borderColor = '#808000';
 
-        const ctxDaily = document.getElementById('dailyProductivityChart').getContext('2d');
-        new Chart(ctxDaily, {
-          type: 'bar',
-          data: data,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: '#E5E7EB' },
-                ticks: { color: '#4B5563', font: { size: 12 } }
-              },
-              x: {
-                grid: { display: false },
-                ticks: { color: '#4B5563', font: { size: 12 } }
-              }
+        // Garantir que as cores sejam aplicadas individualmente às barras
+        dataset.backgroundColor = dataset.backgroundColor || ['#3B82F6', '#10B981', '#F59E0B'];
+        dataset.borderColor = dataset.borderColor || ['#3B82F6', '#10B981', '#F59E0B'];
+        dataset.borderWidth = 2;
+        dataset.borderRadius = 5;
+        dataset.barThickness = 20;
+      });
+
+      const ctxDaily = document.getElementById('dailyProductivityChart').getContext('2d');
+      new Chart(ctxDaily, {
+        type: 'bar',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#E5E7EB' },
+              ticks: { color: '#4B5563', font: { size: 12 } }
             },
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  color: '#1F2937',
-                  font: { size: 14, weight: 'bold' }
-                }
-              },
-              tooltip: {
-                backgroundColor: '#2f2f2f',
-                titleColor: '#FFFFFF',
-                bodyColor: '#FFFFFF',
-                borderColor: '#6B7280',
-                borderWidth: 1,
-                cornerRadius: 8,
-                padding: 10
-              }
-            },
-            animation: {
-              duration: 1500,
-              easing: 'easeOutQuart'
+            x: {
+              grid: { display: false },
+              ticks: { color: '#4B5563', font: { size: 12 } }
             }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#1F2937',
+                font: { size: 14, weight: 'bold' }
+              }
+            },
+            tooltip: {
+              backgroundColor: '#808000',
+              titleColor: '#FFFFFF',
+              bodyColor: '#FFFFFF',
+              borderColor: '#6B7280',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 10
+            }
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeOutQuart'
           }
-        });
-      })
-      .catch(error => console.error('Erro ao carregar dados de produtividade diária:', error));
-  </script>
-{% endif %}
+        }
+      });
+    })
+    .catch(error => console.error('Erro ao carregar dados de produtividade diária:', error));
+</script>
+{% endif %}

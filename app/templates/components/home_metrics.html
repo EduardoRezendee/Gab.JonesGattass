@@ -113,13 +113,13 @@
         <!-- Foto do Usuário -->
         <div class="text-center me-4">
           <img src="{{ photo_url }}" class="rounded-circle" alt="Foto de {{ user.first_name }}" loading="lazy"
-              style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #2f2f2f;">
+               style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #2f2f2f;">
         </div>
         <!-- Informações do Usuário -->
         <div>
           <h4 class="card-title mb-1 text-primary fw-bold">{{ user.first_name }} {{ user.last_name }}</h4>
           <p class="text-muted mb-0" style="font-size: 1rem;">Atividades em andamento</p>
-          <span style="display: block; width: 50px; height: 4px; background-color: #2f2f2f; margin-top: 5px; border-radius: 2px;"></span>
+          <span style="display: block; width: 50px; height: 4px; background-color: #808000; margin-top: 5px; border-radius: 2px;"></span>
         </div>
       </div>
       <!-- Exibição das Espécies -->
@@ -127,14 +127,14 @@
         {% if process_metrics.metrics.contagem_por_especie %}
           {% for especie in process_metrics.metrics.contagem_por_especie %}
             <div class="col-md-3 col-sm-6 mb-3">
-              <a href="#processo-{{ especie.especie__sigla|slugify }}" class="text-decoration-none">
+              <a href="{% url 'home' %}?especie={{ especie.especie__sigla|urlencode }}" class="text-decoration-none">
                 <div class="card shadow-sm border-0 {% if especie.especie__sigla == 'LIM' %}bg-light border border-danger{% else %}bg-light{% endif %}" style="border-radius: 8px;">
                   <div class="card-body py-2 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold {% if especie.especie__sigla == 'LIM' %}text-danger{% else %}text-primary{% endif %} mb-0">
                       {{ especie.especie__sigla|default:"Sem Sigla" }}
                     </h6>
                     <div class="rounded-circle {% if especie.especie__sigla == 'LIM' %}bg-danger text-white{% else %}bg-primary text-white{% endif %} d-flex justify-content-center align-items-center"
-                        style="width: 20px; height: 20px; font-size: 0.7rem;">
+                         style="width: 20px; height: 20px; font-size: 0.7rem;">
                       {{ especie.total }}
                     </div>
                   </div>
@@ -151,11 +151,9 @@
     </div>
   </div>
 
-  {% include 'components/meudia.html' %}
-
   <!-- Visão da Desembargadora -->
   {% if is_desembargador %}
-    {% include 'components/des.html' %} 
+    {% include 'components/desa.html' %} 
   {% elif is_revisor %}
     {% include 'components/revisor.html' %} 
   <!-- Visão do Chefe de Gabinete -->
@@ -430,7 +428,7 @@
           const commentBox = document.getElementById("comment-box-" + processoId);
           commentBox.classList.add("d-none");
         });
-      });
+     });
 
       // Envio de Comentários via AJAX
       document.querySelectorAll(".comentario-form").forEach(form => {
@@ -447,7 +445,7 @@
           const comentarioInput = form.querySelector("textarea");
           const comentariosDiv = document.getElementById("comentarios-" + processoId);
 
-          fetch(`/adicionar-comentario/${processoId}/`, {
+          fetch(/adicionar-comentario/${processoId}/, {
             method: "POST",
             body: new FormData(form),
             headers: {
@@ -462,7 +460,7 @@
               novoComentario.classList.add("d-flex", "align-items-start", "border-bottom", "pb-2", "mb-2");
               novoComentario.innerHTML = `
                 <img src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                    alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
                 <div class="w-100">
                   <strong>${data.usuario}</strong>
                   <span class="text-muted small d-block">${data.data_criacao}</span>
@@ -485,7 +483,7 @@
     function copiarNumero(processoId) {
       let texto = document.getElementById("numeroProcesso-" + processoId).innerText;
       navigator.clipboard.writeText(texto).then(() => {
-        let icone = document.querySelector(`#numeroProcesso-${processoId} + .copiar-icon`);
+        let icone = document.querySelector(#numeroProcesso-${processoId} + .copiar-icon);
         icone.classList.replace("bi-clipboard", "bi-clipboard-check");
         setTimeout(() => icone.classList.replace("bi-clipboard-check", "bi-clipboard"), 1500);
       }).catch(err => console.error("Erro ao copiar o texto:", err));
@@ -538,7 +536,7 @@
                 <div class="card-body py-2 d-flex justify-content-between align-items-center">
                   <h6 class="fw-bold text-primary mb-0">{{ especie }}</h6>
                   <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                      style="width: 30px; height: 30px; font-size: 0.9rem;">
+                       style="width: 30px; height: 30px; font-size: 0.9rem;">
                     {{ count }}
                   </div>
                 </div>
@@ -557,9 +555,9 @@
         {% if top_users|length > 1 %}
           <div class="text-center mx-3">
             <img src="{{ top_users.1.photo|default:'/static/default-profile.png' }}"
-                class="rounded-circle"
-                alt="Foto de {{ top_users.1.name }}"
-                style="width: 70px; height: 70px; object-fit: cover; border: 3px solid silver;">
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.1.name }}"
+                 style="width: 70px; height: 70px; object-fit: cover; border: 3px solid silver;">
             <h5 class="mt-2" style="color: #4B5563;">2º Lugar</h5>
             <p><strong>{{ top_users.1.name }}</strong></p>
             <span class="badge bg-secondary">Pontos: {{ top_users.1.points }}</span>
@@ -570,9 +568,9 @@
         {% if top_users|length > 0 %}
           <div class="text-center mx-3">
             <img src="{{ top_users.0.photo|default:'/static/default-profile.png' }}"
-                class="rounded-circle"
-                alt="Foto de {{ top_users.0.name }}"
-                style="width: 100px; height: 100px; object-fit: cover; border: 3px solid gold;">
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.0.name }}"
+                 style="width: 100px; height: 100px; object-fit: cover; border: 3px solid gold;">
             <h5 class="mt-2" style="color: #083464;">1º Lugar</h5>
             <p><strong>{{ top_users.0.name }}</strong></p>
             <span class="badge bg-warning text-dark">Pontos: {{ top_users.0.points }}</span>
@@ -583,9 +581,9 @@
         {% if top_users|length > 2 %}
           <div class="text-center mx-3">
             <img src="{{ top_users.2.photo|default:'/static/default-profile.png' }}"
-                class="rounded-circle"
-                alt="Foto de {{ top_users.2.name }}"
-                style="width: 60px; height: 60px; object-fit: cover; border: 3px solid #cd7f32;">
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.2.name }}"
+                 style="width: 60px; height: 60px; object-fit: cover; border: 3px solid #cd7f32;">
             <h5 class="mt-2" style="color: #4B5563;">3º Lugar</h5>
             <p><strong>{{ top_users.2.name }}</strong></p>
             <span class="badge bg-danger">Pontos: {{ top_users.2.points }}</span>
@@ -679,5 +677,5 @@
       opacity: 1;
       color: #083464;
     }
-  </style>
+  </style>
 </div>
