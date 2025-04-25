@@ -14,9 +14,10 @@ class ProcessoForm(forms.ModelForm):
         model = Processo
         fields = [
             'numero_processo', 'data_dist', 'especie', 'usuario', 'dt_prazo',
-            'tipo', 'camara', 'dt_julgamento', 'resultado',
+            'tipo','camara', 'dt_julgamento', 'resultado',
             'despacho',              # <-- adicionado
             'prioridade_urgente',    # <-- adicionado
+            # 'tema' # <-- adicionado
         ]
         widgets = {
             'numero_processo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -28,9 +29,10 @@ class ProcessoForm(forms.ModelForm):
             'usuario': forms.Select(attrs={'class': 'form-control'}),
             'dt_prazo': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
             'tipo': forms.Select(attrs={'class': 'form-control'}),
+            # 'tema': forms.Select(attrs={'class': 'form-control'}), 
             'camara': forms.Select(attrs={'class': 'form-control'}),
             'resultado': forms.Select(attrs={'class': 'form-control'}),
-            'dt_julgamento': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}),
+            'dt_julgamento': forms.DateInput(attrs={'class': 'form-control datepicker', 'type': 'text'}), 
             'despacho': forms.CheckboxInput(attrs={'class': 'form-check-input'}),           # <-- checkbox
             'prioridade_urgente': forms.CheckboxInput(attrs={'class': 'form-check-input'}), # <-- checkbox
         }
@@ -41,6 +43,7 @@ class ProcessoForm(forms.ModelForm):
             'usuario': 'Usuário',
             'dt_prazo': 'Prazo',
             'tipo': 'Tipo',
+            # 'tema': 'Tema',
             'camara': 'Câmara',
             'resultado': 'Resultado',
             'dt_julgamento': 'Data do Julgamento',
@@ -69,7 +72,7 @@ class ProcessoForm(forms.ModelForm):
                 # Usuários que não são "Gestor(a)" só podem editar 'tipo' e 'resultado'
                 readonly_fields = [
                     'numero_processo', 'data_dist', 'especie', 'usuario', 
-                    'dt_prazo', 'camara', 'dt_julgamento'
+                    'dt_prazo', 'camara', 'dt_julgamento', # 'tema',
                 ]
                 for field in readonly_fields:
                     if field in self.fields:
