@@ -26,6 +26,8 @@ from django.contrib import messages
 
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
+
+@login_required
 def definir_tema(request, pk):
     """Processa o formulário do modal e define/atualiza o Tema do Processo."""
     processo = get_object_or_404(Processo, pk=pk)
@@ -36,10 +38,25 @@ def definir_tema(request, pk):
             tema = get_object_or_404(Tema, pk=tema_id)
             processo.tema = tema
             processo.save()
-            messages.success(request, "Tema atualizado com sucesso!")
+            # Verificar se a requisição é AJAX
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Tema atualizado com sucesso!',
+                    'tema_nome': tema.nome,
+                })
+            else:
+                messages.success(request, "Tema atualizado com sucesso!")
+                return redirect('processo_list')
         else:
-            messages.error(request, "Selecione um tema válido.")
-        return redirect('processo_list')  # Ajuste para onde você quer voltar
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Selecione um tema válido.',
+                }, status=400)
+            else:
+                messages.error(request, "Selecione um tema válido.")
+                return redirect('processo_list')
     
     return redirect('processo_list')
 
@@ -52,6 +69,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         """
         Filtra os processos com base nos parâmetros fornecidos na URL.
+        Garante que processos na fase "Processo Concluído" apareçam quando o filtro de status for "Concluído".
         """
         queryset = Processo.objects.all()
 
@@ -66,26 +84,27 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         numero_processo = self.request.GET.get('numero_processo')
         meus_processos = self.request.GET.get('meus_processos', None)
         user_id = self.request.GET.get('user_id')
-
         tema = self.request.GET.get('tema')
 
-        # 🔹 Filtra corretamente o status antes da ordenação
+        # 🔹 Obtém a última fase do processo (incluindo todas as fases, independentemente do status)
+        latest_fase = Subquery(
+            ProcessoAndamento.objects.filter(
+                processo=OuterRef('id')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+
+        # 🔹 Anota a fase atual (sem excluir "Processo Concluído")
+        queryset = queryset.annotate(fase_atual=latest_fase)
+
+        # 🔹 Filtra pelo status (pendente ou concluído)
         if status == "concluído":
             queryset = queryset.filter(concluido=True)
         else:
             queryset = queryset.filter(concluido=False)
 
-        # 🔹 Obtém a última fase ativa do processo (excluindo fases concluídas)
-        latest_fase = Subquery(
-            ProcessoAndamento.objects.filter(
-                processo=OuterRef('id'),
-                status__status__in=["Em andamento", "Não iniciado"]  # 🔹 Garante que só pega fases ativas
-            ).order_by('-dt_criacao').values('fase__fase')[:1]
-        )
-
-        queryset = queryset.annotate(fase_atual=latest_fase).filter(fase_atual__isnull=False)
-
-        # 🔹 Aplicar filtros específicos
+        # 🔹 Aplica filtros adicionais
+        if numero_processo:
+            numero_processo = numero_processo.strip()[:10]
         filtros = {
             'fase_atual': fase_atual,
             'camara__camara': camara,
@@ -94,9 +113,7 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             'numero_processo__icontains': numero_processo,
         }
         if tema:
-            # Exemplo: filtrar pelo nome do tema
             filtros['tema__nome'] = tema
-            # Se preferir filtrar por ID, troque por: filtros['tema__id'] = tema
 
         for campo, valor in filtros.items():
             if valor:
@@ -122,11 +139,12 @@ class ProcessoListView(LoginRequiredMixin, ListView):
             if valor:
                 queryset = queryset.filter(**{f"{field}__date": datetime.strptime(valor, '%Y-%m-%d').date()})
 
-         # 🔹 Aplicar os filtros de despacho e prioridade
+        # 🔹 Aplicar os filtros de despacho e prioridade
         if despacho == 'sim':
             queryset = queryset.filter(despacho=True)
         if prioridade == 'sim':
             queryset = queryset.filter(prioridade_urgente=True)
+
         # 🔹 Captura o parâmetro de ordenação da URL, com padrão "mais_recente"
         order_by = self.request.GET.get("ordenar", "mais_recente")
 
@@ -193,11 +211,10 @@ class ProcessoListView(LoginRequiredMixin, ListView):
         metrics_data = get_advanced_metrics()
         context["assessor_process_data"] = {
             item["id"]: item for item in metrics_data["assessor_process_data"]
-
-        
         }
 
         return context
+
 
 class ProcessoCreateView(CreateView):
     model = Processo
@@ -309,26 +326,38 @@ class ProcessoPartialUpdateView(View):
     def post(self, request, processo_id):
         processo = get_object_or_404(Processo, id=processo_id)
 
-        tipo_id = request.POST.get("tipo")
-        resultado_id = request.POST.get("resultado")
+        # Obtém os dados do POST e remove espaços em branco
+        tipo_id = request.POST.get("tipo", "").strip()
+        resultado_id = request.POST.get("resultado", "").strip()  # opcional
+        despacho_val = request.POST.get("despacho")  # vem como "on" se marcado
 
-        # Verifica se os campos foram enviados corretamente
-        if not tipo_id or not resultado_id:
-            return JsonResponse({'error': 'Campos obrigatórios não foram enviados'}, status=400)
+        # Valida se o campo 'tipo' foi preenchido
+        if not tipo_id:
+            return JsonResponse(
+                {'error': 'Por favor, selecione o Tipo antes de salvar.'},
+                status=400
+            )
 
-        # Converte os IDs para instâncias reais do modelo
+        # Converte o id do tipo para instância do modelo
         tipo = get_object_or_404(Tipo, id=tipo_id)
-        resultado = get_object_or_404(Resultado, id=resultado_id)
 
-        # Atualiza os valores no processo
+        # Converte o id do resultado, se enviado; caso contrário, mantém como None
+        if resultado_id:
+            resultado = get_object_or_404(Resultado, id=resultado_id)
+        else:
+            resultado = None
+
+        # Atualiza os valores no objeto processo
         processo.tipo = tipo
         processo.resultado = resultado
+        processo.despacho = despacho_val == "on"  # Checkbox: True se marcado, False caso contrário
         processo.save()
 
-        print(f"✅ Processo atualizado - Tipo: {processo.tipo}, Resultado: {processo.resultado}")  # DEBUG
+        print(f"✅ Processo atualizado - Tipo: {processo.tipo}, Resultado: {processo.resultado}, Despacho: {processo.despacho}")
 
-        # 🔹 Redirecionar para a página correta com o objeto atualizado
+        # Redireciona para a página desejada com o objeto atualizado
         return redirect(f'/andamentos/?processo={processo.id}')
+
     
 
 class ProcessoUpdateView(LoginRequiredMixin, UpdateView):
@@ -360,21 +389,26 @@ class AndamentoUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'andamento_form_update.html'
 
     def get_success_url(self):
-        # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'andamento_list')
-        origem = self.request.POST.get('origem', 'andamento_list')  # Default para 'andamento_list'
-
+        # Obtém o parâmetro 'origem' do formulário
+        origem = self.request.POST.get('origem', 'andamento_list')
         # Obtém o processo associado ao andamento
         processo_id = self.object.processo.id
 
-        # Define a URL de redirecionamento com base na origem
         if origem == 'home':
-            return reverse('home')
+            base_url = reverse('home')
         else:
-            # Redireciona para a URL da lista de andamentos, incluindo o parâmetro 'processo'
-            return f"{reverse('andamento_list')}?processo={processo_id}"
+            base_url = f"{reverse('andamento_list')}?processo={processo_id}"
+
+        # Se houver a query string dos filtros, adicione-a
+        next_query = self.request.POST.get('next')
+        if next_query:
+            if '?' in base_url:
+                return f"{base_url}&{next_query}"
+            else:
+                return f"{base_url}?{next_query}"
+        return base_url
 
     def get_context_data(self, **kwargs):
-        # Adiciona o objeto andamento ao contexto para evitar erro no template
         context = super().get_context_data(**kwargs)
         context["andamento"] = self.object
         return context
@@ -408,8 +442,6 @@ class AndamentoUpdateView(LoginRequiredMixin, UpdateView):
         # Processa o formulário padrão (atualização via UpdateView)
         response = super().post(request, *args, **kwargs)
         return response
-
-
 
 
 class AndamentoDeleteView(LoginRequiredMixin,DeleteView):
@@ -450,8 +482,8 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
         usuario_responsavel = andamento.processo.usuario  # Usuário padrão (do processo)
         if nova_fase == "Revisão":
             usuario_responsavel = UserProfile.objects.filter(funcao="revisor(a)").first().user
-        elif nova_fase == "Revisão Des":
-            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargador").first().user
+        elif nova_fase == "Revisão Desa":
+            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargadora").first().user
 
         # Cria o novo andamento
         nova_fase_obj = get_object_or_404(Fase, fase=nova_fase)
@@ -471,10 +503,17 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
             return redirect('home')
 
 
+
 class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
         andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         
+        # Verificar se o processo está na fase "L. PJE"
+        if andamento.fase.fase != "L. PJE":
+            messages.error(request, "Processo só pode ser concluído na fase L. PJE.")
+            origem = request.POST.get("origem", "andamento_list")
+            return redirect("home" if origem == "home" else f"andamento_list?processo={andamento.processo.pk}")
+
         # Finaliza o andamento atual
         andamento.dt_conclusao = now()
         andamento.status = Status.objects.get(status="Concluído")
@@ -500,6 +539,9 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
             dt_inicio=now(),
             dt_conclusao=now()
         )
+
+        # Remover o processo do "Meu Dia" (deletar o registro em TarefaDoDia)
+        TarefaDoDia.objects.filter(usuario=request.user, processo=processo).delete()
 
         # Obtém o parâmetro 'origem' do formulário (pode ser 'home' ou 'andamento_list')
         origem = request.POST.get('origem', 'andamento_list')  # Default para 'andamento_list' se não especificado
@@ -629,42 +671,88 @@ def remover_tarefa(request, processo_id):
         return redirect(f"{url}?{query_params.urlencode()}")
     return redirect(url)
 
+from django.http import HttpResponse
+from django.db.models.functions import Left
+import openpyxl
+from openpyxl.styles import Font, Alignment
+
 def export_processos_xlsx(request):
-    """Exporta os processos para um arquivo Excel (.xlsx)"""
+    """Exporta os processos para um arquivo Excel (.xlsx) com base nos filtros aplicados na ProcessoListView"""
+    
+    # Instancia a ProcessoListView para reutilizar a lógica de filtros
+    view = ProcessoListView()
+    view.request = request  # Passa a requisição para a view
+    processos = view.get_queryset()
+
+    # 🔹 Obtém o link_doc do andamento com fase "L. PJE" (o mais recente, se houver múltiplos)
+    l_pje_link_doc = Subquery(
+        ProcessoAndamento.objects.filter(
+            processo=OuterRef('id'),
+            fase__fase="L. PJE"  # Filtra pela fase "L. PJE"
+        ).order_by('-dt_criacao').values('link_doc')[:1]
+    )
+
+    # 🔹 Otimiza a query com select_related e anota o link_doc
+    processos = processos.select_related('especie', 'usuario', 'resultado', 'tipo', 'camara', 'tema').annotate(
+        l_pje_link_doc=l_pje_link_doc
+    )
 
     # Criar um novo workbook (arquivo Excel)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Processos"
 
-    # Definir os cabeçalhos da planilha
+    # Definir os cabeçalhos da planilha, incluindo as novas colunas
     headers = [
         "Número do Processo", "Data de Distribuição", "Espécie", "Resultado", "Tipo",
-        "Câmara", "Usuário Responsável", "Data de Julgamento", "Prazo", 
-        "Data de Criação", "Última Atualização", "Concluído", "Data de Conclusão"
+        "Câmara", "Usuário Responsável", "Data de Julgamento", "Prazo",
+        "Data de Criação", "Última Atualização", "Concluído", "Data de Conclusão",
+        "Tema", "Despacho", "Link do Documento"
     ]
     ws.append(headers)
 
-    # Buscar os processos no banco de dados
-    processos = Processo.objects.all()
+    # Verifica se há processos; se não, adiciona uma mensagem
+    if not processos:
+        ws.append(["Nenhum processo encontrado com os filtros aplicados."])
+    else:
+        # Adicionar os dados à planilha
+        for processo in processos:
+            ws.append([
+                processo.numero_processo,
+                processo.data_dist.strftime('%d/%m/%Y %H:%M') if processo.data_dist else "",
+                processo.especie.especie if processo.especie else "",
+                processo.resultado.resultado if processo.resultado else "",
+                processo.tipo.tipo if processo.tipo else "",
+                processo.camara.camara if processo.camara else "",
+                f"{processo.usuario.first_name} {processo.usuario.last_name}" if processo.usuario else "Sem responsável",
+                processo.dt_julgamento.strftime('%d/%m/%Y %H:%M') if processo.dt_julgamento else "",
+                processo.dt_prazo.strftime('%d/%m/%Y %H:%M') if processo.dt_prazo else "",
+                processo.dt_criacao.strftime('%d/%m/%Y %H:%M'),
+                processo.dt_atualizacao.strftime('%d/%m/%Y %H:%M'),
+                "Sim" if processo.concluido else "Não",
+                processo.dt_conclusao.strftime('%d/%m/%Y %H:%M') if processo.dt_conclusao else "",
+                processo.tema.nome if processo.tema else "",  # Novo campo: Tema
+                "Sim" if processo.despacho else "Não",        # Novo campo: Despacho
+                processo.l_pje_link_doc or ""                 # Novo campo: Link do Documento (fase L. PJE)
+            ])
 
-    # Adicionar os dados à planilha
-    for processo in processos:
-        ws.append([
-            processo.numero_processo,
-            processo.data_dist.strftime('%d/%m/%Y %H:%M') if processo.data_dist else "",
-            processo.especie.especie if processo.especie else "",
-            processo.resultado.resultado if processo.resultado else "",
-            processo.tipo.tipo if processo.tipo else "",
-            processo.camara.camara if processo.camara else "",
-            f"{processo.usuario.first_name} {processo.usuario.last_name}" if processo.usuario else "Sem responsável",
-            processo.dt_julgamento.strftime('%d/%m/%Y %H:%M') if processo.dt_julgamento else "",
-            processo.dt_prazo.strftime('%d/%m/%Y %H:%M') if processo.dt_prazo else "",
-            processo.dt_criacao.strftime('%d/%m/%Y %H:%M'),
-            processo.dt_atualizacao.strftime('%d/%m/%Y %H:%M'),
-            "Sim" if processo.concluido else "Não",
-            processo.dt_conclusao.strftime('%d/%m/%Y %H:%M') if processo.dt_conclusao else ""
-        ])
+    # Estilizar cabeçalhos
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+
+    # Ajustar largura das colunas automaticamente
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
 
     # Criar a resposta HTTP com o arquivo Excel
     response = HttpResponse(
