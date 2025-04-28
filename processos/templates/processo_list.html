@@ -11,7 +11,7 @@ Distribuição de Processos
         <!-- Sidebar Secundária (Filtro por Usuário) -->
         <aside class="col-md-3 col-lg-2 bg-white shadow-sm p-3 d-flex flex-column" 
                 style="border-right: 1px solid #e9ecef; min-height: 100vh;">
-            <h1 class="fw-bold mb-4" style="color: #2f2f2f; font-size: 1.5rem;">
+            <h1 class="fw-bold mb-4" style="color: #2f2f2f ; font-size: 1.5rem;">
                 <i class="bi bi-users me-2"></i> Usuários
             </h1>
         
@@ -26,7 +26,7 @@ Distribuição de Processos
                          class="rounded-circle me-2 border" 
                          width="40" 
                          height="40" 
-                         style="object-fit: cover; border-color: #525251 !important;">
+                         style="object-fit: cover; border-color: #525251  !important;">
                     <div class="d-flex flex-column flex-grow-1">
                         <span class="fw-semibold text-dark" style="font-size: 14px;">{{ user.get_full_name }}</span>
                     </div>
@@ -57,7 +57,7 @@ Distribuição de Processos
                     <h1 class="fw-bold" style="color: #2f2f2f; font-size: 1.75rem;">
                         <i class="bi bi-folder-fill me-2"></i> Cadastro de Processos
                     </h1>
-                    <hr style="height: 2px; background: linear-gradient(to right, #2f2f2f, #7a7878); border: none; width: 30%; opacity: 0.8;">
+                    <hr style="height: 2px; background: linear-gradient(to right, #2f2f2f, #525251); border: none; width: 30%; opacity: 0.8;">
                 </div>
             </div>
 
@@ -75,161 +75,134 @@ Distribuição de Processos
 
             <!-- Barra de Pesquisa e Botões -->
             <div class="row g-3 align-items-center mb-4">
-                <!-- Campo de pesquisa -->
+                <!-- Campo de Pesquisa -->
                 <div class="col-md-6 col-lg-5">
                     <form method="get">
                         <div class="input-group shadow-sm">
                             <input type="text" class="form-control" placeholder="Pesquisar Número do Processo" 
-                                   name="numero_processo" value="{{ request.GET.numero_processo }}"
-                                   style="border-radius: 20px 0 0 20px; font-size: 0.95rem; padding: 0.75rem 1rem; border: 1px solid #e9ecef;">
+                                name="numero_processo" value="{{ request.GET.numero_processo }}"
+                                style="border-radius: 25px 0 0 25px; font-size: 0.95rem; padding: 0.75rem 1rem; border: 1px solid #e9ecef; border-right: none;">
                             <button type="submit" class="btn text-white d-flex align-items-center justify-content-center" 
-                                    style="background: linear-gradient(135deg, #2f2f2f, #acabab); border: none; border-radius: 0 20px 20px 0; font-size: 0.95rem; padding: 0.75rem 1.5rem; transition: transform 0.2s ease;">
+                                    style="background: linear-gradient(135deg, #2f2f2f, #525251); border: none; border-radius: 0 25px 25px 0; font-size: 0.95rem; padding: 0.75rem 1.5rem; transition: transform 0.2s ease;">
                                 <i class="bi bi-search me-2"></i> Pesquisar
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <div class="col-md-6 col-lg-7 d-flex justify-content-end align-items-center gap-3 flex-wrap">
-                    <!-- Botão Exportar Excel -->
-                    <a href="{% url 'exportar_excel' %}" 
-                       class="btn text-white shadow-sm d-flex align-items-center gap-2"
-                       style="background: linear-gradient(135deg, #18432a, #5ca056); 
-                              border: none; 
-                              border-radius: 25px; 
-                              font-size: 0.9rem; 
-                              padding: 0.55rem 1.2rem; 
-                              transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                       onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
-                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
-                        <i class="bi bi-file-earmark-excel"></i>
-                        <span>Exportar Excel</span>
-                    </a>
-                
-                    <!-- Formulário com Filtros de Tema, Tipo, Despacho e Prioridade -->
-                    <form method="GET" class="d-flex align-items-center gap-2">
-                        {% for key, value in request.GET.items %}
-                            {% if key != 'tema' and key != 'tipo' and key != 'despacho' and key != 'prioridade' %}
-                                <input type="hidden" name="{{ key }}" value="{{ value }}">
-                            {% endif %}
-                        {% endfor %}
-                
-                        <!-- Filtro de Tema -->
-                        <select name="tema" 
-                                class="form-select form-select-sm shadow-sm"
-                                style="width: auto; 
-                                       border-radius: 25px; 
-                                       border: 1px solid #2f2f2f; 
-                                       padding: 0.4rem 1rem; 
-                                       font-size: 0.9rem; 
-                                       background-color: #fff;">
-                            <option value="">Todos os Temas</option>
-                            {% for t in temas %}
-                                <option value="{{ t.nome }}" {% if request.GET.tema == t.nome %}selected{% endif %}>
-                                    {{ t.nome }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                
-                        <!-- Filtro de Tipo -->
-                        <select name="tipo" 
-                                class="form-select form-select-sm shadow-sm"
-                                style="width: auto; 
-                                       border-radius: 25px; 
-                                       border: 1px solid #2f2f2f; 
-                                       padding: 0.4rem 1rem; 
-                                       font-size: 0.9rem; 
-                                       background-color: #fff;">
-                            <option value="">Todos os Tipos</option>
-                            {% for tipo in tipos %}
-                                <option value="{{ tipo }}" {% if request.GET.tipo == tipo %}selected{% endif %}>
-                                    {{ tipo }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                
-                        <!-- Botão de Despacho -->
-                        <button type="submit" name="despacho" value="{% if despacho_selecionado == 'sim' %}nao{% else %}sim{% endif %}"
-                                class="btn shadow-sm {% if despacho_selecionado == 'sim' %}btn-info{% else %}btn-outline-info{% endif %}"
-                                style="border-radius: 25px; padding: 0.4rem 0.8rem; font-size: 0.9rem;"
-                                title="{% if despacho_selecionado == 'sim' %}Remover Filtro de Despacho{% else %}Filtrar Despachos{% endif %}">
-                            <span style="font-size: 0.9rem;">📜</span>
-                        </button>
-                
-                        <!-- Botão de Prioridade -->
-                        <button type="submit" name="prioridade" value="{% if prioridade_selecionada == 'sim' %}nao{% else %}sim{% endif %}"
-                                class="btn shadow-sm {% if prioridade_selecionada == 'sim' %}btn-danger{% else %}btn-outline-danger{% endif %}"
-                                style="border-radius: 25px; padding: 0.4rem 0.8rem; font-size: 0.9rem;"
-                                title="{% if prioridade_selecionada == 'sim' %}Remover Filtro de Prioridade{% else %}Filtrar Prioridade{% endif %}">
-                            <i class="bi bi-exclamation-circle"></i>
-                        </button>
-                
-                        <!-- Botão Aplicar Filtros -->
-                        <button type="submit" 
-                                class="btn shadow-sm"
-                                style="background-color: #2f2f2f; 
-                                       color: white; 
-                                       border: none; 
-                                       border-radius: 25px; 
-                                       padding: 0.4rem 1rem; 
-                                       font-size: 0.9rem; 
-                                       transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
-                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
-                            Filtrar
-                        </button>
-                    </form>
-                
-                    <!-- Botão Limpar Filtros -->
-                    <a href="{% url 'processo_list' %}" 
-                       class="btn shadow-sm d-flex align-items-center gap-2"
-                       style="background-color: #fff; 
-                              border: 1px solid #2f2f2f; 
-                              color: #2f2f2f; 
-                              border-radius: 25px; 
-                              font-size: 0.9rem; 
-                              padding: 0.55rem 1.2rem; 
-                              transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                       onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
-                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
-                        <i class="bi bi-x-lg"></i>
-                        <span>Limpar Filtros</span>
-                    </a>
-                
-                    <!-- Botão Novo Processo -->
-                    <button type="button"
-                            id="btnNovoProcesso" 
-                            class="btn text-white shadow-sm d-flex align-items-center gap-2"
-                            style="background: linear-gradient(135deg, #2f2f2f, #acabab); 
-                                   border: none; 
-                                   border-radius: 25px; 
-                                   font-size: 0.9rem; 
-                                   padding: 0.55rem 1.2rem; 
-                                   transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
-                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';"
-                            data-bs-toggle="modal" data-bs-target="#processoModal">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Novo Processo</span>
-                    </button>
-                </div>
-            </div>
-            <!-- Modal do Bootstrap -->
-            <div class="modal fade" id="processoModal" tabindex="-1" 
-                    aria-labelledby="processoModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
+                <!-- Filtros e Botões -->
+                <div class="col-md-6 col-lg-7">
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Filtros -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap bg-light p-2 rounded shadow-sm" style="border: 1px solid #e9ecef;">
+                            <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+                                {% for key, value in request.GET.items %}
+                                    {% if key != 'tema' and key != 'tipo' and key != 'despacho' and key != 'prioridade' %}
+                                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                    {% endif %}
+                                {% endfor %}
 
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="processoModalLabel">Cadastrar Processo</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" 
-                                        aria-label="Close"></button>
-                                </div>
-                                    <div class="modal-body" id="processoModalBody">
+                                <!-- Filtro de Tipo -->
+                                <select name="tipo" 
+                                        class="form-select form-select-sm shadow-sm"
+                                        style="width: 120px; border-radius: 25px; border: 1px solid #2f2f2f; padding: 0.4rem 1rem; font-size: 0.9rem; background-color: #fff;">
+                                    <option value="">Tipos</option>
+                                    {% for tipo in tipos %}
+                                        <option value="{{ tipo }}" {% if request.GET.tipo == tipo %}selected{% endif %}>
+                                            {{ tipo }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <!-- Filtro de Tema -->
+                                <select name="tema" 
+                                        class="form-select form-select-sm shadow-sm"
+                                        style="width: 150px; border-radius: 25px; border: 1px solid #2f2f2f; padding: 0.4rem 1rem; font-size: 0.9rem; background-color: #fff;">
+                                    <option value="">Temas</option>
+                                    {% for tema in temas %}
+                                        <option value="{{ tema.nome }}" {% if request.GET.tema == tema.nome %}selected{% endif %}>
+                                            {{ tema.nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <!-- Botão de Despacho -->
+                                <button type="submit" name="despacho" value="{% if despacho_selecionado == 'sim' %}nao{% else %}sim{% endif %}"
+                                        class="btn shadow-sm {% if despacho_selecionado == 'sim' %}btn-info{% else %}btn-outline-info{% endif %}"
+                                        style="border-radius: 25px; padding: 0.4rem 0.8rem; font-size: 0.9rem; border: 1px solid #17a2b8;"
+                                        title="{% if despacho_selecionado == 'sim' %}Remover Filtro de Despacho{% else %}Filtrar Despachos{% endif %}">
+                                    <i class="bi bi-file-text"></i>
+                                </button>
+
+                                <!-- Botão de Prioridade -->
+                                <button type="submit" name="prioridade" value="{% if prioridade_selecionada == 'sim' %}nao{% else %}sim{% endif %}"
+                                        class="btn shadow-sm {% if prioridade_selecionada == 'sim' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                                        style="border-radius: 25px; padding: 0.4rem 0.8rem; font-size: 0.9rem; border: 1px solid #dc3545;"
+                                        title="{% if prioridade_selecionada == 'sim' %}Remover Filtro de Prioridade{% else %}Filtrar Prioridade{% endif %}">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </button>
+
+                                <!-- Botão Aplicar Filtros -->
+                                <button type="submit" 
+                                        class="btn shadow-sm text-white"
+                                        style="background: linear-gradient(135deg, #18432a, #5ca056); border: none; border-radius: 25px; padding: 0.4rem 1rem; font-size: 0.9rem; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
+                                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
+                                    <i class="bi bi-funnel me-1"></i> Filtrar
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Ações -->
+                        <div class="d-flex justify-content-end gap-2 flex-wrap">
+                            <!-- Botão Limpar Filtros -->
+                            <a href="{% url 'processo_list' %}" 
+                            class="btn shadow-sm d-flex align-items-center gap-2"
+                            style="background-color: #fff; border: 1px solid #2f2f2f; color: #7a7878; border-radius: 25px; font-size: 0.9rem; padding: 0.4rem 1rem; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Limpar Filtros
+                            </a>
+
+                            <!-- Botão Exportar Excel -->
+                            <a href="{% url 'exportar_excel' %}?{{ request.GET.urlencode }}" 
+                            class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                            style="background: linear-gradient(135deg, #18432a, #5ca056; border: none; border-radius: 25px; font-size: 0.9rem; padding: 0.4rem 1rem; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+                            </a>
+
+                            <!-- Botão Novo Processo -->
+                            <button type="button" id="btnNovoProcesso" 
+                                    class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                                    style="background: linear-gradient(135deg, #2f2f2f, #7a7878); border: none; border-radius: 25px; font-size: 0.9rem; padding: 0.4rem 1rem; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                                    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 0, 0.3)';"
+                                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)';"
+                                    data-bs-toggle="modal" data-bs-target="#processoModal">
+                                <i class="bi bi-plus-circle me-1"></i> Novo Processo
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Modal do Bootstrap -->
+            <div class="modal fade" id="processoModal" tabindex="-1" 
+                    aria-labelledby="processoModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="processoModalLabel">Cadastrar Processo</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" 
+                                    aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="processoModalBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Meu Dia -->
             <div class="accordion mb-4" id="accordionMeuDia">
                 <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
@@ -237,7 +210,7 @@ Distribuição de Processos
                         <button class="accordion-button d-flex align-items-center justify-content-between" type="button" 
                                 data-bs-toggle="collapse" data-bs-target="#collapseMeuDia" aria-expanded="true" 
                                 aria-controls="collapseMeuDia" 
-                                style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2f2f2f; border-radius: 12px; font-size: 1.1rem; font-weight: 600;">
+                                style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2C3E50; border-radius: 12px; font-size: 1.1rem; font-weight: 600;">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-sun-fill" style="color: #2f2f2f;"></i>
                                 <span>Meu Dia</span>
@@ -254,7 +227,7 @@ Distribuição de Processos
                             <div class="row g-3">
                                 {% for tarefa in tarefas_do_dia %}
                                 <div class="col-md-6 col-lg-4">
-                                    <div class="card shadow-sm p-3 h-100" style="border-radius: 12px; border-left: 4px solid #bea066; transition: transform 0.2s ease;">
+                                    <div class="card shadow-sm p-3 h-100" style="border-radius: 12px; border-left: 4px solid #7a7878; transition: transform 0.2s ease;">
                                         <div class="d-flex flex-column h-100">
                                             <h6 class="fw-bold text-primary mb-2">
                                                 <i class="bi bi-folder-fill me-1"></i> {{ tarefa.processo.numero_processo }}
@@ -301,267 +274,446 @@ Distribuição de Processos
                 </div>
             </div>
 
-           <!-- Filtros Avançados no Acordeão -->
-<div class="accordion mb-4" id="accordionFiltros">
-    <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
-        <h2 class="accordion-header" id="headingFiltros">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseFiltros" aria-expanded="false" aria-controls="collapseFiltros"
-                    style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2C3E50; font-size: 1.1rem; font-weight: 600;">
-                <i class="bi bi-funnel me-2" style="color: #2f2f2f;"></i> Filtros Avançados
-            </button>
-        </h2>
-        <div id="collapseFiltros" class="accordion-collapse collapse" aria-labelledby="headingFiltros"
-             data-bs-parent="#accordionFiltros">
-            <div class="accordion-body p-4" style="background-color: #ffffff;">
-                <form method="get">
-                    {% for key, value in request.GET.items %}
-                        {% if key != 'status' and key != 'fase_atual' and key != 'camara' and key != 'especie' and key != 'data_mes' and key != 'data_dist' and key != 'data_julgamento' %}
-                            <input type="hidden" name="{{ key }}" value="{{ value }}">
-                        {% endif %}
-                    {% endfor %}
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small" style="color: #083464;">Fase Atual</label>
-                            <select class="form-select shadow-sm" name="fase_atual" style="border-radius: 10px; padding: 0.5rem;">
-                                <option value="">Todas as Fases</option>
-                                {% for fase in fases %}
-                                <option value="{{ fase }}" {% if request.GET.fase_atual == fase %}selected{% endif %}>
-                                    {{ fase }}
-                                </option>
+            <!-- Filtros Avançados no Acordeão -->
+            <div class="accordion mb-4" id="accordionFiltros">
+                <div class="accordion-item shadow-sm" style="border: none; border-radius: 12px; overflow: hidden;">
+                    <h2 class="accordion-header" id="headingFiltros">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseFiltros" aria-expanded="false" aria-controls="collapseFiltros"
+                                style="background: linear-gradient(135deg, #f1f7ff, #e9f1ff); color: #2C3E50; font-size: 1.1rem; font-weight: 600;">
+                            <i class="bi bi-funnel me-2" style="color: #2f2f2f;"></i> Filtros Avançados
+                        </button>
+                    </h2>
+                    <div id="collapseFiltros" class="accordion-collapse collapse" aria-labelledby="headingFiltros"
+                         data-bs-parent="#accordionFiltros">
+                        <div class="accordion-body p-4" style="background-color: #ffffff;">
+                            <form method="get">
+                                {% for key, value in request.GET.items %}
+                                    {% if key != 'status' and key != 'fase_atual' and key != 'camara' and key != 'especie' and key != 'data_mes' and key != 'data_dist' and key != 'data_julgamento' and key != 'tema' %}
+                                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                    {% endif %}
                                 {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small" style="color: #083464;">Status</label>
-                            <select class="form-select shadow-sm" name="status" id="status" style="border-radius: 10px; padding: 0.5rem;">
-                                <option value="pendente" {% if request.GET.status == "pendente" or not request.GET.status %}selected{% endif %}>Pendente</option>
-                                <option value="concluído" {% if request.GET.status == "concluído" %}selected{% endif %}>Concluído</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small" style="color: #083464;">Câmara</label>
-                            <select class="form-select shadow-sm" name="camara" style="border-radius: 10px; padding: 0.5rem;">
-                                <option value="">Todas as Câmaras</option>
-                                {% for camara in camaras %}
-                                <option value="{{ camara }}" {% if request.GET.camara == camara %}selected{% endif %}>
-                                    {{ camara }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Fase Atual</label>
+                                        <select class="form-select shadow-sm" name="fase_atual" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="">Todas as Fases</option>
+                                            {% for fase in fases %}
+                                            <option value="{{ fase }}" {% if request.GET.fase_atual == fase %}selected{% endif %}>
+                                                {{ fase }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Status</label>
+                                        <select class="form-select shadow-sm" name="status" id="status" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="pendente" {% if request.GET.status == "pendente" or not request.GET.status %}selected{% endif %}>Pendente</option>
+                                            <option value="concluído" {% if request.GET.status == "concluído" %}selected{% endif %}>Concluído</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Câmara</label>
+                                        <select class="form-select shadow-sm" name="camara" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="">Todas as Câmaras</option>
+                                            {% for camara in camaras %}
+                                            <option value="{{ camara }}" {% if request.GET.camara == camara %}selected{% endif %}>
+                                                {{ camara }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
 
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small" style="color: #083464;">Espécie</label>
-                            <select class="form-select shadow-sm" name="especie" style="border-radius: 10px; padding: 0.5rem;">
-                                <option value="">Todas as Espécies</option>
-                                {% for especie in especies %}
-                                <option value="{{ especie }}" {% if request.GET.especie == especie %}selected{% endif %}>
-                                    {{ especie }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small" style="color: #083464;">Mês</label>
-                            <select class="form-select shadow-sm" name="data_mes" style="border-radius: 10px; padding: 0.5rem;">
-                                <option value="">Mês</option>
-                                {% for mes_num, mes_nome in meses %}
-                                <option value="{{ mes_num }}" {% if request.GET.data_mes == mes_num|stringformat:"d" %}selected{% endif %}>
-                                    {{ mes_nome }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="data_dist" class="form-label fw-semibold small" style="color: #083464;">Data de Distribuição</label>
-                            <input type="date" id="data_dist" class="form-control shadow-sm" name="data_dist"
-                                   value="{{ request.GET.data_dist }}" style="border-radius: 10px; padding: 0.5rem;">
-                        </div>
-                    </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Espécie</label>
+                                        <select class="form-select shadow-sm" name="especie" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="">Todas as Espécies</option>
+                                            {% for especie in especies %}
+                                            <option value="{{ especie }}" {% if request.GET.especie == especie %}selected{% endif %}>
+                                                {{ especie }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Tema</label>
+                                        <select class="form-select shadow-sm" name="tema" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="">Todos os Temas</option>
+                                            {% for tema in temas %}
+                                            <option value="{{ tema.nome }}" {% if request.GET.tema == tema.nome %}selected{% endif %}>
+                                                {{ tema.nome }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold small" style="color: #083464;">Mês</label>
+                                        <select class="form-select shadow-sm" name="data_mes" style="border-radius: 10px; padding: 0.5rem;">
+                                            <option value="">Mês</option>
+                                            {% for mes_num, mes_nome in meses %}
+                                            <option value="{{ mes_num }}" {% if request.GET.data_mes == mes_num|stringformat:"d" %}selected{% endif %}>
+                                                {{ mes_nome }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
 
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-4">
-                            <label for="data_julgamento" class="form-label fw-semibold small" style="color: #083464;">Data de Julgamento</label>
-                            <input type="date" id="data_julgamento" class="form-control shadow-sm" name="data_julgamento"
-                                   value="{{ request.GET.data_julgamento }}" style="border-radius: 10px; padding: 0.5rem;">
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn text-white shadow-sm w-100" 
-                                    style="background: linear-gradient(135deg, #2f2f2f, #acabab); border-radius: 20px; padding: 0.5rem; transition: transform 0.2s ease;">
-                                <i class="bi bi-funnel me-2"></i> Aplicar Filtros
-                            </button>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-4">
+                                        <label for="data_dist" class="form-label fw-semibold small" style="color: #083464;">Data de Distribuição</label>
+                                        <input type="date" id="data_dist" class="form-control shadow-sm" name="data_dist"
+                                               value="{{ request.GET.data_dist }}" style="border-radius: 10px; padding: 0.5rem;">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="data_julgamento" class="form-label fw-semibold small" style="color: #083464;">Data de Julgamento</label>
+                                        <input type="date" id="data_julgamento" class="form-control shadow-sm" name="data_julgamento"
+                                               value="{{ request.GET.data_julgamento }}" style="border-radius: 10px; padding: 0.5rem;">
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="submit" class="btn text-white shadow-sm w-100" 
+                                                style="background: linear-gradient(135deg, #2f2f2f, #7a7878); border-radius: 20px; padding: 0.5rem; transition: transform 0.2s ease;">
+                                            <i class="bi bi-funnel me-2"></i> Aplicar Filtros
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
             <!-- Tabela de Processos -->
-<div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
-    <table class="table table-hover align-middle">
-        <thead style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff;">
-            <tr>
-                <th class="text-center">Nº Processo</th>
-                <th class="text-center">
-                    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'mais_recente' %}mais_antigo{% else %}mais_recente{% endif %}" 
-                       class="text-black text-decoration-none">
-                        Data Distribuição 
-                        {% if request.GET.ordenar == "mais_recente" %}
-                            <i class="bi bi-arrow-down"></i>
-                        {% elif request.GET.ordenar == "mais_antigo" %}
-                            <i class="bi bi-arrow-up"></i>
-                        {% elif not request.GET.ordenar %}
-                            <i class="bi bi-arrow-down"></i>
-                        {% else %}
-                            <i class="bi bi-arrow-up-down"></i>
-                        {% endif %}
-                    </a>
-                </th>
-                <th class="text-center">
-                    <a href="?ordenar=usuario__first_name" class="text-black text-decoration-none">
-                        Responsável 
-                        <i class="bi bi-arrow-up-down"></i>
-                    </a>
-                </th>
-                <th class="text-center">
-                    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'dias_gabinete_recente' %}dias_gabinete_antigo{% else %}dias_gabinete_recente{% endif %}" 
-                       class="text-black text-decoration-none">
-                        Dias Gabinete
-                        {% if request.GET.ordenar == "dias_gabinete_recente" %}
-                            <i class="bi bi-arrow-up"></i>
-                        {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
-                            <i class="bi bi-arrow-down"></i>
-                        {% else %}
-                            <i class="bi bi-arrow-up-down"></i>
-                        {% endif %}
-                    </a>
-                </th>
-                <th class="text-center">Fase</th>
-                <th class="text-center">
-                    <a href="?ordenar=especie__sigla" class="text-black text-decoration-none">
-                        Espécie 
-                        <i class="bi bi-arrow-up-down"></i>
-                    </a>
-                </th>
-                <th class="text-center">Tipo</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Ações</th>
-                <th class="text-center">Meu Dia</th>
-                <th class="text-center">Andamentos</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for processo in processos %}
-            <tr style="transition: background 0.3s ease;">
-                <td class="text-center position-relative">
-                    {{ processo.numero_processo }}
-                    {% if processo.despacho %}
-                        <span class="badge bg-info text-dark rounded-pill ms-2" style="font-size: 0.9rem;" title="Despacho">
-                            <i class="bi bi-file-earmark-text"></i>
-                        </span>
-                    {% endif %}
-                    {% if processo.prioridade_urgente %}
-                        <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.9rem;" title="Prioridade Urgente">
-                            <i class="bi bi-exclamation-circle"></i>
-                        </span>
-                    {% endif %}
-                    <!-- Tema como ícone discreto no canto superior direito -->
-                    {% if processo.tema %}
-                        <span class="position-absolute" 
-                              style="top: 5px; right: 5px; font-size: 0.8rem; opacity: 0.7;"
-                              data-bs-toggle="tooltip" 
-                              data-bs-placement="top" 
-                              title="{{ processo.tema.nome }}">
-                            <i class="bi bi-tag text-muted"></i>
-                        </span>
-                    {% endif %}
-                </td>                
-                <td class="text-center">{{ processo.data_dist|date:"d/m/Y" }}</td>
-                <td class="text-center">{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
-                <td class="text-center">
-                    {% if processo.dias_no_gabinete is not None %}
-                        <span class="badge bg-light text-dark">{{ processo.dias_no_gabinete }} dias</span>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td class="text-center">{{ processo.fase_atual }}</td>
-                <td class="text-center">{{ processo.especie.sigla }}</td>
-                <td class="text-center">
-                    {% if processo.tipo %}
-                        {{ processo.tipo.tipo }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td class="text-center">
-                    {% if processo.concluido %}
-                        <span class="badge bg-success">Concluído</span>
-                    {% else %}
-                        <span class="badge bg-warning text-dark">Pendente</span>
-                    {% endif %}
-                </td>
-                <td class="text-center">
-                    <div class="d-flex justify-content-center gap-2">
-                        <a href="{% url 'processo_detail' processo.pk %}" class="btn btn-outline-info btn-sm" 
-                           title="Visualizar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{% url 'processo_update' processo.pk %}" class="btn btn-outline-warning btn-sm" 
-                           title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" 
-                                data-bs-target="#deleteModal" data-id="{{ processo.pk }}" 
-                                data-name="{{ processo.numero_processo }}" title="Excluir" 
-                                style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
-                <td class="text-center">
-                    {% with request.GET.urlencode as filtros %}
-                        {% if processo.id in tarefas_do_dia_ids %}
-                            <a href="{% url 'remover_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
-                               class="btn btn-outline-danger btn-sm" title="Remover Tarefa" 
-                               style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        {% else %}
-                            <a href="{% url 'adicionar_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
-                               class="btn btn-outline-success btn-sm" title="Adicionar Tarefa" 
-                               style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-plus-circle"></i>
-                            </a>
-                        {% endif %}
-                    {% endwith %}
-                </td>
-                <td class="text-center">
-                    <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}" 
-                       class="btn text-white btn-sm" 
-                       style="background: linear-gradient(135deg, #5DADE2, #4682B4); border-radius: 20px; padding: 0.25rem 0.75rem;" 
-                       title="Ver Andamentos">
-                        <i class="bi bi-list-task"></i>
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+            <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
+                <table class="table table-hover align-middle">
+                    <thead style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff;">
+                        <tr>
+                            <th class="text-center">Nº Processo</th>
+                            <th class="text-center">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'mais_recente' %}mais_antigo{% else %}mais_recente{% endif %}" 
+                                   class="text-black text-decoration-none">
+                                    Data Distribuição 
+                                    {% if request.GET.ordenar == "mais_recente" %}
+                                        <i class="bi bi-arrow-down"></i>
+                                    {% elif request.GET.ordenar == "mais_antigo" %}
+                                        <i class="bi bi-arrow-up"></i>
+                                    {% elif not request.GET.ordenar %}
+                                        <i class="bi bi-arrow-down"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-up-down"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="text-center">
+                                <a href="?ordenar=usuario__first_name" class="text-black text-decoration-none">
+                                    Responsável 
+                                    <i class="bi bi-arrow-up-down"></i>
+                                </a>
+                            </th>
+                            <th class="text-center">
+                                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}ordenar={% if request.GET.ordenar == 'dias_gabinete_recente' %}dias_gabinete_antigo{% else %}dias_gabinete_recente{% endif %}" 
+                                   class="text-black text-decoration-none">
+                                    Dias Gabinete
+                                    {% if request.GET.ordenar == "dias_gabinete_recente" %}
+                                        <i class="bi bi-arrow-up"></i>
+                                    {% elif request.GET.ordenar == "dias_gabinete_antigo" %}
+                                        <i class="bi bi-arrow-down"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-up-down"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="text-center">Fase</th>
+                            <th class="text-center">
+                                <a href="?ordenar=especie__sigla" class="text-black text-decoration-none">
+                                    Espécie 
+                                    <i class="bi bi-arrow-up-down"></i>
+                                </a>
+                            </th>
+                            <th class="text-center">Tipo</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
+                            <th class="text-center">Meu Dia</th>
+                            <th class="text-center">Andamentos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for processo in processos %}
+                        <tr style="transition: background 0.3s ease;">
+                            <td class="text-center position-relative">
+                                {% if processo.tema %}
+                                  <!-- Marcador discreto de tema -->
+                                  <div class="corner-marker" 
+                                       data-bs-toggle="tooltip"
+                                       title="Tema: {{ processo.tema.nome }}"
+                                       data-bs-placement="top">
+                                    <i class="bi bi-tag-fill"></i>
+                                  </div>
+                                {% else %}
+                                  <!-- Marcador discreto para adicionar tema -->
+                                  <div class="corner-marker add"
+                                       data-bs-toggle="modal"
+                                       data-bs-target="#definirTemaModal"
+                                       data-processo-id="{{ processo.pk }}"
+                                       data-processo-numero="{{ processo.numero_processo }}"
+                                       data-tema-id=""
+                                       title="Clique para adicionar tema">
+                                    <i class="bi bi-plus"></i>
+                                  </div>
+                                {% endif %}
+                              
+                                <!-- Número do processo -->
+                                {{ processo.numero_processo }}
+                              
+                                <!-- Badges adicionais (Despacho, Prioridade, etc.) -->
+                                {% if processo.despacho %}
+                                  <span class="badge bg-info text-dark rounded-pill ms-2" style="font-size: 0.9rem;" title="Despacho">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                  </span>
+                                {% endif %}
+                                {% if processo.prioridade_urgente %}
+                                  <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.9rem;" title="Prioridade Urgente">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                  </span>
+                                {% endif %}
+                              </td>
+                              
+                              <style>
+                                /* Marcador de canto dobrado (folded corner) em estilo verde oliva */
+                                .corner-marker {
+                                  position: absolute;
+                                  top: 0; 
+                                  left: 0;
+                                  width: 24px;         /* Menor largura para ocupar menos espaço */
+                                  height: 24px;        /* Menor altura */
+                                  background-color: #18432a; /* Verde oliva (Olive Drab) */
+                                  /* Formato do canto dobrado */
+                                  clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                  color: #fff;
+                                  cursor: pointer;
+                                  z-index: 10;
+                                  box-shadow: 0 0 2px rgba(0, 0, 0, 0.25); /* sombra sutil */
+                                  transition: transform 0.2s ease;
+                                }
+                                /* pseudo-elemento para dar um efeito de dobra mais realista */
+                                .corner-marker::after {
+                                  content: "";
+                                  position: absolute;
+                                  top: 0;
+                                  left: 0;
+                                  border-right: 10px solid transparent; 
+                                  border-bottom: 10px solid rgba(255, 255, 255, 0.2); 
+                                }
+                                /* Ícone menor */
+                                .corner-marker i {
+                                  font-size: 0.7rem;
+                                  line-height: 1;
+                                }
+                                /* Efeito de hover */
+                                .corner-marker:hover {
+                                  transform: scale(1.05);
+                                }
+                              
+                                /* Se não há tema, usamos um tom de verde um pouco diferente */
+                                .corner-marker.add {
+                                  background-color: #8FBC8F; /* "DarkSeaGreen" - mais claro */
+                                }
+                              </style>
+                              
+                              <!-- Inicialização dos tooltips (se ainda não estiver no JS global) -->
+                              <script>
+                                document.addEventListener('DOMContentLoaded', function () {
+                                  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                                  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                    new bootstrap.Tooltip(tooltipTriggerEl)
+                                  });
+                                });
+                              </script>                                                                             
+                            <td class="text-center">{{ processo.data_dist|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ processo.usuario.first_name }} {{ processo.usuario.last_name }}</td>
+                            <td class="text-center">
+                                {% if processo.dias_no_gabinete is not None %}
+                                    <span class="badge bg-light text-dark">{{ processo.dias_no_gabinete }} dias</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ processo.fase_atual }}</td>
+                            <td class="text-center">{{ processo.especie.sigla }}</td>
+                            <td class="text-center">
+                                {% if processo.tipo %}
+                                    {% if processo.tipo.tipo == "Plantão" %}
+                                        {{ processo.tipo.tipo }} <i class="fas fa-exclamation-circle text-danger" title="Plantão"></i>
+                                    {% else %}
+                                        {{ processo.tipo.tipo }}
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>                           
+                            <td class="text-center">
+                                {% if processo.concluido %}
+                                    <span class="badge bg-success">Concluído</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{% url 'processo_detail' processo.pk %}" class="btn btn-outline-info btn-sm" 
+                                       title="Visualizar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'processo_update' processo.pk %}" class="btn btn-outline-warning btn-sm" 
+                                       title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal" data-id="{{ processo.pk }}" 
+                                            data-name="{{ processo.numero_processo }}" title="Excluir" 
+                                            style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% with request.GET.urlencode as filtros %}
+                                    {% if processo.id in tarefas_do_dia_ids %}
+                                        <a href="{% url 'remover_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
+                                           class="btn btn-outline-danger btn-sm" title="Remover Tarefa" 
+                                           style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'adicionar_tarefa' processo.id %}{% if filtros %}?{{ filtros }}{% endif %}"
+                                           class="btn btn-outline-success btn-sm" title="Adicionar Tarefa" 
+                                           style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}" 
+                                   class="btn text-white btn-sm" 
+                                   style="background: linear-gradient(135deg, #5DADE2, #4682B4); border-radius: 20px; padding: 0.25rem 0.75rem;" 
+                                   title="Ver Andamentos">
+                                    <i class="bi bi-list-task"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Paginação -->
             <div class="d-flex justify-content-center mt-4">
                 {% include 'components/_pagination.html' %}
             </div>
+
+            <!-- Modal para Definir Tema -->
+            <div class="modal fade" id="definirTemaModal" tabindex="-1" aria-labelledby="definirTemaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                        <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+                            <h6 class="modal-title" id="definirTemaModalLabel" style="color: #083464; font-weight: 600;">Definir Tema do Processo</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" style="padding-top: 0;">
+                            <form id="definirTemaForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="processo_id" id="processo_id">
+                                <div class="mb-3">
+                                    <label for="tema_id" class="form-label fw-semibold small" style="color: #083464;">Selecione o Tema</label>
+                                    <select name="tema_id" id="tema_id" class="form-select shadow-sm" style="border-radius: 10px; padding: 0.5rem;" required>
+                                        <option value="">Selecione um tema</option>
+                                        {% for tema in temas %}
+                                            <option value="{{ tema.id }}">{{ tema.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn text-white shadow-sm w-100" 
+                                        style="background: linear-gradient(135deg, #2f2f2f, #7a7878); border-radius: 20px; padding: 0.5rem; transition: transform 0.2s ease;">
+                                    <i class="bi bi-check-circle me-2"></i> Salvar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Script para o modal de definir tema
+    const definirTemaModal = document.getElementById('definirTemaModal');
+    definirTemaModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget; // Botão que abriu o modal
+        const processoId = button.getAttribute('data-processo-id'); // Obtém o ID do processo
+        const processoNumero = button.getAttribute('data-processo-numero'); // Obtém o número do processo
+        const temaId = button.getAttribute('data-tema-id'); // Obtém o ID do tema atual (se houver)
+
+        // Atualizar o título do modal com o número do processo
+        const modalTitle = definirTemaModal.querySelector('.modal-title');
+        modalTitle.textContent = `Definir Tema do Processo ${processoNumero}`;
+
+        // Preencher o campo oculto com o ID do processo
+        const form = definirTemaModal.querySelector('#definirTemaForm');
+        form.querySelector('#processo_id').value = processoId;
+
+        // Pré-selecionar o tema atual (se houver)
+        const temaSelect = form.querySelector('#tema_id');
+        temaSelect.value = temaId || ''; // Seleciona o tema atual ou a opção padrão
+    });
+
+    // Limpar o formulário ao fechar o modal
+    definirTemaModal.addEventListener('hidden.bs.modal', function() {
+        const form = definirTemaModal.querySelector('#definirTemaForm');
+        form.reset(); // Limpa o formulário
+        const modalTitle = definirTemaModal.querySelector('.modal-title');
+        modalTitle.textContent = 'Definir Tema do Processo'; // Reseta o título
+    });
+
+    document.getElementById('definirTemaForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Impede o comportamento padrão do formulário
+
+        const form = this;
+        const formData = new FormData(form);
+        const processoId = form.querySelector('#processo_id').value;
+
+        fetch("{% url 'definir_tema' pk=0 %}".replace('0', processoId), {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest' // Indica que é uma requisição AJAX
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                const modal = bootstrap.Modal.getInstance(definirTemaModal);
+                modal.hide();
+                location.reload(); // Recarrega a página para atualizar o tema do processo
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Ocorreu um erro ao definir o tema.');
+        });
+    });
+</script>
+
 <script>
     // Quando clicarmos no botão "Novo Processo",
     // faz um GET na rota /processos/novo/ e injeta o HTML no modal
