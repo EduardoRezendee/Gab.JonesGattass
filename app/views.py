@@ -44,7 +44,7 @@ def noticia_detalhe(request, noticia_id):
 def paineis(request):
     """Lista todos os painéis"""
     paineis = Painel.objects.all()
-    return render(request, 'paineis.html', {'paineis': paineis})
+    return render(request, 'home2.html', {'paineis': paineis})
 
 # MÉTRICAS E GAMIFICAÇÃO
 from .metrics import (
