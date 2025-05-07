@@ -256,7 +256,7 @@
                         <div class="d-flex gap-2 align-items-center">
                           <!-- Botões condicionais com base na fase atual -->
                           {% if processo.fase_atual == 'Elaboração' %}
-                          <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
+                          <!--<form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
                             {% csrf_token %}
                             <input type="hidden" name="nova_fase" value="Revisão">
                             <input type="hidden" name="origem" value="home">
