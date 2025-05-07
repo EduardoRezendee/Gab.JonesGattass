@@ -470,6 +470,11 @@ class AndamentoIniciarView(LoginRequiredMixin,UpdateView):
 class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
     def post(self, request, pk, *args, **kwargs):
         andamento = get_object_or_404(ProcessoAndamento, pk=pk)
+
+        # Verifica se o usuário logado é o atribuído ao andamento
+        if request.user != andamento.usuario:
+            return HttpResponseForbidden("Você não tem permissão para movimentar este andamento.")
+
         nova_fase = request.POST.get('nova_fase')
         origem = request.POST.get('origem', 'home')  # Padrão para 'home' se não fornecido
 
@@ -482,8 +487,8 @@ class AndamentoEnviarParaFaseView(LoginRequiredMixin, UpdateView):
         usuario_responsavel = andamento.processo.usuario  # Usuário padrão (do processo)
         if nova_fase == "Revisão":
             usuario_responsavel = UserProfile.objects.filter(funcao="revisor(a)").first().user
-        elif nova_fase == "Revisão Desa":
-            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargadora").first().user
+        elif nova_fase == "Revisão Des":
+            usuario_responsavel = UserProfile.objects.filter(funcao="Desembargador").first().user
 
         # Cria o novo andamento
         nova_fase_obj = get_object_or_404(Fase, fase=nova_fase)

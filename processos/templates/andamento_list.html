@@ -49,6 +49,14 @@
                         {% endfor %}
                     </select>
                 </div>
+                <!-- Checkbox Despacho -->
+                <div class="form-check d-flex align-items-center gap-2" style="min-height: 38px;">
+                    <input class="form-check-input" type="checkbox" name="despacho" id="despacho"
+                           {% if processo.despacho %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold mb-0" for="despacho" style="color: #2f2f2f; font-size: 0.9rem;">
+                        É despacho?
+                    </label>
+                </div>
                 <button type="submit" class="btn shadow-sm px-4" 
                         style="background: linear-gradient(135deg, #065b14, #0fca1b); color: white; border: none; height: 38px; border-radius: 20px; transition: transform 0.2s ease;">
                     <i class="bi bi-save me-2"></i> Salvar
@@ -65,13 +73,13 @@
 
     <!-- Kanban de Fases -->
     <div class="row g-4">
-        {% with fases_orderadas="Elaboração|Revisão Des|Devolvido|L. PJE" %} <!--Revisão|Correção-->
+        {% with fases_orderadas="Elaboração|Revisão|Revisão Des|Devolvido|L. PJE" %}
             {% for fase_nome in fases_orderadas|split:"|" %}
                 {% for item in andamentos_por_fase %}
                     {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
-                        <div class="col-2">
+                        <div class="col-kanban">
                             <div class="card shadow-sm border-0 h-100" 
-                                 style="border-radius: 12px; overflow: hidden; border-top: 4px solid #000000;">
+                                 style="border-radius: 12px; overflow: hidden; border-top: 4px solid #2f2f2f;">
                                 <!-- Cabeçalho da Fase -->
                                 <div class="card-header text-center" 
                                      style="background: linear-gradient(135deg, #535746, #6f745d); color: #ffffff; padding: 15px;">
@@ -129,11 +137,15 @@
                                                                 </form>
                                                                 {% endif %}
                                                                 <!-- Botão Editar que abre o modal -->
+                                                                {% if request.user == andamento.usuario %}
                                                                 <button type="button" class="btn btn-warning btn-sm shadow-sm" 
                                                                         data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ andamento.pk }}"
                                                                         title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </button>
+                                                                {% endif %}
+                                                                <!-- Dropdown -->
+                                                                {% if request.user == andamento.usuario %}
                                                                 <div class="dropdown">
                                                                     <button class="btn btn-secondary btn-sm shadow-sm dropdown-toggle" 
                                                                             type="button" id="dropdownActions{{ andamento.pk }}" 
@@ -146,9 +158,12 @@
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <!--<button class="dropdown-item" type="submit">Enviar para Revisão</button>-->
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');">
+                                                                                        Enviar para Revisão Des
+                                                                                    </button>
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
@@ -157,47 +172,37 @@
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Correção">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <!--<button class="dropdown-item" type="submit">Enviar para Correção</button>-->
-                                                                                </form>
-                                                                            </li>
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
                                                                                     <input type="hidden" name="nova_fase" value="Revisão Des">
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');">
+                                                                                        Enviar para Revisão Des
+                                                                                    </button>
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
 
-                                                                        {% if andamento.fase.fase == "Correção" %}
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <!--<button class="dropdown-item" type="submit">Enviar para Revisão</button>-->
-                                                                                </form>
-                                                                            </li>
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}
-
-                                                                        {% if andamento.fase.fase == "Revisão Des" %}
+                                                                         {% if andamento.fase.fase == "Revisão Des" %}
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
                                                                                     <input type="hidden" name="nova_fase" value="Devolvido">
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Devolvido</button>
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para Devolvido?');">
+                                                                                        Enviar para Devolvido
+                                                                                    </button>
+                                                                                </form>
+                                                                            </li>
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para Revisão?');">
+                                                                                        Enviar para Revisão
+                                                                                    </button>
                                                                                 </form>
                                                                             </li>
                                                                             <li>
@@ -205,7 +210,10 @@
                                                                                     {% csrf_token %}
                                                                                     <input type="hidden" name="nova_fase" value="L. PJE">
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para L. PJE</button>
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para L. PJE?');">
+                                                                                        Enviar para L. PJE
+                                                                                    </button>
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
@@ -216,7 +224,10 @@
                                                                                     {% csrf_token %}
                                                                                     <input type="hidden" name="nova_fase" value="Revisão Des">
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
+                                                                                    <button class="dropdown-item" type="submit" 
+                                                                                            onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');">
+                                                                                        Enviar para Revisão Des
+                                                                                    </button>
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
@@ -226,7 +237,8 @@
                                                                                 <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
                                                                                     {% csrf_token %}
                                                                                     <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button type="submit" class="dropdown-item text-success">
+                                                                                    <button type="submit" class="dropdown-item text-success" 
+                                                                                            onclick="return confirm('Tem certeza que deseja concluir o processo?');">
                                                                                         <i class="bi bi-check-circle me-1"></i> Concluir Processo
                                                                                     </button>
                                                                                 </form>
@@ -234,6 +246,7 @@
                                                                         {% endif %}
                                                                     </ul>
                                                                 </div>
+                                                                {% endif %}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -430,6 +443,12 @@
 </div>
 
 <style>
+/* Ajustes para o Kanban */
+.col-kanban {
+    flex: 0 0 20%;
+    max-width: 20%;
+}
+
 /* Ajustes para Responsividade */
 @media (max-width: 767px) {
     .form-select, .btn {
@@ -454,7 +473,7 @@
         height: 60vh;
         max-height: 60vh;
     }
-    .col-2 {
+    .col-kanban {
         flex: 0 0 100%;
         max-width: 100%;
     }
@@ -464,6 +483,62 @@
 .modal-content {
     border-radius: 12px;
     border: none;
+}
+.chat-container {
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.chat-message {
+    background: #ffffff;
+    border-left: 5px solid #083464;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #083464;
+    margin-bottom: 5px;
+}
+
+.chat-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chat-text {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.chat-input {
+    resize: none;
+    font-size: 0.95rem;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.input-group button {
+    border-radius: 0 6px 6px 0;
+    padding: 10px 15px;
+}
+
+/* Efeito de Fade-In para novos comentários */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
