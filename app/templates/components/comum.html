@@ -101,7 +101,7 @@
                         aria-controls="pane-{{ fase|slugify }}"
                         aria-selected="{% if fase == active_tab %}true{% else %}false{% endif %}"
                         style="font-size: 1.1rem; padding: 0.75rem 1.5rem; background-color: {% if fase == active_tab %}rgba(0, 0, 0, 0.00){% endif %}; border-radius: 0.25rem 0.25rem 0 0; color: #1F2937;">
-                  {{ fase }} <span class="badge" style="background-color: #808000; color: white;">{{ processos|length }}</span>
+                  {{ fase }} <span class="badge" style="background-color: #7e0d09; color: white;">{{ processos|length }}</span>
                 </button>
               </li>
             {% endfor %}
@@ -135,7 +135,7 @@
                         <!-- Informações à esquerda -->
                         <div class="flex-grow-1">
                           <p class="mb-1 d-flex align-items-center" style="color: #1F2937;">
-                            <i class="bi bi-file-earmark-text me-2" style="color: #808000;"></i>
+                            <i class="bi bi-file-earmark-text me-2" style="color: #7e0d09;"></i>
                             <strong style="color: #1F2937;">Processo:</strong>
                             <span id="numeroProcesso-{{ processo.pk }}" class="ms-1" style="color: #1F2937;">{{ processo.numero_processo }}</span>
                             <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
@@ -243,7 +243,7 @@
                           <!-- Link do Documento (se existir) -->
                           {% if processo.andamento_link_doc %}
                             <a href="{{ processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
-                               style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
+                               style="background-color: #065b14; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
                               <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
                             </a>
                           {% endif %}
