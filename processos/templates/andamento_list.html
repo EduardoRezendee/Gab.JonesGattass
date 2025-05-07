@@ -73,7 +73,7 @@
 
     <!-- Kanban de Fases -->
     <div class="row g-4">
-        {% with fases_orderadas="Elaboração|Revisão|Revisão Des|Devolvido|L. PJE" %}
+        {% with fases_orderadas="Elaboração|Revisão Des|Devolvido|L. PJE" %}
             {% for fase_nome in fases_orderadas|split:"|" %}
                 {% for item in andamentos_por_fase %}
                     {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
