@@ -678,7 +678,7 @@
       color: #083464;
     }
   </style>
- <!-- Seção de Cartões Visuais com Título -->
+ // Seção de Cartões Visuais com Título -->
 <div class="container mt-5">
   <h3 class="text-center mb-4" style="color: #083464; font-weight: bold;">
     Produtividade Hoje (<span id="dataHoje"></span>)
@@ -738,13 +738,13 @@
 <script>
 (function() {
   function logError(message, error) {
-    console.error([Desa Error] ${message}, error);
+    console.error(`[Desa Error] ${message}`, error);
   }
 
   function initCartoesDesa() {
     fetch("{% url 'get_revisoes_hoje_data' %}")
       .then(response => {
-        if (!response.ok) throw new Error(HTTP error! Status: ${response.status});
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
@@ -762,7 +762,7 @@
           enviados: data.datasets[0].data[index],
           photoUrl: data.datasets[0].photo_urls 
             ? data.datasets[0].photo_urls[index] 
-            : https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
         }));
 
         combinedData.sort((a, b) => b.enviados - a.enviados);
@@ -772,7 +772,7 @@
           const diff = item.enviados - meta;
 
           const card = document.createElement('div');
-          card.className = assessor-card ${statusClass};
+          card.className = `assessor-card ${statusClass}`;
 
           card.innerHTML = `
             <img src="${item.photoUrl}" alt="Foto de ${item.label}">
@@ -780,14 +780,14 @@
             <p>Enviados: <strong>${item.enviados}</strong></p>
             <p>${item.enviados >= meta 
                 ? '✅ Bateu a meta' 
-                : ⚠ Faltam <strong>${Math.abs(diff)}</strong>}</p>
+                : `⚠ Faltam <strong>${Math.abs(diff)}</strong>`}</p>
           `;
 
           container.appendChild(card);
         });
       })
       .catch(err => {
-        logError('Erro ao carregar dados do cartão Enviados para Desa:', err);
+        logError('Erro ao carregar dados do cartão Enviados para Des:', err);
         const container = document.getElementById('revisoesContainer');
         container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
       });
@@ -855,7 +855,7 @@
 <script>
 (function() {
   function logError(message, error) {
-    console.error([Desa Error] ${message}, error);
+    console.error(`[Desa Error] ${message}`, error);
   }
 
   function getCurrentWeekRange() {
@@ -865,13 +865,13 @@
     const monday = new Date(today.setDate(diffToMonday));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return ${monday.toLocaleDateString('pt-BR')} - ${sunday.toLocaleDateString('pt-BR')};
+    return `${monday.toLocaleDateString('pt-BR')} - ${sunday.toLocaleDateString('pt-BR')}`;
   }
 
   function initCartoesSemana() {
     fetch("{% url 'get_revisoes_semana_data' %}")
       .then(response => {
-        if (!response.ok) throw new Error(HTTP error! Status: ${response.status});
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
@@ -892,7 +892,7 @@
           mediaDia: mediasDiarias[index],
           photoUrl: photoUrls
             ? photoUrls[index]
-            : https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
         }));
 
         combinedData.sort((a, b) => b.enviados - a.enviados);
@@ -904,7 +904,7 @@
           const diff = meta - item.enviados;
           const statusText = item.enviados >= meta 
             ? '✅ Bateu a meta'
-            : ⚠ Faltam <strong>${diff}</strong>;
+            : `⚠ Faltam <strong>${diff}</strong>`;
 
           const card = document.createElement('div');
           card.className = 'assessor-card';
