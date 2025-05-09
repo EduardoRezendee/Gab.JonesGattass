@@ -343,5 +343,262 @@ fetch("{% url 'get_es_assessor_hoje_data' %}")
         });
     });
 
+  // Seção de Cartões Visuais com Título -->
+<div class="container mt-5">
+  <h3 class="text-center mb-4" style="color: #083464; font-weight: bold;">
+    Produtividade Hoje (<span id="dataHoje"></span>)
+  </h3>
+  <div id="revisoesContainer" class="revisoes-container"></div>
+</div>
+
+<style>
+.revisoes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.assessor-card {
+  width: 150px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px;
+  background-color: #f9fafb;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.assessor-card.success {
+  border-color: #10B981;
+}
+
+.assessor-card.fail {
+  border-color: #EF4444;
+}
+
+.assessor-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #808000;
+}
+
+.assessor-card h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #083464;
+}
+
+.assessor-card p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+</style>
+
+<script>
+(function() {
+  function logError(message, error) {
+    console.error(`[Desa Error] ${message}`, error);
+  }
+
+  function initCartoesDesa() {
+    fetch("{% url 'get_revisoes_hoje_data' %}")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const container = document.getElementById('revisoesContainer');
+        const dataHojeEl = document.getElementById('dataHoje');
+        container.innerHTML = '';
+
+        const meta = 5;
+        const today = new Date();
+        const hojeFormatado = today.toLocaleDateString('pt-BR');
+        dataHojeEl.textContent = hojeFormatado;
+
+        const combinedData = data.labels.map((label, index) => ({
+          label,
+          enviados: data.datasets[0].data[index],
+          photoUrl: data.datasets[0].photo_urls 
+            ? data.datasets[0].photo_urls[index] 
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
+        }));
+
+        combinedData.sort((a, b) => b.enviados - a.enviados);
+
+        combinedData.forEach(item => {
+          const statusClass = item.enviados >= meta ? 'success' : 'fail';
+          const diff = item.enviados - meta;
+
+          const card = document.createElement('div');
+          card.className = `assessor-card ${statusClass}`;
+
+          card.innerHTML = `
+            <img src="${item.photoUrl}" alt="Foto de ${item.label}">
+            <h4>${item.label}</h4>
+            <p>Enviados: <strong>${item.enviados}</strong></p>
+            <p>${item.enviados >= meta 
+                ? '✅ Bateu a meta' 
+                : `⚠ Faltam <strong>${Math.abs(diff)}</strong>`}</p>
+          `;
+
+          container.appendChild(card);
+        });
+      })
+      .catch(err => {
+        logError('Erro ao carregar dados do cartão Enviados para Des:', err);
+        const container = document.getElementById('revisoesContainer');
+        container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      initCartoesDesa();
+    } catch (err) {
+      logError('Erro na inicialização geral:', err);
+    }
+  });
+})();
 </script>
 
+
+<!-- Seção de Cartões Visuais com Ranking e Meta -->
+<div class="container mt-5">
+  <h3 class="text-center mb-4" style="color: #083464; font-weight: bold;">
+    Produtividade na Semana (<span id="semanaAtual"></span>)
+  </h3>
+  <div id="revisoesSemanaContainer" class="revisoes-container"></div>
+</div>
+
+<style>
+.revisoes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.assessor-card {
+  width: 160px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px;
+  background-color: #f9fafb;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.assessor-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #808000;
+}
+
+.assessor-card h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #083464;
+}
+
+.assessor-card p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+</style>
+
+<script>
+(function() {
+  function logError(message, error) {
+    console.error(`[Desa Error] ${message}`, error);
+  }
+
+  function getCurrentWeekRange() {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diffToMonday));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return `${monday.toLocaleDateString('pt-BR')} - ${sunday.toLocaleDateString('pt-BR')}`;
+  }
+
+  function initCartoesSemana() {
+    fetch("{% url 'get_revisoes_semana_data' %}")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const container = document.getElementById('revisoesSemanaContainer');
+        const semanaEl = document.getElementById('semanaAtual');
+        container.innerHTML = '';
+
+        semanaEl.textContent = getCurrentWeekRange();
+
+        const meta = 25; // Exemplo: meta semanal de 25 por pessoa
+        const enviadosData = data.datasets[0].data;
+        const photoUrls = data.datasets[0].photo_urls;
+        const mediasDiarias = data.datasets[1]?.data || [];
+
+        const combinedData = data.labels.map((label, index) => ({
+          label,
+          enviados: enviadosData[index],
+          mediaDia: mediasDiarias[index],
+          photoUrl: photoUrls
+            ? photoUrls[index]
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
+        }));
+
+        combinedData.sort((a, b) => b.enviados - a.enviados);
+
+        const emojis = ['🥇', '🥈', '🥉', '🎖', '🏅'];
+
+        combinedData.forEach((item, index) => {
+          const emoji = emojis[index] || '⭐';
+          const diff = meta - item.enviados;
+          const statusText = item.enviados >= meta 
+            ? '✅ Bateu a meta'
+            : `⚠ Faltam <strong>${diff}</strong>`;
+
+          const card = document.createElement('div');
+          card.className = 'assessor-card';
+
+          card.innerHTML = `
+            <img src="${item.photoUrl}" alt="Foto de ${item.label}">
+            <h4>${emoji} ${item.label}</h4>
+            <p>Enviados: <strong>${item.enviados}</strong></p>
+            <p>Média/dia: <strong>${item.mediaDia}</strong></p>
+            <p>${statusText}</p>
+          `;
+
+          container.appendChild(card);
+        });
+      })
+      .catch(err => {
+        logError('Erro ao carregar dados do cartão de produtividade da semana:', err);
+        const container = document.getElementById('revisoesSemanaContainer');
+        container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      initCartoesSemana();
+    } catch (err) {
+      logError('Erro na inicialização geral:', err);
+    }
+  });
+})();
+
+</script>
