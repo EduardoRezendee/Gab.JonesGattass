@@ -40,8 +40,8 @@ urlpatterns = [
     # Alteração de senha
     path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change.html'), name='password_change'),
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='registration/password_change_done.html'), name='password_change_done'),
-]
     path('revisoes-semana-data/', views.get_revisoes_semana_data, name='get_revisoes_semana_data'),
+]
 # Servir arquivos de mídia no ambiente de desenvolvimento
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
