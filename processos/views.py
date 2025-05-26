@@ -22,7 +22,230 @@ from django.utils.timezone import now
 from django.views import View
 from django.db.models import Subquery, OuterRef
 from django.contrib import messages
+from rest_framework import generics
+from . import models, forms, serializers
+import pandas as pd
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import datetime
+from django.shortcuts import render
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from .models import Processo, Especie, Camara, Tema
+from django.db import DatabaseError
 
+
+# Mapeamento de siglas para nomes completos
+MAPEAMENTO_ESPECIES = {
+    'ApCrim': 'Apelação Criminal',
+    'ArRCrim': 'Agravo Regimental Criminal',
+    'AI': 'Agravo de Instrumento',
+    'AgExPe': 'Agravo em Execução Penal',
+    'AgRCiv': 'Agravo Regimental Cível',
+    'ApCiv': 'Apelação Cível',
+    'ApCiv/RNCi': 'Apelação/Remessa Necessária Cível',
+    'AC': 'Ação Cautelar',
+    'ACP': 'Ação Civil Pública',
+    'AIJE': 'Ação de Investigação Judicial Eleitoral',
+    'ADJ': 'Ação Declaratória de Inexistência de Débito',
+    'ADIN': 'Ação Direta de Inconstitucionalidade',
+    'AR': 'Ação Rescisória',
+    'CT': 'Carta Testemunhável',
+    'CIC': 'Cautelar Inominada Criminal',
+    'CC': 'Conflito de Competência',
+    'CCCiv': 'Conflito de Competência Cível',
+    'Desafor': 'Desaforamento',
+    'ED': 'Embargos de Declaração',
+    'EDCrim': 'Embargos de Declaração Criminal',
+    'ExecFiscal': 'Execução Fiscal',
+    'IDC': 'Incidente de Deslocamento de Competência',
+    'ISM': 'Incidente de Sanidade Mental',
+    'LIM': 'Liminar',
+    'MSCrim': 'Mandado de Segurança Criminal',
+    'MSCiv': 'Mandado de Segurança Cível',
+    'PESE': 'Pedido de Efeito Suspensivo à Apelação',
+    'PetCrim': 'Petição Criminal',
+    'Rcl': 'Reclamação',
+    'Resp': 'Recurso Especial',
+    'RE': 'Recurso Extraordinário',
+    'ROC': 'Recurso Ordinário Constitucional',
+    'RSE': 'Recurso em Sentido Estrito',
+    'RINT': 'Representação por Interceptação Telefônica',
+    'RQD': 'Representação por Quebra de Domicílio',
+    'HCCrim': 'Habeas Corpus Criminal',
+    'RECURSO': 'Recurso Ordinário',
+    'RevCrim': 'Revisão Criminal',
+}
+
+# Mapeamento de tags para nomes de usuário
+MAPEAMENTO_TAG_USUARIO = {
+    'Ass-Priscilla': 'priscillalessi',
+    'Ass-Thais': 'thaiscamila',
+    'Ass-Caio': 'caiocesar',
+    'Ass-Izabela': 'izabelaortiz',
+    'Ass-Juliana': 'julianalodi',
+    'Ass-Jurandy': 'jurandysilva',
+    'Ass-Karen': 'karenaquino',
+    'Ass-Manoel': 'manoellima',
+    'Ass-Marco Antônio': 'marcoantonio',
+    'Ass-Mirelli': 'mirellisilva',
+    'Ass-Viviane': 'vivianelima',
+}
+
+def importar_processos_view(request):
+    if request.method == 'POST':
+        if 'arquivo' not in request.FILES:
+            messages.error(request, 'Nenhum arquivo selecionado.')
+            return render(request, 'importar_processos.html')
+
+        arquivo = request.FILES['arquivo']
+        if not arquivo.name.endswith('.csv'):
+            messages.error(request, 'O arquivo deve ser um CSV (.csv).')
+            return render(request, 'importar_processos.html')
+
+        try:
+            # Forçar que a coluna 'prioridade' seja lida como string
+            df = pd.read_csv(arquivo, sep=';', encoding='utf-8', dtype={'prioridade': str})
+
+            # Verificar colunas esperadas
+            colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade']
+            colunas_faltando = [col for col in colunas_esperadas if col not in df.columns]
+            if colunas_faltando:
+                messages.error(request, f"Colunas faltando no CSV: {', '.join(colunas_faltando)}")
+                return render(request, 'importar_processos.html')
+
+            # Carregar usuários mapeados para evitar consultas repetidas
+            usuarios = {u.username: u for u in User.objects.filter(username__in=MAPEAMENTO_TAG_USUARIO.values())}
+            usuario_default = 'admin'
+            if usuario_default not in usuarios and not User.objects.filter(username=usuario_default).exists():
+                messages.error(request, f"Usuário padrão {usuario_default} não encontrado no banco de dados.")
+                return render(request, 'importar_processos.html')
+
+            processos_inseridos = 0
+            processos_ignorados = 0
+
+            for index, row in df.iterrows():
+                try:
+                    numero_processo = row['numeroProcesso']
+
+                    # Ignorar processos já existentes e não concluídos
+                    processo_existente = Processo.objects.filter(numero_processo=numero_processo, concluido=False).first()
+                    if processo_existente:
+                        processos_ignorados += 1
+                        continue
+
+                    # Processar espécie
+                    especie = None
+                    if pd.notna(row.get('classeJudicial')) and row['classeJudicial'].strip():
+                        sigla = str(row['classeJudicial']).strip().upper()
+                        nome_especie = MAPEAMENTO_ESPECIES.get(sigla, sigla)  # Usar sigla como fallback
+                        especie, _ = Especie.objects.get_or_create(
+                            sigla=sigla,
+                            defaults={
+                                'especie': nome_especie,
+                                'dt_criacao': timezone.now(),
+                                'dt_atualizacao': timezone.now(),
+                            }
+                        )
+                    else:
+                        print(f"Processo {numero_processo} sem classe judicial, ignorando espécie.")
+
+                    # Processar tema
+                    tema = None
+                    if pd.notna(row.get('assuntoPrincipal')) and row['assuntoPrincipal'].strip():
+                        tema, _ = Tema.objects.get_or_create(
+                            nome=row['assuntoPrincipal'],
+                            defaults={
+                                'nome': row['assuntoPrincipal'],
+                                'dt_criacao': timezone.now(),
+                                'dt_atualizacao': timezone.now(),
+                                'ativo': True
+                            }
+                        )
+
+        
+
+                    # Processar usuário a partir das tags
+                    usuario = None
+                    if pd.notna(row.get('tagsProcessoList')) and row['tagsProcessoList'].strip():
+                        tags = [tag.strip() for tag in str(row['tagsProcessoList']).split(',') if tag.strip() and tag.strip().startswith('Ass-')]
+                        usuario_encontrado = False
+                        for tag in tags:
+                            if not tag.startswith('Ass-'):
+                                print(f"Tag ignorada (não começa com 'Ass-'): {tag} para processo {numero_processo}")
+                                continue
+                            username_mapeado = MAPEAMENTO_TAG_USUARIO.get(tag)
+                            if username_mapeado:
+                                usuario = usuarios.get(username_mapeado)
+                                if usuario:
+                                    usuario_encontrado = True
+                                    break
+                                else:
+                                    print(f"Usuário mapeado {username_mapeado} não encontrado para tag {tag} no processo {numero_processo}")
+                            else:
+                                print(f"Tag não mapeada: {tag} para processo {numero_processo}")
+                        if not usuario_encontrado:
+                            usuario = None
+                            print(f"Processo {numero_processo} sem usuário mapeado, nenhum usuário atribuído.")
+                    else:
+                        print(f"Processo {numero_processo} sem tags válidas ou tagsProcessoList vazio, usando usuário padrão {usuario_default}")
+                        usuario = usuarios.get(usuario_default, User.objects.filter(username=usuario_default).first())
+
+                    # Processar data de chegada
+                    antigo = None
+                    if pd.notna(row.get('dataChegada')) and row['dataChegada'].strip():
+                        try:
+                            data_str = str(row['dataChegada']).strip()
+                            antigo = datetime.strptime(data_str, '%d/%m/%Y')
+                            antigo = antigo.replace(hour=0, minute=0, second=0, microsecond=0)
+                            antigo = timezone.make_aware(antigo)
+                        except ValueError as e:
+                            print(f"Erro ao converter data para {numero_processo}: {str(e)}")
+                            messages.warning(request, f"Data inválida para processo {numero_processo}, ignorando data.")
+
+                    # Processar prioridade
+                    prioridade_str = str(row.get('prioridade', 'false')).strip().lower()
+                    prioridade_urgente = prioridade_str == 'true'
+
+                    # Criar ou atualizar processo
+                    processo, created = Processo.objects.update_or_create(
+                        numero_processo=numero_processo,
+                        defaults={
+                            'especie': especie,
+                            'tema': tema,
+                            'usuario': usuario,
+                            'antigo': antigo,
+                            'prioridade_urgente': prioridade_urgente,
+                            'dt_criacao': timezone.now(),
+                            'dt_atualizacao': timezone.now(),
+                            'data_dist': timezone.now(),
+                            'concluido': False,
+                        }
+                    )
+                    processos_inseridos += 1
+
+                except Exception as e:  # Linha 236 - Garantindo indentação correta
+                    print(f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
+                    messages.warning(request, f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
+                    continue
+
+            messages.success(
+                request,
+                f"Importação concluída: {processos_inseridos} processos inseridos, {processos_ignorados} processos ignorados."
+            )
+            return HttpResponseRedirect(request.path)
+
+        except pd.errors.ParserError as e:
+            messages.error(request, f"Erro ao ler o arquivo CSV: {str(e)}")
+            return render(request, 'importar_processos.html')
+        except DatabaseError as e:
+            messages.error(request, f"Erro ao salvar no banco de dados: {str(e)}")
+            return render(request, 'importar_processos.html')
+        except Exception as e:
+            messages.error(request, f"Erro ao processar o arquivo: {str(e)}")
+            return render(request, 'importar_processos.html')
+
+    return render(request, 'importar_processos.html')
 
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
@@ -798,3 +1021,23 @@ def adicionar_comentario(request, processo_id):
 
     return JsonResponse({"error": "Método não permitido."}, status=405)
 
+
+class ProcessosCreateListAPIView(generics.ListCreateAPIView):
+    queryset = models.Processo.objects.all()
+    serializer_class = serializers.ProcessoSerializer
+
+def get_queryset(self):
+        queryset = models.Processo.objects.all()
+        request = self.request
+
+        numero = request.GET.get('numero_processo')
+        concluido = request.GET.get('concluido')
+
+        if numero:
+            queryset = queryset.filter(numero_processo=numero)
+
+        if concluido is not None:
+            concluido_bool = concluido.lower() == 'true'
+            queryset = queryset.filter(concluido=concluido_bool)
+
+        return queryset

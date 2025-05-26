@@ -31,8 +31,8 @@ urlpatterns = [
     path('get_user_daily_productivity_data/', views.get_user_daily_productivity_data, name='get_user_daily_productivity_data'),
     path('change-profile-photo/', views.change_profile_photo, name='change_profile_photo'),
 
-
-
+    path('api/v1/', include('authentication.urls')),
+    
     path('', include('processos.urls')),
     path('', include('publico.urls')),
 

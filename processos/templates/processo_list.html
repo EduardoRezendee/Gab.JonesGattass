@@ -182,6 +182,15 @@ Distribuição de Processos
                                     data-bs-toggle="modal" data-bs-target="#processoModal">
                                 <i class="bi bi-plus-circle me-1"></i> Novo Processo
                             </button>
+
+                            <!-- Botão Importar Processos-->
+                            <a href="{% url 'importar_processos' %}"
+                                class="btn text-white shadow-sm d-flex align-items-center gap-2"
+                                style="background: linear-gradient(135deg, #074dad, #0971c6); border: none; border-radius: 8px;"
+                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(128, 128, 128, 0.5)'"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.1)'">
+                                <i class="bi bi-plus-circle me-1"></i> Importar Processos
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ from .views import (
     AndamentoListView, AndamentoCreateView, AndamentoUpdateView, AndamentoDeleteView, ProcessoDetailView, AndamentoIniciarView, AndamentoEnviarParaFaseView, AndamentoConcluirProcessoView
 , process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView)
 from . import views
+from .views import importar_processos_view
 
 urlpatterns = [
     # URLs para Processo
@@ -33,5 +34,7 @@ urlpatterns = [
     path('exportar-excel/', export_processos_xlsx, name='exportar_excel'),
 
     path("adicionar-comentario/<int:processo_id>/", adicionar_comentario, name="adicionar_comentario"),
-
+    path('api/v1/processos/', views.ProcessosCreateListAPIView.as_view(), name='processos-create-list-api-view'),
+    path('importar-processos/', importar_processos_view, name='importar_processos'),
+    
 ]

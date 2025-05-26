@@ -1,3 +1,4 @@
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
@@ -11,7 +12,7 @@ from accounts.models import UserProfile
 
 from django.contrib.auth import get_user_model
 import datetime
-
+from datetime import datetime, timedelta
 
 User = get_user_model()
 
@@ -773,3 +774,4 @@ def get_user_daily_productivity_data(request):
         data = get_user_daily_productivity(request.user)
         return JsonResponse(data)
     return JsonResponse({'error': 'Usuário não autenticado'}, status=403)
+
