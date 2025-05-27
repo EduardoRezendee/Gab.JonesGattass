@@ -83,13 +83,13 @@ MAPEAMENTO_TAG_USUARIO = {
     'Ass-Thais': 'thaiscamila',
     'Ass-Caio': 'caiocesar',
     'Ass-Izabela': 'izabelaortiz',
-    'ASS-IZABELA': 'izabelaortiz'
+    'ASS-IZABELA': 'izabelaortiz',
     'Ass-Juliana': 'julianalodi',
     'Ass-Jurandy': 'jurandysilva',
     'Ass-Karen': 'karenaquino',
     'Ass-Manoel': 'manoellima',
     'Ass-Marco Antônio': 'marcoantonio',
-    'ASS-Marco Antônio': 'marcoantonio'
+    'ASS-Marco Antônio': 'marcoantonio',
     'Ass-Mirelli': 'mirellisilva',
     'Ass-Viviane': 'vivianelima',
 }
