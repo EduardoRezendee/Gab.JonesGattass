@@ -3,5 +3,6 @@ media
 db.sqlite3
 __pycache__
 *.pyc
-nginx/*
-gunicorn/*
+gunicorn.service
+uwsgi.ini
+nginx.conf
