@@ -108,6 +108,7 @@ def importar_processos_view(request):
         try:
             # Forçar que a coluna 'prioridade' seja lida como string
             df = pd.read_csv(arquivo, sep=';', encoding='utf-8', dtype={'prioridade': str})
+            
 
             # Verificar colunas esperadas
             colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade']
