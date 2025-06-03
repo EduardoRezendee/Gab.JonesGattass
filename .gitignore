@@ -6,3 +6,4 @@ __pycache__
 gunicorn.service
 uwsgi.ini
 nginx.conf
+gabjonesgattass_uwsgi.ini
