@@ -563,10 +563,21 @@ def importar_processos_view(request):
             df = pd.read_csv(arquivo, sep=';', encoding='utf-8', dtype={'prioridade': str})
 
             #Marcar despacho como True
-            despacho = False
-            if pd.notna(row.get('nomeTarefa')) and 'Minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
-                despacho = True
+            for index, row in df.iterrows():
+                try:
+                    numero_processo = row['numeroProcesso']
 
+                    despacho = False
+                    if 'nomeTarefa' in row and pd.notna(row['nomeTarefa']):
+                        if 'minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
+                            despacho = True
+
+        # ... resto do seu código: colunas, espécie, usuário, etc.
+
+                except Exception as e:
+                    print(f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
+                    messages.warning(request, f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
+                    continue
             # Verificar colunas esperadas
             colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade']
             colunas_faltando = [col for col in colunas_esperadas if col not in df.columns]
