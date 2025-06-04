@@ -545,6 +545,7 @@ MAPEAMENTO_TAG_USUARIO = {
     'ASS-Marco Antônio': 'marcoantonio',
     'Ass-Mirelli': 'mirellisilva',
     'Ass-Viviane': 'vivianelima',
+    'Ass-Marinalva': 'marinalva'
 }
 
 def importar_processos_view(request):
