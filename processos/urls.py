@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     ProcessoListView, ProcessoCreateView, ProcessoUpdateView, ProcessoDeleteView,
     AndamentoListView, AndamentoCreateView, AndamentoUpdateView, AndamentoDeleteView, ProcessoDetailView, AndamentoIniciarView, AndamentoEnviarParaFaseView, AndamentoConcluirProcessoView
-, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView)
+, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView, configurar_meta_semanal)
 from . import views
 from .views import importar_processos_view
 
@@ -37,4 +37,9 @@ urlpatterns = [
     path('api/v1/processos/', views.ProcessosCreateListAPIView.as_view(), name='processos-create-list-api-view'),
     path('importar-processos/', importar_processos_view, name='importar_processos'),
     
+    path('configurar-meta-semanal/', configurar_meta_semanal, name='configurar_meta_semanal'),
+    path('listar-metas-semanal/', views.listar_metas_semanal, name='listar_metas_semanal'),
+    path('editar-meta-semanal/', views.editar_meta_semanal, name='editar_meta_semanal'),
+    path('excluir-meta-semanal/', views.excluir_meta_semanal, name='excluir_meta_semanal'),
+    path('minhas-metas/', views.minhas_metas, name='minhas_metas'),
 ]

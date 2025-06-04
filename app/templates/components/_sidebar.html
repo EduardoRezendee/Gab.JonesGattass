@@ -2,7 +2,6 @@
 <button id="toggleSidebar" class="btn btn-glow">
   <i id="toggleIcon" class="bi bi-list fs-4"></i>
 </button>
-
 <!-- Sidebar -->
 <div id="sidebar" class="sidebar border-end">
   <div class="sidebar-header">
@@ -20,6 +19,13 @@
               <i class="bi bi-arrow-repeat fs-4"></i> Distribuição de Processos
           </a>
       </li>
+        {% if user.profile.funcao in "Desembargador,Chefe de Gabinete" %}
+          <li class="nav-item">
+            <a href="{% url 'listar_metas_semanal' %}" class="nav-link {% if '/listar-metas-semanal/' in request.path %}active{% endif %}">
+              <i class="bi bi-table fs-4"></i> <span class="nav-text">Listar Metas</span>
+            </a>
+          </li>
+  {% endif %}
       <li class="nav-item">
           <a href="{% url 'process_metrics' %}" class="nav-link">
               <i class="bi bi-bar-chart fs-4"></i> Painel de Processos
@@ -186,6 +192,5 @@
       toggle.addEventListener('click', function () {
         this.parentElement.classList.toggle('show');
       });
-    });
-  </script>
-  
+  });
+  </script>

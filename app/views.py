@@ -40,7 +40,7 @@ def get_revisoes_hoje_data(request):
         'processo_usuario_first_name',
         'processo_usuario_last_name'
     ).annotate(
-        enviados_desa=Count('processo', distinct=True)
+        enviados_des=Count('processo', distinct=True)
     ).order_by('processo_usuariofirst_name', 'processousuario_last_name')
 
     meta = 5
@@ -97,7 +97,7 @@ def get_revisoes_semana_data(request):
         'processo_usuario_first_name',
         'processo_usuario_last_name'
     ).annotate(
-        enviados_desa=Count('processo', distinct=True)
+        enviados_des=Count('processo', distinct=True)
     ).order_by('processo_usuario_first_name')
 
     labels, data_enviados, photo_urls, medias_diarias = [], [], [], []
@@ -106,7 +106,7 @@ def get_revisoes_semana_data(request):
         user_id = item['processo_usuario_id']
         first_name = item['processo_usuario_first_name']
         last_name = item['processo_usuario_last_name']
-        enviados = item['enviados_desa']
+        enviados = item['enviados_des']
 
         media_dia = enviados / 5  # média considerando 5 dias úteis (segunda a sexta)
         media_dia = round(media_dia, 2)  # arredonda para 2 casas decimais

@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-dark fw-semibold">Configurar Meta Semanal</h2>
+
+  <div class="card p-4">
+    <form id="metaForm" class="needs-validation" novalidate>
+      <div class="mb-3">
+        <label for="usuario" class="form-label fw-medium text-dark">Usuário</label>
+        <select id="usuario" name="usuario_id" class="form-select" onchange="carregarProcessos()" required>
+          <option value="">Selecione um usuário</option>
+          {% for user in usuarios %}
+          <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+          {% endfor %}
+        </select>
+        <div class="invalid-feedback">Por favor, selecione um usuário.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="periodo" class="form-label fw-medium text-dark">Período da Meta</label>
+        <select id="periodo" name="periodo" class="form-select" required>
+          <option value="">Selecione o período</option>
+          {% for periodo in periodos %}
+          <option value="{{ periodo.value }}">{{ periodo.label }}</option>
+          {% endfor %}
+        </select>
+        <div class="invalid-feedback">Por favor, selecione um período.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="meta_qtd" class="form-label fw-medium text-dark">Meta (quantidade)</label>
+        <div class="input-group">
+          <input type="number" name="meta_qtd" id="meta_qtd" class="form-control" required min="1" readonly>
+          <button type="button" class="btn btn-outline-primary" onclick="selecionarTodos()" id="selecionarTodosBtn">
+            Selecionar Todos
+          </button>
+        </div>
+        <small class="form-text text-secondary">Calculado automaticamente com base nos processos selecionados.</small>
+        <div class="invalid-feedback">A meta deve ser maior que 0.</div>
+      </div>
+
+      <h6 class="mb-3 fw-medium text-dark">Selecionar Processos</h6>
+      <div id="processosContainer" class="border p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+        <p class="text-secondary m-0" id="processosMessage">Selecione um usuário para ver os processos</p>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="submit" class="btn btn-primary px-4" id="submitBtn">
+          <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status"></span> Salvar Meta
+        </button>
+        <a href="{% url 'listar_metas_semanal' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+      </div>
+    </form>
+
+    <div id="resultMessage" class="mt-3"></div>
+  </div>
+</div>
+
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
+  color: #1f2a44;
+}
+
+.container {
+  max-width: 800px;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2a44;
+}
+
+.form-select,
+.form-control {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-group .btn {
+  border-radius: 8px;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn-outline-primary {
+  border-color: #2563eb;
+  color: #2563eb;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  border-color: #6b7280;
+  color: #6b7280;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6b7280;
+  color: #fff;
+}
+
+#processosContainer {
+  background-color: #fff;
+}
+
+#processosContainer label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+#processosContainer input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+#resultMessage .alert {
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 576px) {
+  .card {
+    padding: 1rem;
+  }
+
+  .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+
+  .form-label {
+    font-size: 0.75rem;
+  }
+
+  .form-select,
+  .form-control {
+    font-size: 0.75rem;
+  }
+}
+</style>
+
+<script>
+const processosPorUsuario = {{ processos_por_usuario|safe }};
+let todosSelecionados = false;
+
+function carregarProcessos() {
+  const usuarioId = document.getElementById('usuario').value;
+  const container = document.getElementById('processosContainer');
+  const metaInput = document.getElementById('meta_qtd');
+  const message = document.getElementById('processosMessage');
+  const selecionarTodosBtn = document.getElementById('selecionarTodosBtn');
+
+  // Limpar o contêiner e resetar estados
+  container.innerHTML = '';
+  metaInput.value = 0;
+  todosSelecionados = false;
+  selecionarTodosBtn.textContent = 'Selecionar Todos';
+  message.style.display = 'block';
+  message.textContent = 'Carregando processos...';
+
+  // Log para depuração
+  console.log('Usuario selecionado:', usuarioId);
+  console.log('Processos disponíveis:', processosPorUsuario[usuarioId]);
+
+  // Verificar se há processos para o usuário
+  if (!usuarioId || !processosPorUsuario[usuarioId] || !Array.isArray(processosPorUsuario[usuarioId]) || processosPorUsuario[usuarioId].length === 0) {
+    message.textContent = 'Nenhum processo disponível para este usuário.';
+    return;
+  }
+
+  // Esconder mensagem e carregar processos
+  message.style.display = 'none';
+  const processosOrdenados = processosPorUsuario[usuarioId].slice().sort((a, b) => b.dias_no_gabinete - a.dias_no_gabinete);
+
+  processosOrdenados.forEach(proc => {
+    const label = document.createElement('label');
+    label.className = 'd-flex align-items-center gap-2';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.name = 'processo_ids[]';
+    input.value = proc.id;
+    input.addEventListener('change', atualizarMetaQtd);
+    const span = document.createElement('span');
+    const faseTexto = proc.fase_atual ? ` - ${proc.fase_atual}` : '';
+    span.textContent = `${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)${faseTexto}`;
+    label.append(input, span);
+    container.appendChild(label);
+  });
+
+  // Log para verificar processos carregados
+  console.log('Processos carregados:', processosOrdenados.length);
+}
+
+function selecionarTodos() {
+  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]');
+  todosSelecionados = !todosSelecionados;
+  const selecionarTodosBtn = document.getElementById('selecionarTodosBtn');
+  selecionarTodosBtn.textContent = todosSelecionados ? 'Deselecionar Todos' : 'Selecionar Todos';
+
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = todosSelecionados;
+  });
+  atualizarMetaQtd();
+}
+
+function atualizarMetaQtd() {
+  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
+  document.getElementById('meta_qtd').value = checkboxes.length || 0;
+}
+
+function showMessage(message, isError = false) {
+  const messageDiv = document.getElementById('resultMessage');
+  messageDiv.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'} shadow-sm" role="alert">${message}</div>`;
+  setTimeout(() => messageDiv.innerHTML = '', 5000);
+}
+
+function resetForm() {
+  const form = document.getElementById('metaForm');
+  form.reset();
+  form.classList.remove('was-validated');
+  const message = document.getElementById('processosMessage');
+  message.style.display = 'block';
+  message.textContent = 'Selecione um usuário para ver os processos';
+  document.getElementById('processosContainer').innerHTML = '';
+  document.getElementById('meta_qtd').value = 0;
+  todosSelecionados = false;
+  document.getElementById('selecionarTodosBtn').textContent = 'Selecionar Todos';
+  document.getElementById('periodo').value = ''; // Resetar o campo de período
+}
+
+document.getElementById('metaForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = this;
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  submitBtn.disabled = true;
+  spinner.classList.remove('d-none');
+
+  if (!form.checkValidity()) {
+    form.classList.add('was-validated');
+    submitBtn.disabled = false;
+    spinner.classList.add('d-none');
+    return;
+  }
+
+  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
+  if (checkboxes.length === 0) {
+    showMessage('Selecione pelo menos um processo.', true);
+    submitBtn.disabled = false;
+    spinner.classList.add('d-none');
+    return;
+  }
+
+  try {
+    const formData = new FormData(form);
+    const response = await fetch("{% url 'configurar_meta_semanal' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      body: formData
+    });
+    const data = await response.json();
+    if (data.success) {
+      showMessage(data.message);
+      setTimeout(() => {
+        window.location.href = "{% url 'listar_metas_semanal' %}";
+      }, 1000);
+    } else {
+      showMessage(data.message || 'Erro ao salvar meta.', true);
+    }
+  } catch (error) {
+    showMessage('Erro ao salvar meta.', true);
+    console.error('Erro na requisição:', error);
+  } finally {
+    submitBtn.disabled = false;
+    spinner.classList.add('d-none');
+  }
+});
+
+document.querySelectorAll('.needs-validation').forEach(form => {
+  form.addEventListener('submit', event => {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    form.classList.add('was-validated');
+  });
+});
+</script>
+{% endblock %}

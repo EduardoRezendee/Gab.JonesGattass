@@ -1,5 +1,22 @@
 {% load app_filters %}
 {% include 'components/meudia.html' %}
+
+<div class="d-flex justify-content-end gap-3 my-3">
+  <button
+    type="button"
+    class="btn position-relative shadow-sm rounded-pill"
+    style="background: linear-gradient(90deg, #ed8d39, #f08307);
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 1rem;
+          border: 1px solid transparent;"
+    data-bs-toggle="modal"
+    data-bs-target="#minhasMetasModal"
+  >
+    <i class="bi bi-clipboard-check me-2"></i> Ver Meta Semana
+  </button>
+</div>
+
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%; background-color: #CFE2FF;">
   <div class="accordion-item">
     <h2 class="accordion-header">
@@ -462,6 +479,52 @@
   </div>
 </div>
 
+<div
+  class="modal fade"
+  id="minhasMetasModal"
+  tabindex="-1"
+  aria-labelledby="minhasMetasModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="minhasMetasModalLabel">Minhas Metas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" id="minhasMetasModalBody">
+        <p class="text-center">Carregando...</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+  (function() {
+    const modal = document.getElementById('minhasMetasModal');
+    modal.addEventListener('show.bs.modal', () => {
+      const body = modal.querySelector('#minhasMetasModalBody');
+      body.innerHTML = '<p class="text-center">Carregando...</p>';
+
+      fetch("{% url 'minhas_metas' %}", {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Erro na requisição');
+        return response.text();
+      })
+      .then(html => {
+        body.innerHTML = html;
+      })
+      .catch(() => {
+        body.innerHTML = '<p class="text-danger text-center">Falha ao carregar.</p>';
+      });
+    });
+})();
+</script>
+
   <!-- Estilos para o Gráfico -->
   <style>
     .charts-container {
@@ -566,4 +629,5 @@
     })
     .catch(error => console.error('Erro ao carregar dados de produtividade diária:', error));
 </script>
+
 {% endif %}

@@ -1,0 +1,538 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <!-- Cabeçalho -->
+  <div class="header d-flex justify-content-between align-items-center mb-4">
+    <h1 class="title fw-semibold text-dark">Metas Semanais por Usuário</h1>
+    <a href="{% url 'configurar_meta_semanal' %}" class="btn btn-primary d-flex align-items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+      </svg>
+      Nova Meta
+    </a>
+  </div>
+
+  <!-- Filtro de Semana -->
+  <div class="mb-4">
+    <form method="GET" action="{% url 'listar_metas_semanal' %}" id="filtroSemanaForm">
+      <div class="row align-items-center">
+        <div class="col-md-4">
+          <label for="periodo" class="form-label fw-medium text-dark">Filtrar por Semana:</label>
+          <select id="periodo" name="periodo" class="form-select" onchange="this.form.submit()">
+            <option value="">Todas as semanas</option>
+            {% for periodo in periodos %}
+            <option value="{{ periodo.value }}" {% if periodo_selecionado == periodo.value %}selected{% endif %}>
+              {{ periodo.label }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if metas %}
+  <div class="row g-4">
+    {% for meta in metas %}
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100 meta-card">
+        <div class="card-body">
+          <!-- Usuário -->
+          <div class="d-flex align-items-center mb-3">
+            <img src="{% if meta.usuario.profile.photo %}{{ meta.usuario.profile.photo.url }}{% else %}https://www.gravatar.com/avatar/000?d=mp&s=40{% endif %}"
+                 class="rounded-circle me-2 border border-light" width="40" height="40">
+            <h5 class="mb-0 text-dark fw-medium">{{ meta.usuario.get_full_name }}</h5>
+          </div>
+
+          <!-- Semana e Meta -->
+          <p class="text-secondary small mb-1">
+            {{ meta.semana_inicio|date:"d/m/Y" }} a {{ meta.semana_fim|date:"d/m/Y" }}
+            {% if meta.status == 'passada' %}
+              <span class="badge bg-secondary ms-2">Passada</span>
+            {% elif meta.status == 'futura' %}
+              <span class="badge bg-info ms-2">Futura</span>
+            {% else %}
+              <span class="badge bg-success ms-2">Atual</span>
+            {% endif %}
+          </p>
+          <p class="mb-3"><strong>Meta:</strong> {{ meta.meta_qtd }} processos</p>
+
+          <!-- Progress Bar -->
+          <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar bg-primary"
+                 role="progressbar"
+                 style="width: {{ meta.progresso|stringformat:'0.1f'|cut:',' }}%;"
+                 aria-valuenow="{{ meta.progresso|stringformat:'0.1f'|cut:',' }}"
+                 aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+          <p class="text-secondary small text-end">{{ meta.progresso|stringformat:"0.1f"|cut:"," }}%</p>
+
+          <!-- Quantitativos por faixa de dias -->
+          <div class="mb-3">
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-success">≤ 30 dias: {{ meta.range_le30 }}</span>
+              <span class="badge bg-primary">31–40 dias: {{ meta.range_31_40 }}</span>
+              <span class="badge bg-warning">41–50 dias: {{ meta.range_41_50 }}</span>
+              <span class="badge bg-danger">> 50 dias: {{ meta.range_gt50 }}</span>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary w-100" onclick="mostrarTodosProcessos({{ meta.id }})">
+              Ver Processos
+            </button>
+            <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#editMetaModal" onclick="carregarMeta({{ meta.id }})">
+              Editar
+            </button>
+            <button class="btn btn-outline-danger w-100" onclick="excluirMeta({{ meta.id }})">
+              Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <p class="text-secondary">
+      {% if periodo_selecionado %}
+        Nenhuma meta encontrada para o período selecionado.
+      {% else %}
+        Nenhuma meta semanal encontrada.
+      {% endif %}
+    </p>
+    <a href="{% url 'configurar_meta_semanal' %}" class="btn btn-primary">
+      Configurar Nova Meta
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Edição -->
+<div class="modal fade" id="editMetaModal" tabindex="-1" aria-labelledby="editMetaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-dark fw-semibold" id="editMetaModalLabel">Editar Meta Semanal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editMetaForm" class="needs-validation" novalidate>
+          <input type="hidden" name="meta_id" id="meta_id">
+          <div class="mb-3">
+            <label for="meta_qtd" class="form-label fw-medium">Meta (quantidade):</label>
+            <input type="number" name="meta_qtd" id="meta_qtd" class="form-control" required min="1" readonly>
+            <div class="invalid-feedback">A meta deve ser maior que 0.</div>
+          </div>
+
+          <h6 class="mb-3 fw-medium">Selecionar Processos</h6>
+          <div id="processosContainer" class="border p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+            <p class="text-muted" id="loadingMessage">Carregando processos...</p>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="submit" id="submitBtn" class="btn btn-primary px-4">
+              <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status"></span> Salvar
+            </button>
+            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+        <div id="resultMessage" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal "Ver Todos Processos" -->
+<div class="modal fade" id="allProcessosModal" tabindex="-1" aria-labelledby="allProcessosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-dark fw-semibold" id="allProcessosModalLabel">Todos os Processos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="allProcessosBody">
+        <p>Carregando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
+  color: #1f2a44;
+}
+
+.container {
+  max-width: 1200px;
+}
+
+/* Estilo dos cartões */
+.meta-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.meta-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* Barra de progresso */
+.progress {
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: #2563eb;
+  transition: width 0.4s ease;
+  min-width: 1%;
+  display: block;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5em 1em;
+  border-radius: 9999px;
+}
+
+.bg-success { background-color: #10b981; }
+.bg-primary { background-color: #2563eb; }
+.bg-warning { background-color: #f59e0b; }
+.bg-danger { background-color: #ef4444; }
+.bg-info { background-color: #3b82f6; }
+.bg-secondary { background-color: #6b7280; }
+
+/* Botões */
+.btn-primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn-outline-primary {
+  border-color: #2563eb;
+  color: #2563eb;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.btn-outline-danger {
+  border-color: #ef4444;
+  color: #ef4444;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  border-color: #6b7280;
+  color: #6b7280;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6b7280;
+  color: #fff;
+}
+
+/* Filtro */
+.form-select {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Modal */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fff;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Lista de processos */
+#processosContainer label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+#processosContainer input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+/* Responsividade */
+@media (max-width: 576px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.4em 0.8em;
+  }
+
+  .form-select {
+    font-size: 0.75rem;
+  }
+}
+</style>
+
+<script>
+  const processosPorUsuario = {{ processos_por_usuario|safe }};
+  let currentMeta = null;
+  
+  $(document).ready(function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+
+  async function carregarMeta(metaId) {
+    try {
+      const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
+        method: 'GET',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+      });
+      const meta = await response.json();
+      currentMeta = meta;
+
+      document.getElementById('meta_id').value = meta.id;
+      document.getElementById('meta_qtd').value = meta.meta_qtd;
+
+      const usuarioId = meta.usuario_id;
+      const container = document.getElementById('processosContainer');
+      container.innerHTML = '';
+
+      if (!usuarioId || !processosPorUsuario[usuarioId]?.length) {
+        container.innerHTML = '<p class="text-muted">Nenhum processo disponível para este usuário.</p>';
+        return;
+      }
+
+      const processosOrdenados = processosPorUsuario[usuarioId].sort((a, b) => b.dias_no_gabinete - a.dias_no_gabinete);
+      const idsListados = new Set(processosOrdenados.map(p => p.id));
+
+      // Processos ainda ativos (vêm de processosPorUsuario)
+      processosOrdenados.forEach(proc => {
+        const isChecked = meta.processo_ids.includes(proc.id) ? 'checked' : '';
+        const processoDetalhado = meta.processos.find(p => p.id === proc.id);
+        const faseTexto = proc.fase_atual ? ` - <strong>${proc.fase_atual}</strong>` : '';
+
+        const label = document.createElement('label');
+        label.className = 'd-flex align-items-center gap-2';
+        label.innerHTML = `
+          <input type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()">
+          <span>${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)${faseTexto}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      // Processos da meta que já estão concluídos e não estão na lista de abertos
+      meta.processos.forEach(proc => {
+        if (!idsListados.has(proc.id)) {
+          const faseTexto = proc.fase_atual ? ` - <strong>${proc.fase_atual}</strong>` : '';
+          const label = document.createElement('label');
+          label.className = 'd-flex align-items-center gap-2';
+          label.innerHTML = `
+            <input type="checkbox" name="processo_ids[]" value="${proc.id}" checked onchange="atualizarMetaQtd()">
+            <span>${proc.numero_processo} - ${proc.especie} <em>(concluído)</em>${faseTexto}</span>
+          `;
+          container.appendChild(label);
+        }
+      });
+
+      const loadingMessage = document.getElementById('loadingMessage');
+      if (loadingMessage) loadingMessage.style.display = 'none';
+
+    } catch (error) {
+      console.error('Erro ao carregar meta:', error);
+      showMessage('Erro ao carregar meta.', true);
+    }
+  }
+
+  async function mostrarTodosProcessos(metaId) {
+    try {
+      const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
+        method: 'GET',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+      });
+      const meta = await response.json();
+      const processos = meta.processos.map(p => `
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-gear-fill text-secondary"></i>
+          <span>${p.numero_processo} (${p.especie__especie || 'N/A'})</span>
+          ${p.fase_atual ? `<span class="badge bg-info ms-2">${p.fase_atual}</span>` : ''}
+        </div>
+      `).join('');
+      const modalBody = document.getElementById('allProcessosBody');
+      modalBody.innerHTML = processos || '<p class="text-muted">Nenhum processo associado.</p>';
+      new bootstrap.Modal(document.getElementById('allProcessosModal')).show();
+    } catch (error) {
+      console.error('Erro ao carregar processos:', error);
+      showMessage('Erro ao carregar processos.', true);
+    }
+  }
+
+  function atualizarMetaQtd() {
+    const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
+    document.getElementById('meta_qtd').value = checkboxes.length || 0;
+  }
+
+  function showMessage(message, isError = false) {
+    const messageDiv = document.getElementById('resultMessage');
+    messageDiv.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'} shadow-sm" role="alert">${message}</div>`;
+    setTimeout(() => messageDiv.innerHTML = '', 5000);
+  }
+
+  function resetForm() {
+    const form = document.getElementById('editMetaForm');
+    form.reset();
+    form.classList.remove('was-validated');
+    document.getElementById('meta_qtd').value = 0;
+
+    // Recria mensagem de carregamento
+    document.getElementById('processosContainer').innerHTML = `
+      <p class="text-muted" id="loadingMessage">Carregando processos...</p>`;
+  }
+
+  async function excluirMeta(metaId) {
+    if (confirm('Tem certeza que deseja excluir esta meta?')) {
+      try {
+        const response = await fetch(`{% url 'excluir_meta_semanal' %}?meta_id=${metaId}`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await response.json();
+        showMessage(data.message, !data.success);
+        if (data.success) {
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      } catch (error) {
+        console.error('Erro ao excluir meta:', error);
+        showMessage('Erro ao excluir meta.', true);
+      }
+    }
+  }
+
+  document.getElementById('editMetaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = this;
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      submitBtn.disabled = false;
+      spinner.classList.add('d-none');
+      return;
+    }
+
+    const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
+    if (checkboxes.length === 0) {
+      showMessage('Selecione pelo menos um processo.', true);
+      submitBtn.disabled = false;
+      spinner.classList.add('d-none');
+      return;
+    }
+
+    try {
+      const response = await fetch("{% url 'editar_meta_semanal' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: new FormData(form)
+      });
+      const data = await response.json();
+      if (data.success) {
+        showMessage(data.message);
+        resetForm();
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showMessage(data.message || 'Erro ao salvar meta.', true);
+      }
+    } catch (error) {
+      console.error('Erro na requisição:', error);
+      showMessage('Erro ao salvar meta.', true);
+    } finally {
+      submitBtn.disabled = false;
+      spinner.classList.add('d-none');
+    }
+  });
+
+  (() => {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+        console.log('Validação Bootstrap acionada.');
+      }, false);
+    });
+  })();
+</script>
+{% endblock %}

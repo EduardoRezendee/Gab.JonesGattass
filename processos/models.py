@@ -2,6 +2,23 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from django.db import models
+
+class MetaSemanal(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metas_semanal')
+    processos = models.ManyToManyField('Processo', related_name='metas_semanal')
+    semana_inicio = models.DateField()  
+    semana_fim = models.DateField()     
+    meta_qtd = models.PositiveIntegerField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    concluida = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('usuario', 'semana_inicio', 'semana_fim')
+
+    def _str_(self):
+        return f"Meta {self.usuario.get_full_name()} ({self.semana_inicio} - {self.semana_fim})"
 
 
 class Resultado(models.Model):

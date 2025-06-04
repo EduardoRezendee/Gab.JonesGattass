@@ -1,0 +1,338 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container mt-4">
+  <!-- Card Principal -->
+  <div class="card shadow-sm mb-4" style="border-radius: 12px; background: #fff;">
+    <div class="card-header" style="background: linear-gradient(90deg, #fdf8e3, #bbdefb); border-bottom: none; border-radius: 12px 12px 0 0;">
+      <h2 class="mb-0 text-primary fw-bold">
+        <i class="bi bi-person-check me-2"></i> Minhas Metas
+      </h2>
+    </div>
+    <div class="card-body p-4">
+      <!-- Foto e Nome -->
+      <div class="text-center mb-4">
+        <img
+          src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}https://www.gravatar.com/avatar/{{ request.user.email|default:'000' }}?d=mp&s=80{% endif %}"
+          class="rounded-circle border border-3 border-primary mb-2"
+          width="80" height="80"
+          alt="Avatar"
+        >
+        <h4 class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</h4>
+      </div>
+
+      {% if meta %}
+      <!-- Resumo Quantitativo -->
+      <div class="row text-center g-4 mb-4">
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
+            <h6 class="text-muted mb-2">Total de Processos</h6>
+            <p class="h3 mb-0">{{ total_meta }}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
+            <h6 class="text-warning mb-2">Pendentes</h6>
+            <p class="h3 mb-0">{{ metas_pendentes }}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
+            <h6 class="text-success mb-2">Concluídos</h6>
+            <p class="h3 mb-0">{{ metas_concluidas }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta da Semana -->
+      <h5 class="mb-3 fw-semibold">
+        Meta da Semana
+        ({{ meta.semana_inicio|date:"d/m/Y" }} – {{ meta.semana_fim|date:"d/m/Y" }})
+      </h5>
+      <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
+        <table class="table table-hover align-middle">
+          <thead style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff;">
+            <tr>
+              <th class="text-center">Nº Processo</th>
+              <th class="text-center">Data Entrada</th>
+              <th class="text-center">Dias Gabinete</th>
+              <th class="text-center">Fase</th>
+              <th class="text-center">Espécie</th>
+              <th class="text-center">Tipo</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in processos_com_status %}
+            <tr class="transition-row">
+              <td class="text-center">{{ p.numero_processo }}</td>
+              <td class="text-center">{{ p.data_entrada|date:"d/m/Y"|default:"-" }}</td>
+              <td class="text-center">
+                {% if p.dias_no_gabinete is not None %}
+                  <span class="badge bg-light text-dark">{{ p.dias_no_gabinete }} dias</span>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-center">{{ p.fase_atual|default:"-" }}</td>
+              <td class="text-center">{{ p.especie|default:"-" }}</td>
+              <td class="text-center">{{ p.tipo|default:"-" }}</td>
+              <td class="text-center">
+                {% if p.concluido %}
+                  <span class="badge bg-success">Concluído</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Nenhum processo na meta.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Progresso da Meta -->
+      <div class="mb-4">
+        <h6 class="fw-medium">Progresso da Meta</h6>
+        <div class="progress" style="height: 24px; border-radius: 12px; background-color: #e9ecef;">
+          <div class="progress-bar bg-success transition-width"
+               role="progressbar"
+               style="width: {{ progresso|stringformat:"0.1f"|cut:"," }}%; min-width: 40px; transition: width 0.6s ease;"
+               aria-valuenow="{{ progresso|stringformat:"0.1f"|cut:"," }}"
+               aria-valuemin="0"
+               aria-valuemax="100">
+            {{ progresso|stringformat:"0.1f"|cut:"," }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Processos Fora da Meta (Opcional - Manter ou Remover) -->
+      <h5 class="mb-3 fw-semibold">Processos Enviados para Revisão Des (Fora da Meta)</h5>
+      <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
+        <table class="table table-hover align-middle">
+          <thead style="background: linear-gradient(135deg, #1a3c6b, #2e5b8a); color: #ffffff;">
+            <tr>
+              <th class="text-center">Nº Processo</th>
+              <th class="text-center">Data Entrada</th>
+              <th class="text-center">Dias Gabinete</th>
+              <th class="text-center">Fase</th>
+              <th class="text-center">Espécie</th>
+              <th class="text-center">Tipo</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in processos_fora_meta %}
+            <tr class="transition-row">
+              <td class="text-center">{{ p.numero_processo }}</td>
+              <td class="text-center">{{ p.data_entrada|date:"d/m/Y"|default:"-" }}</td>
+              <td class="text-center">
+                {% if p.dias_no_gabinete is not None %}
+                  <span class="badge bg-light text-dark">{{ p.dias_no_gabinete }} dias</span>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-center">{{ p.fase_atual|default:"-" }}</td>
+              <td class="text-center">{{ p.especie|default:"-" }}</td>
+              <td class="text-center">{{ p.tipo|default:"-" }}</td>
+              <td class="text-center">
+                <span class="badge bg-success">Concluído</span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Nenhum processo fora da meta enviado para Revisão Des.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% else %}
+      <p class="text-center text-muted fs-5">Nenhuma meta cadastrada para esta semana. <a href="{% url 'configurar_meta_semanal' %}" class="text-primary fw-medium">Configurar agora</a></p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.table td, .table th {
+  vertical-align: middle;
+}
+.progress-bar {
+  line-height: 24px;
+  font-weight: 500;
+  transition: width 0.5s ease-in-out;
+}
+.transition-shadow {
+  transition: box-shadow 0.3s ease;
+}
+.transition-shadow:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+.transition-row:hover {
+  background-color: #f8f9fa;
+}
+@media (max-width: 576px) {
+  .row.text-center .col-md-4 {
+    margin-bottom: 1rem;
+  }
+  .progress {
+    height: 20px !important;
+  }
+  .table {
+    font-size: 0.9rem;
+  }
+}
+</style>
+
+<script>
+const processosPorUsuario = {{ processos_por_usuario|safe }};
+let currentMeta = null;
+
+async function carregarMeta(metaId) {
+  try {
+    const response = await fetch({% url 'editar_meta_semanal' %}?meta_id=${metaId}, {
+      method: 'GET',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    });
+    const meta = await response.json();
+    currentMeta = meta;
+
+    document.getElementById('meta_id').value = meta.id;
+    document.getElementById('meta_qtd').value = meta.meta_qtd;
+
+    const usuarioId = meta.usuario_id;
+    const container = document.getElementById('processosContainer');
+    container.innerHTML = '';
+
+    if (!usuarioId || !processosPorUsuario[usuarioId]?.length) {
+      container.innerHTML = '<p class="text-muted">Nenhum processo disponível para este usuário.</p>';
+      return;
+    }
+
+    const processosOrdenados = processosPorUsuario[usuarioId].sort((a, b) => b.dias_no_gabinete - a.dias_no_gabinete);
+    processosOrdenados.forEach(proc => {
+      const isChecked = meta.processo_ids.includes(proc.id) ? 'checked' : '';
+      const label = document.createElement('label');
+      label.innerHTML = `
+        <input type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()">
+        ${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)
+      `;
+      container.appendChild(label);
+    });
+    document.getElementById('loadingMessage').style.display = 'none';
+  } catch (error) {
+    showMessage('Erro ao carregar meta.', true);
+  }
+}
+
+async function mostrarTodosProcessos(metaId) {
+  try {
+    const response = await fetch({% url 'editar_meta_semanal' %}?meta_id=${metaId}, {
+      method: 'GET',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    });
+    const meta = await response.json();
+    const processos = meta.processos.map(p => ${p.numero_processo} (${p.especie})).join('<br>');
+    const modalBody = document.getElementById('allProcessosBody');
+    modalBody.innerHTML = processos || '<p>Nenhum processo adicional.</p>';
+    new bootstrap.Modal(document.getElementById('allProcessosModal')).show();
+  } catch (error) {
+    showMessage('Erro ao carregar processos.', true);
+  }
+}
+
+function atualizarMetaQtd() {
+  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
+  document.getElementById('meta_qtd').value = checkboxes.length;
+}
+
+function showMessage(message, isError = false) {
+  const messageDiv = document.getElementById('resultMessage');
+  messageDiv.innerHTML = <div class="alert ${isError ? 'alert-danger' : 'alert-success'}" role="alert">${message}</div>;
+  setTimeout(() => messageDiv.innerHTML = '', 5000);
+}
+
+function resetForm() {
+  const form = document.getElementById('editMetaForm');
+  form.reset();
+  form.classList.remove('was-validated');
+  document.getElementById('processosContainer').innerHTML = '<p class="text-muted" id="loadingMessage">Carregando processos...</p>';
+  document.getElementById('meta_qtd').value = 0;
+}
+
+async function excluirMeta(metaId) {
+  if (confirm('Tem certeza que deseja excluir esta meta?')) {
+    try {
+      const response = await fetch({% url 'excluir_meta_semanal' %}?meta_id=${metaId}, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+      });
+      const data = await response.json();
+      showMessage(data.message);
+      if (data.success) {
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } catch (error) {
+      showMessage('Erro ao excluir meta.', true);
+    }
+  }
+}
+
+document.getElementById('editMetaForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = this;
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  submitBtn.disabled = true;
+  spinner.classList.remove('d-none');
+
+  if (!form.checkValidity()) {
+    form.classList.add('was-validated');
+    submitBtn.disabled = false;
+    spinner.classList.add('d-none');
+    return;
+  }
+
+  try {
+    const response = await fetch("{% url 'editar_meta_semanal' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      body: new FormData(form)
+    });
+    const data = await response.json();
+    if (data.success) {
+      showMessage(data.message);
+      resetForm();
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showMessage(data.message || 'Erro ao salvar meta.', true);
+    }
+  } catch (error) {
+    showMessage('Erro ao salvar meta.', true);
+  } finally {
+    submitBtn.disabled = false;
+    spinner.classList.add('d-none');
+  }
+});
+
+// Bootstrap form validation
+(() => {
+  'use strict';
+  const forms = document.querySelectorAll('.needs-validation');
+  Array.from(forms).forEach(form => {
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+</script>
