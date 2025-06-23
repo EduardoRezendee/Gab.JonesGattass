@@ -4,7 +4,7 @@
 <div class="container mt-4">
   <!-- Card Principal -->
   <div class="card shadow-sm mb-4" style="border-radius: 12px; background: #fff;">
-    <div class="card-header" style="background: linear-gradient(90deg, #fdf8e3, #bbdefb); border-bottom: none; border-radius: 12px 12px 0 0;">
+    <div class="card-header" style="background: linear-gradient(90deg, #e7e7e7, #2f2f2f); border-bottom: none; border-radius: 12px 12px 0 0;">
       <h2 class="mb-0 text-primary fw-bold">
         <i class="bi bi-person-check me-2"></i> Minhas Metas
       </h2>
@@ -145,15 +145,12 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted">Nenhum processo fora da meta enviado para Revisão Des.</td>
+              <td colspan="7" class="text-center text-muted">Nenhum processo fora da meta enviado para Revisão Desa.</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-
-      {% else %}
-      <p class="text-center text-muted fs-5">Nenhuma meta cadastrada para esta semana. <a href="{% url 'configurar_meta_semanal' %}" class="text-primary fw-medium">Configurar agora</a></p>
       {% endif %}
     </div>
   </div>
@@ -196,7 +193,7 @@ let currentMeta = null;
 
 async function carregarMeta(metaId) {
   try {
-    const response = await fetch({% url 'editar_meta_semanal' %}?meta_id=${metaId}, {
+    const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
       method: 'GET',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' }
     });
@@ -233,12 +230,12 @@ async function carregarMeta(metaId) {
 
 async function mostrarTodosProcessos(metaId) {
   try {
-    const response = await fetch({% url 'editar_meta_semanal' %}?meta_id=${metaId}, {
+    const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
       method: 'GET',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' }
     });
     const meta = await response.json();
-    const processos = meta.processos.map(p => ${p.numero_processo} (${p.especie})).join('<br>');
+    const processos = meta.processos.map(p => `${p.numero_processo} (${p.especie})`).join('<br>');
     const modalBody = document.getElementById('allProcessosBody');
     modalBody.innerHTML = processos || '<p>Nenhum processo adicional.</p>';
     new bootstrap.Modal(document.getElementById('allProcessosModal')).show();
@@ -254,7 +251,7 @@ function atualizarMetaQtd() {
 
 function showMessage(message, isError = false) {
   const messageDiv = document.getElementById('resultMessage');
-  messageDiv.innerHTML = <div class="alert ${isError ? 'alert-danger' : 'alert-success'}" role="alert">${message}</div>;
+  messageDiv.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'}" role="alert">${message}</div>`;
   setTimeout(() => messageDiv.innerHTML = '', 5000);
 }
 
@@ -269,7 +266,7 @@ function resetForm() {
 async function excluirMeta(metaId) {
   if (confirm('Tem certeza que deseja excluir esta meta?')) {
     try {
-      const response = await fetch({% url 'excluir_meta_semanal' %}?meta_id=${metaId}, {
+      const response = await fetch(`{% url 'excluir_meta_semanal' %}?meta_id=${metaId}`, {
         method: 'POST',
         headers: { 'X-CSRFToken': '{{ csrf_token }}' }
       });

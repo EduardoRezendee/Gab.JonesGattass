@@ -41,6 +41,21 @@
       </div>
 
       <h6 class="mb-3 fw-medium text-dark">Selecionar Processos</h6>
+      
+      <!-- Campo de busca por número de processo -->
+      <div class="mb-3" id="buscaContainer" style="display: none;">
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="fas fa-search"></i>
+          </span>
+          <input type="text" id="buscaProcesso" class="form-control" placeholder="Buscar por número do processo..." onkeyup="filtrarProcessos()">
+          <button type="button" class="btn btn-outline-secondary" onclick="limparBusca()" id="limparBuscaBtn">
+            <i class="fas fa-times"></i> Limpar
+          </button>
+        </div>
+        <small class="form-text text-secondary">Digite o número do processo para filtrar a lista - resultados aparecerão no topo</small>
+      </div>
+
       <div id="processosContainer" class="border p-3 rounded" style="max-height: 300px; overflow-y: auto;">
         <p class="text-secondary m-0" id="processosMessage">Selecione um usuário para ver os processos</p>
       </div>
@@ -96,6 +111,13 @@ body {
 
 .input-group .btn {
   border-radius: 8px;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+  border-color: #d1d5db;
+  color: #6b7280;
+  border-radius: 8px 0 0 8px;
 }
 
 .btn-primary {
@@ -160,6 +182,32 @@ body {
   font-size: 0.875rem;
 }
 
+/* Estilos para processos filtrados */
+.processo-item {
+  transition: all 0.3s ease;
+}
+
+.processo-item.hidden {
+  display: none;
+}
+
+.processo-item.highlight {
+  background-color: #fef3c7;
+  border-radius: 4px;
+  padding: 0.25rem;
+  margin: 0.125rem 0;
+  border-left: 3px solid #f59e0b;
+}
+
+.processo-item.encontrado {
+  background-color: #dcfce7;
+  border-radius: 4px;
+  padding: 0.25rem;
+  margin: 0.125rem 0;
+  border-left: 3px solid #22c55e;
+  order: -1;
+}
+
 @media (max-width: 576px) {
   .card {
     padding: 1rem;
@@ -184,6 +232,8 @@ body {
 <script>
 const processosPorUsuario = {{ processos_por_usuario|safe }};
 let todosSelecionados = false;
+let processosCarregados = [];
+let ordemOriginal = [];
 
 function carregarProcessos() {
   const usuarioId = document.getElementById('usuario').value;
@@ -191,6 +241,8 @@ function carregarProcessos() {
   const metaInput = document.getElementById('meta_qtd');
   const message = document.getElementById('processosMessage');
   const selecionarTodosBtn = document.getElementById('selecionarTodosBtn');
+  const buscaContainer = document.getElementById('buscaContainer');
+  const buscaInput = document.getElementById('buscaProcesso');
 
   // Limpar o contêiner e resetar estados
   container.innerHTML = '';
@@ -199,6 +251,10 @@ function carregarProcessos() {
   selecionarTodosBtn.textContent = 'Selecionar Todos';
   message.style.display = 'block';
   message.textContent = 'Carregando processos...';
+  buscaContainer.style.display = 'none';
+  buscaInput.value = '';
+  processosCarregados = [];
+  ordemOriginal = [];
 
   // Log para depuração
   console.log('Usuario selecionado:', usuarioId);
@@ -212,34 +268,131 @@ function carregarProcessos() {
 
   // Esconder mensagem e carregar processos
   message.style.display = 'none';
+  buscaContainer.style.display = 'block';
   const processosOrdenados = processosPorUsuario[usuarioId].slice().sort((a, b) => b.dias_no_gabinete - a.dias_no_gabinete);
+  processosCarregados = processosOrdenados;
 
-  processosOrdenados.forEach(proc => {
+  processosOrdenados.forEach((proc, index) => {
     const label = document.createElement('label');
-    label.className = 'd-flex align-items-center gap-2';
+    label.className = 'd-flex align-items-center gap-2 processo-item';
+    label.setAttribute('data-numero-processo', proc.numero_processo.toLowerCase());
+    label.setAttribute('data-ordem-original', index);
+    
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.name = 'processo_ids[]';
     input.value = proc.id;
     input.addEventListener('change', atualizarMetaQtd);
+    
     const span = document.createElement('span');
     const faseTexto = proc.fase_atual ? ` - ${proc.fase_atual}` : '';
     span.textContent = `${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)${faseTexto}`;
+    
     label.append(input, span);
     container.appendChild(label);
+    ordemOriginal.push(label);
   });
 
   // Log para verificar processos carregados
   console.log('Processos carregados:', processosOrdenados.length);
 }
 
+function filtrarProcessos() {
+  const termoBusca = document.getElementById('buscaProcesso').value.toLowerCase().trim();
+  const container = document.getElementById('processosContainer');
+  const processosItems = Array.from(document.querySelectorAll('.processo-item'));
+  let processosEncontrados = [];
+  let processosNaoEncontrados = [];
+
+  // Remover info de busca anterior
+  const infoElement = container.querySelector('.info-busca');
+  if (infoElement) {
+    infoElement.remove();
+  }
+
+  if (termoBusca === '') {
+    // Se não há busca, restaurar ordem original
+    restaurarOrdemOriginal();
+    return;
+  }
+
+  // Separar processos encontrados e não encontrados
+  processosItems.forEach(item => {
+    const numeroProcesso = item.getAttribute('data-numero-processo');
+    
+    // Remover classes anteriores
+    item.classList.remove('hidden', 'highlight', 'encontrado');
+    
+    if (numeroProcesso.includes(termoBusca)) {
+      item.classList.add('encontrado');
+      processosEncontrados.push(item);
+    } else {
+      processosNaoEncontrados.push(item);
+    }
+  });
+
+  // Reordenar: primeiro os encontrados, depois os não encontrados
+  container.innerHTML = '';
+  
+  // Adicionar info de busca
+  if (processosEncontrados.length > 0) {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'info-busca text-success small mb-2 fw-medium';
+    infoDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${processosEncontrados.length} processo(s) encontrado(s) - movidos para o topo`;
+    container.appendChild(infoDiv);
+  } else {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'info-busca text-warning small mb-2';
+    infoDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Nenhum processo encontrado com "${termoBusca}"`;
+    container.appendChild(infoDiv);
+  }
+
+  // Adicionar processos encontrados primeiro
+  processosEncontrados.forEach(item => {
+    container.appendChild(item);
+  });
+
+  // Adicionar processos não encontrados depois
+  processosNaoEncontrados.forEach(item => {
+    container.appendChild(item);
+  });
+
+  // Scroll para o topo do container se houver resultados
+  if (processosEncontrados.length > 0) {
+    container.scrollTop = 0;
+  }
+}
+
+function restaurarOrdemOriginal() {
+  const container = document.getElementById('processosContainer');
+  
+  // Limpar container
+  container.innerHTML = '';
+  
+  // Remover todas as classes de busca
+  ordemOriginal.forEach(item => {
+    item.classList.remove('hidden', 'highlight', 'encontrado');
+  });
+  
+  // Restaurar ordem original
+  ordemOriginal.forEach(item => {
+    container.appendChild(item);
+  });
+}
+
+function limparBusca() {
+  document.getElementById('buscaProcesso').value = '';
+  restaurarOrdemOriginal();
+}
+
 function selecionarTodos() {
-  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]');
+  const checkboxesVisiveis = Array.from(document.querySelectorAll('.processo-item input[name="processo_ids[]"]'));
+  
   todosSelecionados = !todosSelecionados;
   const selecionarTodosBtn = document.getElementById('selecionarTodosBtn');
   selecionarTodosBtn.textContent = todosSelecionados ? 'Deselecionar Todos' : 'Selecionar Todos';
 
-  checkboxes.forEach(checkbox => {
+  checkboxesVisiveis.forEach(checkbox => {
     checkbox.checked = todosSelecionados;
   });
   atualizarMetaQtd();
@@ -265,9 +418,13 @@ function resetForm() {
   message.textContent = 'Selecione um usuário para ver os processos';
   document.getElementById('processosContainer').innerHTML = '';
   document.getElementById('meta_qtd').value = 0;
+  document.getElementById('buscaContainer').style.display = 'none';
+  document.getElementById('buscaProcesso').value = '';
   todosSelecionados = false;
   document.getElementById('selecionarTodosBtn').textContent = 'Selecionar Todos';
-  document.getElementById('periodo').value = ''; // Resetar o campo de período
+  document.getElementById('periodo').value = '';
+  processosCarregados = [];
+  ordemOriginal = [];
 }
 
 document.getElementById('metaForm').addEventListener('submit', async function(e) {
@@ -329,3 +486,4 @@ document.querySelectorAll('.needs-validation').forEach(form => {
 });
 </script>
 {% endblock %}
+

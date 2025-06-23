@@ -38,6 +38,190 @@ from django.views.decorators.http import require_http_methods
 from .models import Processo, MetaSemanal
 
 @login_required
+@require_http_methods(["POST"])
+def adicionar_processo_meta(request, processo_id):
+
+    try:
+        # Verificar se usuário é gestor
+        if not is_gestor(request.user):
+            return JsonResponse({
+                'success': False, 
+                'message': 'Apenas gestores podem gerenciar metas semanais.'
+            }, status=403)
+
+        processo = get_object_or_404(Processo, id=processo_id)
+        
+        # Verificar se o processo tem responsável
+        if not processo.usuario:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Este processo não possui responsável definido.'
+            }, status=400)
+
+        # Calcular semana atual
+        hoje = timezone.localdate()
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        fim_semana = inicio_semana + timedelta(days=6)
+
+        # Buscar ou criar meta semanal do responsável pelo processo
+        meta, created = MetaSemanal.objects.get_or_create(
+            usuario=processo.usuario,  # Meta do responsável, não do gestor
+            semana_inicio=inicio_semana,
+            semana_fim=fim_semana,
+            defaults={'meta_qtd': 0}
+        )
+
+        # Verificar se o processo já está na meta
+        if meta.processos.filter(id=processo_id).exists():
+            return JsonResponse({
+                'success': False,
+                'message': f'Este processo já está na meta de {processo.usuario.get_full_name()}.'
+            })
+
+        # Adicionar processo à meta
+        meta.processos.add(processo)
+        meta.meta_qtd = meta.processos.count()
+        meta.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Processo {processo.numero_processo} adicionado à meta de {processo.usuario.get_full_name()}!',
+            'meta_qtd': meta.meta_qtd,
+            'responsavel': processo.usuario.get_full_name()
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao adicionar processo à meta: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def remover_processo_meta(request, processo_id):
+
+    try:
+        # Verificar se usuário é gestor
+        if not is_gestor(request.user):
+            return JsonResponse({
+                'success': False, 
+                'message': 'Apenas gestores podem gerenciar metas semanais.'
+            }, status=403)
+
+        processo = get_object_or_404(Processo, id=processo_id)
+        
+        # Verificar se o processo tem responsável
+        if not processo.usuario:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Este processo não possui responsável definido.'
+            }, status=400)
+
+        # Calcular semana atual
+        hoje = timezone.localdate()
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        fim_semana = inicio_semana + timedelta(days=6)
+
+        # Buscar meta semanal do responsável
+        try:
+            meta = MetaSemanal.objects.get(
+                usuario=processo.usuario, 
+                semana_inicio=inicio_semana,
+                semana_fim=fim_semana
+            )
+        except MetaSemanal.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': f'{processo.usuario.get_full_name()} não possui meta semanal configurada.'
+            })
+
+        # Verificar se o processo está na meta
+        if not meta.processos.filter(id=processo_id).exists():
+            return JsonResponse({
+                'success': False,
+                'message': f'Este processo não está na meta de {processo.usuario.get_full_name()}.'
+            })
+
+        # Remover processo da meta
+        meta.processos.remove(processo)
+        meta.meta_qtd = meta.processos.count()
+        meta.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Processo {processo.numero_processo} removido da meta de {processo.usuario.get_full_name()}!',
+            'meta_qtd': meta.meta_qtd,
+            'responsavel': processo.usuario.get_full_name()
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao remover processo da meta: {str(e)}'
+        }, status=500)
+
+
+@login_required
+def status_meta_semanal(request, user_id=None):
+    """
+    Retorna informações sobre a meta semanal
+    Gestores podem ver qualquer meta, usuários comuns apenas a própria
+    """
+    try:
+
+        if user_id and is_gestor(request.user):
+            # Gestor consultando meta de outro usuário
+            target_user = get_object_or_404(User, id=user_id)
+        else:
+            # Usuário consultando própria meta
+            target_user = request.user
+
+        # Calcular semana atual
+        hoje = timezone.localdate()
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        fim_semana = inicio_semana + timedelta(days=6)
+
+        # Buscar meta semanal
+        try:
+            meta = MetaSemanal.objects.get(
+                usuario=target_user,
+                semana_inicio=inicio_semana,
+                semana_fim=fim_semana
+            )
+            
+            processos_na_meta = meta.processos.all()
+            processos_concluidos = processos_na_meta.filter(concluido=True).count()
+            
+            return JsonResponse({
+                'success': True,
+                'meta': {
+                    'id': meta.id,
+                    'usuario': target_user.get_full_name(),
+                    'meta_qtd': meta.meta_qtd,
+                    'processos_total': processos_na_meta.count(),
+                    'processos_concluidos': processos_concluidos,
+                    'processos_pendentes': processos_na_meta.count() - processos_concluidos,
+                    'percentual_conclusao': round((processos_concluidos / processos_na_meta.count() * 100), 1) if processos_na_meta.count() > 0 else 0,
+                    'semana_inicio': inicio_semana.strftime('%d/%m/%Y'),
+                    'semana_fim': fim_semana.strftime('%d/%m/%Y'),
+                }
+            })
+            
+        except MetaSemanal.DoesNotExist:
+            return JsonResponse({
+                'success': True,
+                'meta': None,
+                'message': f'Nenhuma meta semanal configurada para {target_user.get_full_name()} nesta semana.'
+            })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao buscar status da meta: {str(e)}'
+},status=500)
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def configurar_meta_semanal(request):
     if request.method == "POST":
@@ -147,77 +331,190 @@ def configurar_meta_semanal(request):
     })
 
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Count, Q, Avg
+from django.core.paginator import Paginator
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from datetime import datetime, timedelta
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from io import BytesIO
+
 User = get_user_model()
 
 @login_required
 @require_http_methods(["GET"])
 def listar_metas_semanal(request):
+    """
+    View melhorada para listagem de metas semanais com:
+    - Dashboard de estatísticas
+    - Filtros avançados
+    - Paginação
+    - Status calculados
+    - Performance otimizada
+    """
     # 1) Define a data atual para comparações
     agora = timezone.localtime()
     hoje = timezone.localdate()
 
-    # 2) Obtém todas as metas disponíveis para determinar os períodos
+    # 2) Obtém todas as metas disponíveis com permissões
     if request.user.has_perm('app_name.view_all_metas'):
         todas_metas = MetaSemanal.objects.all()
     else:
         todas_metas = MetaSemanal.objects.filter(usuario=request.user)
 
-    # 3) Cria uma lista de períodos disponíveis (semanas únicas)
+    # 3) Cria lista de períodos disponíveis (otimizada)
     periodos_disponiveis = []
-    semanas_vistas = set()
-    for meta in todas_metas:
-        semana_key = (meta.semana_inicio, meta.semana_fim)
-        if semana_key not in semanas_vistas:
-            semanas_vistas.add(semana_key)
-            periodos_disponiveis.append({
-                'inicio': meta.semana_inicio,
-                'fim': meta.semana_fim,
-                'label': f"{meta.semana_inicio.strftime('%d/%m/%Y')} a {meta.semana_fim.strftime('%d/%m/%Y')}",
-                'value': f"{meta.semana_inicio.strftime('%Y-%m-%d')}|{meta.semana_fim.strftime('%Y-%m-%d')}"
-            })
-    # Ordena os períodos por data de início
-    periodos_disponiveis.sort(key=lambda x: x['inicio'])
+    semanas_unicas = todas_metas.values('semana_inicio', 'semana_fim').distinct().order_by('semana_inicio')
+    
+    for semana in semanas_unicas:
+        inicio = semana['semana_inicio']
+        fim = semana['semana_fim']
+        periodos_disponiveis.append({
+            'inicio': inicio,
+            'fim': fim,
+            'label': f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}",
+            'value': f"{inicio.strftime('%Y-%m-%d')}|{fim.strftime('%Y-%m-%d')}"
+        })
 
-    # 4) Filtra metas com base no período selecionado (via GET)
-    periodo_selecionado = request.GET.get('periodo', None)
+    # 4) Aplicar filtros
+    metas_filtradas = aplicar_filtros(request, todas_metas, hoje)
+    
+    # 5) Calcular estatísticas para o dashboard
+    estatisticas = calcular_estatisticas(metas_filtradas, hoje)
+    
+    # 6) Preparar dados de processos por usuário
+    processos_por_usuario = preparar_processos_por_usuario(hoje)
+    
+    # 7) Calcular progresso e métricas para cada meta
+    metas_com_dados = calcular_dados_metas(metas_filtradas, hoje)
+    
+    # 8) Aplicar paginação
+    paginator = Paginator(metas_com_dados, 12)  # 12 metas por página
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # 9) Preparar lista de usuários para filtro
+    usuarios_disponiveis = User.objects.filter(
+        id__in=todas_metas.values_list('usuario_id', flat=True)
+    ).order_by('first_name', 'last_name')
+
+    # 10) Contexto para o template
+    context = {
+        'metas': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'processos_por_usuario': processos_por_usuario,
+        'periodos': periodos_disponiveis,
+        'usuarios': usuarios_disponiveis,
+        'estatisticas': estatisticas,
+        
+        # Filtros aplicados (para manter estado)
+        'periodo_selecionado': request.GET.get('periodo', ''),
+        'usuario_selecionado': request.GET.get('usuario', ''),
+        'status_selecionado': request.GET.get('status', ''),
+        'busca_termo': request.GET.get('busca', ''),
+    }
+
+    return render(request, 'listar_metas_semanal.html', context)
+
+
+def aplicar_filtros(request, queryset, hoje):
+    """
+    Aplica filtros avançados na queryset de metas
+    """
+    # Filtro por período
+    periodo_selecionado = request.GET.get('periodo')
     if periodo_selecionado:
         try:
             inicio_str, fim_str = periodo_selecionado.split('|')
             inicio_semana = datetime.strptime(inicio_str, '%Y-%m-%d').date()
             fim_semana = datetime.strptime(fim_str, '%Y-%m-%d').date()
-            if request.user.has_perm('app_name.view_all_metas'):
-                metas = MetaSemanal.objects.filter(semana_inicio=inicio_semana, semana_fim=fim_semana)
-            else:
-                metas = MetaSemanal.objects.filter(
-                    usuario=request.user,
-                    semana_inicio=inicio_semana,
-                    semana_fim=fim_semana
-                )
+            queryset = queryset.filter(semana_inicio=inicio_semana, semana_fim=fim_semana)
         except (ValueError, TypeError):
-            # Caso o parâmetro esteja malformado, mostra todas as metas
-            metas = todas_metas
-    else:
-        metas = todas_metas
-
-    metas = metas.select_related('usuario', 'usuario__profile').prefetch_related(
+            pass  # Ignora filtro malformado
+    
+    # Filtro por usuário
+    usuario_selecionado = request.GET.get('usuario')
+    if usuario_selecionado:
+        try:
+            user_id = int(usuario_selecionado)
+            queryset = queryset.filter(usuario_id=user_id)
+        except (ValueError, TypeError):
+            pass
+    
+    # Filtro por busca (nome do usuário)
+    busca_termo = request.GET.get('busca', '').strip()
+    if busca_termo:
+        queryset = queryset.filter(
+            Q(usuario__first_name__icontains=busca_termo) |
+            Q(usuario__last_name__icontains=busca_termo)
+        )
+    
+    # Aplicar select_related e prefetch_related para otimização
+    queryset = queryset.select_related('usuario', 'usuario__profile').prefetch_related(
         Prefetch('processos', Processo.objects.select_related('especie'))
     )
+    
+    return queryset
 
-    # 5) Prepara o dicionário de processos abertos por usuário
+
+def calcular_estatisticas(metas, hoje):
+    """
+    Calcula estatísticas para o dashboard
+    """
+    if not metas.exists():
+        return {
+            'total_usuarios': 0,
+            'metas_atingidas': 0,
+            'metas_andamento': 0,
+            'media_progresso': 0
+        }
+    
+    # Calcular progresso para cada meta (versão simplificada)
+    metas_com_progresso = []
+    for meta in metas:
+        progresso = calcular_progresso_meta(meta, hoje)
+        metas_com_progresso.append({
+            'meta': meta,
+            'progresso': progresso,
+            'status': determinar_status_meta(meta, hoje, progresso)
+        })
+    
+    # Calcular estatísticas
+    total_usuarios = len(set(m['meta'].usuario_id for m in metas_com_progresso))
+    metas_atingidas = sum(1 for m in metas_com_progresso if m['progresso'] >= 100)
+    metas_andamento = sum(1 for m in metas_com_progresso if 0 < m['progresso'] < 100)
+    media_progresso = sum(m['progresso'] for m in metas_com_progresso) / len(metas_com_progresso)
+    
+    return {
+        'total_usuarios': total_usuarios,
+        'metas_atingidas': metas_atingidas,
+        'metas_andamento': metas_andamento,
+        'media_progresso': round(media_progresso, 1)
+    }
+
+
+def preparar_processos_por_usuario(hoje):
+    """
+    Prepara dicionário de processos abertos por usuário
+    """
     usuarios = User.objects.all()
     processos_abertos = Processo.objects.filter(concluido=False).select_related('especie', 'usuario')
 
-    # Subquery para fase atual
+    # Subquery para fase atual (otimizada)
     ultima_fase_subquery = ProcessoAndamento.objects.filter(
         processo=OuterRef('pk')
     ).order_by('-dt_criacao').values('fase__fase')[:1]
 
-    # Adiciona anotação de fase atual
     processos_abertos = processos_abertos.annotate(fase_atual=Subquery(ultima_fase_subquery))
 
-    processos_por_usuario = {
-        u.id: [
+    processos_por_usuario = {}
+    for usuario in usuarios:
+        processos_usuario = processos_abertos.filter(usuario=usuario)
+        processos_por_usuario[usuario.id] = [
             {
                 'id': p.id,
                 'numero_processo': p.numero_processo,
@@ -225,66 +522,356 @@ def listar_metas_semanal(request):
                 'dias_no_gabinete': (hoje - p.antigo.date()).days if p.antigo else 0,
                 'fase_atual': p.fase_atual or '—'
             }
-            for p in processos_abertos.filter(usuario=u)
+            for p in processos_usuario
         ]
-        for u in usuarios
-    }
+    
+    return processos_por_usuario
 
-    # 6) Calcula progresso e faixas de dias para cada meta individualmente
+
+def calcular_dados_metas(metas, hoje):
+    """
+    Calcula progresso, status e métricas para cada meta
+    """
+    metas_processadas = []
+    
     for meta in metas:
-        procs_meta = list(meta.processos.all())
-        if not procs_meta:
-            meta.progresso = 0
-            continue
-
-        # Usa o intervalo específico da meta para calcular o progresso
-        inicio_semana = meta.semana_inicio
-        fim_semana = meta.semana_fim
-
-        # Consulta otimizada para processos revisados no intervalo da meta
-        revisados_por_meta = (
-            ProcessoAndamento.objects
-            .filter(
-                processo__in=procs_meta,
-                fase__fase="Revisão Des",
-                dt_criacao__range=(inicio_semana, fim_semana)
-            )
-            .values('processo')
-            .distinct()
-        )
-        revisados_ids = set(revisados_por_meta.values_list('processo', flat=True))
-
-        concluidas = sum(1 for p in procs_meta if p.id in revisados_ids)
-        meta.progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
-
-        # Calcula faixas de dias para todos os processos do usuário
-        user_procs = processos_abertos.filter(usuario=meta.usuario)
-        total_user = user_procs.count()
-        dias = [(hoje - p.antigo.date()).days for p in user_procs if p.antigo]
-        mais_30 = sum(1 for d in dias if d > 30)
-        mais_40 = sum(1 for d in dias if d > 40)
-        mais_50 = sum(1 for d in dias if d > 50)
-
-        meta.range_le30 = total_user - mais_30
-        meta.range_31_40 = mais_30 - mais_40
-        meta.range_41_50 = mais_40 - mais_50
-        meta.range_gt50 = mais_50
-
-        # Adiciona indicador de status da meta (passada, atual ou futura)
-        if fim_semana < hoje:
+        # Calcular progresso
+        progresso = calcular_progresso_meta(meta, hoje)
+        
+        # Determinar status
+        status = determinar_status_meta(meta, hoje, progresso)
+        
+        # Calcular faixas de dias
+        faixas = calcular_faixas_dias(meta, hoje)
+        
+        # Adicionar dados calculados à meta
+        meta.progresso = progresso
+        meta.status_calculado = status
+        meta.range_le30 = faixas['le30']
+        meta.range_31_40 = faixas['31_40']
+        meta.range_41_50 = faixas['41_50']
+        meta.range_gt50 = faixas['gt50']
+        
+        # Calcular totais
+        processos_meta = list(meta.processos.all())
+        meta.total_processos = len(processos_meta)
+        meta.processos_concluidos = calcular_processos_concluidos(meta, hoje)
+        meta.processos_pendentes = meta.total_processos - meta.processos_concluidos
+        
+        # Determinar status da semana
+        if meta.semana_fim < hoje:
             meta.status = 'passada'
-        elif inicio_semana > hoje:
+        elif meta.semana_inicio > hoje:
             meta.status = 'futura'
         else:
             meta.status = 'atual'
+        
+        metas_processadas.append(meta)
+    
+    # Aplicar filtro por status se especificado
+    status_filtro = None  # Você pode pegar do request se necessário
+    if status_filtro:
+        metas_processadas = [m for m in metas_processadas if m.status_calculado == status_filtro]
+    
+    return metas_processadas
 
-    # 7) Renderiza o template
-    return render(request, 'listar_metas_semanal.html', {
-        'metas': metas,
-        'processos_por_usuario': processos_por_usuario,
-        'periodos': periodos_disponiveis,
-        'periodo_selecionado': periodo_selecionado,
-    })
+
+def calcular_progresso_meta(meta, hoje):
+    """
+    Calcula o progresso de uma meta específica
+    """
+    processos_meta = list(meta.processos.all())
+    if not processos_meta:
+        return 0
+
+    # Consulta otimizada para processos revisados no intervalo da meta
+    revisados_por_meta = ( 
+        ProcessoAndamento.objects
+        .filter(
+            processo__in=processos_meta,
+            fase__fase="Revisão Desa",
+            dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+        )
+        .values('processo')
+        .distinct()
+    )
+    revisados_ids = set(revisados_por_meta.values_list('processo', flat=True))
+
+    concluidas = sum(1 for p in processos_meta if p.id in revisados_ids)
+    progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
+    
+    return progresso
+
+
+def determinar_status_meta(meta, hoje, progresso):
+    """
+    Determina o status calculado da meta
+    """
+    if meta.semana_fim < hoje:
+        # Meta passada
+        return 'atingida' if progresso >= 100 else 'atrasada'
+    elif meta.semana_inicio > hoje:
+        # Meta futura
+        return 'futura'
+    else:
+        # Meta atual
+        if progresso >= 100:
+            return 'atingida'
+        elif progresso >= 80:
+            return 'quase_la'
+        else:
+            return 'em_andamento'
+
+
+def calcular_faixas_dias(meta, hoje):
+    """
+    Calcula distribuição de processos por faixas de dias
+    """
+    processos_usuario = Processo.objects.filter(
+        usuario=meta.usuario,
+        concluido=False
+    ).exclude(antigo__isnull=True)
+    
+    total_user = processos_usuario.count()
+    if total_user == 0:
+        return {'le30': 0, '31_40': 0, '41_50': 0, 'gt50': 0}
+    
+    dias = [(hoje - p.antigo.date()).days for p in processos_usuario]
+    mais_30 = sum(1 for d in dias if d > 30)
+    mais_40 = sum(1 for d in dias if d > 40)
+    mais_50 = sum(1 for d in dias if d > 50)
+
+    return {
+        'le30': total_user - mais_30,
+        '31_40': mais_30 - mais_40,
+        '41_50': mais_40 - mais_50,
+        'gt50': mais_50
+    }
+
+
+def calcular_processos_concluidos(meta, hoje):
+    """
+    Calcula número de processos concluídos na meta
+    """
+    processos_meta = list(meta.processos.all())
+    if not processos_meta:
+        return 0
+
+    revisados_por_meta = (
+        ProcessoAndamento.objects
+        .filter(
+            processo__in=processos_meta,
+            fase__fase="Revisão Desa",
+            dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+        )
+        .values('processo')
+        .distinct()
+    )
+    
+    return revisados_por_meta.count()
+
+@login_required
+@require_http_methods(["GET"])
+def api_meta_detalhes(request):
+    """
+    API para retornar detalhes de uma meta específica
+    """
+    meta_id = request.GET.get('meta_id')
+    if not meta_id:
+        return JsonResponse({'error': 'meta_id é obrigatório'}, status=400)
+    
+    try:
+        meta = get_object_or_404(MetaSemanal, id=meta_id)
+        
+        # Verificar permissões
+        if not request.user.has_perm('app_name.view_all_metas') and meta.usuario != request.user:
+            return JsonResponse({'error': 'Sem permissão'}, status=403)
+        
+        hoje = timezone.localdate()
+        progresso = calcular_progresso_meta(meta, hoje)
+        faixas = calcular_faixas_dias(meta, hoje)
+        
+        data = {
+            'id': meta.id,
+            'usuario': meta.usuario.get_full_name(),
+            'periodo': f"{meta.semana_inicio.strftime('%d/%m/%Y')} a {meta.semana_fim.strftime('%d/%m/%Y')}",
+            'meta_qtd': meta.meta_qtd,
+            'progresso': progresso,
+            'range_le30': faixas['le30'],
+            'range_31_40': faixas['31_40'],
+            'range_41_50': faixas['41_50'],
+            'range_gt50': faixas['gt50'],
+            'processos_total': meta.processos.count(),
+            'processos_concluidos': calcular_processos_concluidos(meta, hoje),
+        }
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_meta_processos(request):
+    """
+    API para retornar processos de uma meta específica
+    """
+    meta_id = request.GET.get('meta_id')
+    if not meta_id:
+        return JsonResponse({'error': 'meta_id é obrigatório'}, status=400)
+    
+    try:
+        meta = get_object_or_404(MetaSemanal, id=meta_id)
+        
+        # Verificar permissões
+        if not request.user.has_perm('app_name.view_all_metas') and meta.usuario != request.user:
+            return JsonResponse({'error': 'Sem permissão'}, status=403)
+        
+        hoje = timezone.localdate()
+        
+        # Buscar processos com fase atual
+        processos = meta.processos.select_related('especie').annotate(
+            fase_atual=Subquery(
+                ProcessoAndamento.objects.filter(
+                    processo=OuterRef('pk')
+                ).order_by('-dt_criacao').values('fase__fase')[:1]
+            )
+        )
+        
+        # Verificar quais estão concluídos na semana da meta
+        revisados_ids = set(
+            ProcessoAndamento.objects.filter(
+                processo__in=processos,
+                fase__fase="Revisão Desa",
+                dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+            ).values_list('processo', flat=True)
+        )
+        
+        processos_data = []
+        for processo in processos:
+            dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
+            
+            processos_data.append({
+                'id': processo.id,
+                'numero_processo': processo.numero_processo,
+                'especie': processo.especie.especie if processo.especie else 'N/A',
+                'fase_atual': processo.fase_atual or 'N/A',
+                'dias_no_gabinete': dias_gabinete,
+                'concluido': processo.id in revisados_ids
+            })
+        
+        # Ordenar por status (concluídos primeiro) e depois por dias no gabinete
+        processos_data.sort(key=lambda x: (not x['concluido'], -x['dias_no_gabinete']))
+        
+        return JsonResponse({
+            'processos': processos_data,
+            'total': len(processos_data),
+            'concluidos': len(revisados_ids)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def exportar_metas_relatorio(request):
+    """
+    Exporta relatório de metas em formato Excel
+    """
+    try:
+        # Buscar metas com filtros aplicados
+        if request.user.has_perm('app_name.view_all_metas'):
+            metas = MetaSemanal.objects.all()
+        else:
+            metas = MetaSemanal.objects.filter(usuario=request.user)
+        
+        metas = aplicar_filtros(request, metas, timezone.localdate())
+        metas_com_dados = calcular_dados_metas(metas, timezone.localdate())
+        
+        # Criar workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Metas Semanais"
+        
+        # Estilos
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Cabeçalhos
+        headers = [
+            "Usuário", "Período", "Meta", "Progresso (%)", 
+            "Processos Total", "Concluídos", "Pendentes",
+            "≤30 dias", "31-40 dias", "41-50 dias", ">50 dias", "Status"
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_alignment
+        
+        # Dados
+        for row, meta in enumerate(metas_com_dados, 2):
+            periodo = f"{meta.semana_inicio.strftime('%d/%m/%Y')} - {meta.semana_fim.strftime('%d/%m/%Y')}"
+            status_map = {
+                'atingida': 'Atingida',
+                'em_andamento': 'Em Andamento',
+                'atrasada': 'Atrasada',
+                'futura': 'Futura',
+                'quase_la': 'Quase Lá'
+            }
+            
+            dados = [
+                meta.usuario.get_full_name(),
+                periodo,
+                meta.meta_qtd,
+                meta.progresso,
+                meta.total_processos,
+                meta.processos_concluidos,
+                meta.processos_pendentes,
+                meta.range_le30,
+                meta.range_31_40,
+                meta.range_41_50,
+                meta.range_gt50,
+                status_map.get(meta.status_calculado, 'Desconhecido')
+            ]
+            
+            for col, valor in enumerate(dados, 1):
+                cell = ws.cell(row=row, column=col, value=valor)
+                cell.alignment = center_alignment
+        
+        # Ajustar largura das colunas
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Salvar em BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Resposta HTTP
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="metas_semanais_{timezone.localdate().strftime("%Y%m%d")}.xlsx"'
+        
+        return response
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao gerar relatório: {str(e)}'}, status=500)
 
 @require_http_methods(["GET", "POST"])
 @login_required
@@ -368,7 +955,6 @@ def editar_meta_semanal(request):
             'message': f'Meta atualizada com sucesso! {len(processos)} processos associados.',
         })
 
-
    
 
 @require_http_methods(["POST"])
@@ -379,6 +965,261 @@ def excluir_meta_semanal(request):
     return JsonResponse({'success': True, 'message': 'Meta excluída com sucesso!'})
 
 
+@login_required
+@require_http_methods(["GET"])
+def ver_todos_processos_meta(request):
+    """
+    View para o modal "Ver Processos" que estava faltando
+    """
+    meta_id = request.GET.get('meta_id')
+    if not meta_id:
+        return JsonResponse({'error': 'meta_id é obrigatório'}, status=400)
+    
+    try:
+        meta = get_object_or_404(MetaSemanal, id=meta_id)
+        
+        # Verificar permissões
+        if not request.user.has_perm('app_name.view_metasemanal') and meta.usuario != request.user:
+            return JsonResponse({'error': 'Sem permissão para ver esta meta'}, status=403)
+        
+        hoje = timezone.localdate()
+        
+        # Buscar processos da meta com informações detalhadas
+        processos = meta.processos.select_related('especie').annotate(
+            fase_atual=Subquery(
+                ProcessoAndamento.objects.filter(
+                    processo=OuterRef('pk')
+                ).order_by('-dt_criacao').values('fase__fase')[:1]
+            )
+        )
+        
+        # Verificar quais processos foram revisados no período da meta
+        revisados_ids = set(
+            ProcessoAndamento.objects.filter(
+                processo__in=processos,
+                fase__fase="Revisão Desa",
+                dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+            ).values_list('processo', flat=True)
+        )
+        
+        # Preparar dados dos processos
+        processos_data = []
+        for processo in processos:
+            dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
+            concluido = processo.id in revisados_ids
+            
+            # Determinar cor do badge baseado nos dias
+            if dias_gabinete <= 30:
+                badge_class = "bg-success"
+            elif dias_gabinete <= 40:
+                badge_class = "bg-primary"
+            elif dias_gabinete <= 50:
+                badge_class = "bg-warning"
+            else:
+                badge_class = "bg-danger"
+            
+            processos_data.append({
+                'numero_processo': processo.numero_processo,
+                'especie': processo.especie.especie if processo.especie else 'N/A',
+                'fase_atual': processo.fase_atual or 'Não especificado',
+                'dias_gabinete': dias_gabinete,
+                'badge_class': badge_class,
+                'concluido': concluido,
+                'status_texto': 'Concluído' if concluido else 'Pendente',
+                'status_class': 'success' if concluido else 'warning'
+            })
+        
+        # Ordenar: concluídos primeiro, depois por dias no gabinete (decrescente)
+        processos_data.sort(key=lambda x: (not x['concluido'], -x['dias_gabinete']))
+        
+        # Calcular estatísticas
+        total_processos = len(processos_data)
+        concluidos = sum(1 for p in processos_data if p['concluido'])
+        pendentes = total_processos - concluidos
+        progresso = round((concluidos / meta.meta_qtd * 100) if meta.meta_qtd > 0 else 0, 1)
+        
+        # Preparar HTML para o modal
+        html_content = f"""
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-primary mb-1">{total_processos}</h4>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-success mb-1">{concluidos}</h4>
+                    <small class="text-muted">Concluídos</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-warning mb-1">{pendentes}</h4>
+                    <small class="text-muted">Pendentes</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-info mb-1">{progresso}%</h4>
+                    <small class="text-muted">Progresso</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress mb-4" style="height: 8px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {progresso}%"></div>
+        </div>
+        """
+        
+        if processos_data:
+            html_content += """
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Processo</th>
+                            <th>Espécie</th>
+                            <th>Fase Atual</th>
+                            <th>Dias no Gabinete</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            """
+            
+            for processo in processos_data:
+                html_content += f"""
+                <tr class="{'table-success' if processo['concluido'] else ''}">
+                    <td class="fw-medium">{processo['numero_processo']}</td>
+                    <td>{processo['especie']}</td>
+                    <td>{processo['fase_atual']}</td>
+                    <td>
+                        <span class="badge {processo['badge_class']}">{processo['dias_gabinete']} dias</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{processo['status_class']}">{processo['status_texto']}</span>
+                    </td>
+                </tr>
+                """
+            
+            html_content += """
+                    </tbody>
+                </table>
+            </div>
+            """
+        else:
+            html_content += """
+            <div class="text-center py-4">
+                <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum processo associado a esta meta</h5>
+            </div>
+            """
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content,
+            'usuario': meta.usuario.get_full_name(),
+            'periodo': f"{meta.semana_inicio.strftime('%d/%m/%Y')} a {meta.semana_fim.strftime('%d/%m/%Y')}",
+            'meta_qtd': meta.meta_qtd,
+            'total_processos': total_processos,
+            'concluidos': concluidos,
+            'pendentes': pendentes,
+            'progresso': progresso
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao carregar processos: {str(e)}'}, status=500)
+
+
+@login_required  
+@require_http_methods(["GET"])
+def api_detalhes_meta(request):
+    """
+    API para retornar detalhes de uma meta (para o modal de detalhes)
+    """
+    meta_id = request.GET.get('meta_id')
+    if not meta_id:
+        return JsonResponse({'error': 'meta_id é obrigatório'}, status=400)
+    
+    try:
+        meta = get_object_or_404(MetaSemanal, id=meta_id)
+        
+        # Verificar permissões
+        if not request.user.has_perm('app_name.view_metasemanal') and meta.usuario != request.user:
+            return JsonResponse({'error': 'Sem permissão'}, status=403)
+        
+        hoje = timezone.localdate()
+        
+        # Calcular progresso
+        processos_meta = list(meta.processos.all())
+        if processos_meta:
+            revisados_ids = set(
+                ProcessoAndamento.objects.filter(
+                    processo__in=processos_meta,
+                    fase__fase="Revisão Desa",
+                    dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+                ).values_list('processo', flat=True)
+            )
+            concluidos = len(revisados_ids)
+            progresso = round((concluidos / meta.meta_qtd * 100) if meta.meta_qtd > 0 else 0, 1)
+        else:
+            concluidos = 0
+            progresso = 0
+        
+        # Calcular faixas de dias para o usuário
+        processos_usuario = Processo.objects.filter(
+            usuario=meta.usuario,
+            concluido=False
+        ).exclude(antigo__isnull=True)
+        
+        total_user = processos_usuario.count()
+        if total_user > 0:
+            dias = [(hoje - p.antigo.date()).days for p in processos_usuario]
+            mais_30 = sum(1 for d in dias if d > 30)
+            mais_40 = sum(1 for d in dias if d > 40)
+            mais_50 = sum(1 for d in dias if d > 50)
+            
+            range_le30 = total_user - mais_30
+            range_31_40 = mais_30 - mais_40
+            range_41_50 = mais_40 - mais_50
+            range_gt50 = mais_50
+        else:
+            range_le30 = range_31_40 = range_41_50 = range_gt50 = 0
+        
+        # Determinar status
+        if meta.semana_fim < hoje:
+            status = 'Passada'
+            status_class = 'secondary'
+        elif meta.semana_inicio > hoje:
+            status = 'Futura'
+            status_class = 'info'
+        else:
+            status = 'Atual'
+            status_class = 'primary'
+        
+        data = {
+            'success': True,
+            'usuario': meta.usuario.get_full_name(),
+            'periodo': f"{meta.semana_inicio.strftime('%d/%m/%Y')} a {meta.semana_fim.strftime('%d/%m/%Y')}",
+            'meta_qtd': meta.meta_qtd,
+            'progresso': progresso,
+            'total_processos': len(processos_meta),
+            'concluidos': concluidos,
+            'pendentes': len(processos_meta) - concluidos,
+            'range_le30': range_le30,
+            'range_31_40': range_31_40,
+            'range_41_50': range_41_50,
+            'range_gt50': range_gt50,
+            'status': status,
+            'status_class': status_class
+        }
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao carregar detalhes: {str(e)}'}, status=500)
+    
 @login_required
 @require_http_methods(["GET"])
 def minhas_metas(request):
@@ -410,7 +1251,7 @@ def minhas_metas(request):
         concluidos_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão Des",
+                fase__fase="Revisão Desa",
                 dt_criacao__range=(inicio_semana, fim_semana)
             ).values_list('processo', flat=True).distinct()
         )
@@ -445,10 +1286,17 @@ def minhas_metas(request):
                 'concluido': (p.id in concluidos_ids)
             })
 
+        # >>>>> AQUI O ORDENADOR <<<<<
+        processos_com_status = sorted(
+            processos_com_status,
+            key=lambda x: (x['concluido'], -(x['dias_no_gabinete'] or 0))
+        )
+
+
         # Busca processos enviados para Revisão Desa fora da meta
         processos_fora = ProcessoAndamento.objects.filter(
             processo__usuario=user,
-            fase__fase="Revisão Des",
+            fase__fase="Revisão Desa",
             dt_criacao__range=(inicio_semana, fim_semana)
         ).exclude(
             processo__in=[p.id for p in processos]
@@ -545,7 +1393,7 @@ MAPEAMENTO_TAG_USUARIO = {
     'ASS-Marco Antônio': 'marcoantonio',
     'Ass-Mirelli': 'mirellisilva',
     'Ass-Viviane': 'vivianelima',
-    'Ass-Marinalva': 'marinalva'
+    'Ass-Paulo': 'ass-paulo',
 }
 
 def importar_processos_view(request):
@@ -563,22 +1411,7 @@ def importar_processos_view(request):
             # Forçar que a coluna 'prioridade' seja lida como string
             df = pd.read_csv(arquivo, sep=';', encoding='utf-8', dtype={'prioridade': str})
 
-            #Marcar despacho como True
-            for index, row in df.iterrows():
-                try:
-                    numero_processo = row['numeroProcesso']
 
-                    despacho = False
-                    if 'nomeTarefa' in row and pd.notna(row['nomeTarefa']):
-                        if 'minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
-                            despacho = True
-
-        # ... resto do seu código: colunas, espécie, usuário, etc.
-
-                except Exception as e:
-                    print(f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
-                    messages.warning(request, f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
-                    continue
             # Verificar colunas esperadas
             colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade']
             colunas_faltando = [col for col in colunas_esperadas if col not in df.columns]
@@ -635,7 +1468,11 @@ def importar_processos_view(request):
                             }
                         )
 
-        
+                     #Marcar despacho como True
+                    despacho = False
+                    if pd.notna(row.get('nomeTarefa')) and 'Minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
+                        despacho = True
+
 
                     # Processar usuário a partir das tags
                     usuario = None

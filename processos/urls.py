@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     ProcessoListView, ProcessoCreateView, ProcessoUpdateView, ProcessoDeleteView,
     AndamentoListView, AndamentoCreateView, AndamentoUpdateView, AndamentoDeleteView, ProcessoDetailView, AndamentoIniciarView, AndamentoEnviarParaFaseView, AndamentoConcluirProcessoView
-, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView, configurar_meta_semanal)
+, process_metrics_view, adicionar_tarefa, remover_tarefa, export_processos_xlsx, adicionar_comentario, ProcessoPartialUpdateView, configurar_meta_semanal, adicionar_processo_meta, remover_processo_meta)
 from . import views
 from .views import importar_processos_view
 
@@ -37,9 +37,18 @@ urlpatterns = [
     path('api/v1/processos/', views.ProcessosCreateListAPIView.as_view(), name='processos-create-list-api-view'),
     path('importar-processos/', importar_processos_view, name='importar_processos'),
     
-    path('configurar-meta-semanal/', configurar_meta_semanal, name='configurar_meta_semanal'),
-    path('listar-metas-semanal/', views.listar_metas_semanal, name='listar_metas_semanal'),
+    path('metas-semanais/', views.listar_metas_semanal, name='listar_metas_semanal'),
+    path('api/meta-detalhes/', views.api_meta_detalhes, name='api_meta_detalhes'),
+    path('api/meta-processos/', views.api_meta_processos, name='api_meta_processos'),
+    path('exportar-metas/', views.exportar_metas_relatorio, name='exportar_metas'),
+    path('minhas-metas/', views.minhas_metas, name='minhas_metas'),
+    path('ver-processos-meta/', views.ver_todos_processos_meta, name='ver_todos_processos_meta'),
+    path('api/detalhes-meta/', views.api_detalhes_meta, name='api_detalhes_meta'),
     path('editar-meta-semanal/', views.editar_meta_semanal, name='editar_meta_semanal'),
     path('excluir-meta-semanal/', views.excluir_meta_semanal, name='excluir_meta_semanal'),
-    path('minhas-metas/', views.minhas_metas, name='minhas_metas'),
+    path('processo/<int:processo_id>/adicionar-meta/', views.adicionar_processo_meta, name='adicionar_processo_meta'),
+    path('processo/<int:processo_id>/remover-meta/', views.remover_processo_meta, name='remover_processo_meta'),
+    path('meta-semanal/status/', views.status_meta_semanal, name='status_meta_semanal'),
+    path('configurar-meta-semanal/', configurar_meta_semanal, name='configurar_meta_semanal'),
+
 ]
