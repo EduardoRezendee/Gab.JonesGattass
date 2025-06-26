@@ -27,10 +27,8 @@ SECRET_KEY = 'django-insecure-3mry0!qt@k&!dvic0r!$!w55**(jg@3^1srfsaby-jxuk#3db!
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = [
-    '*'
-]
+from decouple import config
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -105,12 +103,12 @@ DATABASES = {
  }
 }
 
-#DATABASES = {
-#    'default': {
- #   'ENGINE': 'django.db.backends.sqlite3',
-  #  'NAME': BASE_DIR / 'db.sqlite3',
-#}
-#}
+DATABASES = {
+    'default': {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
+}
+}
 
 
 # Password validation

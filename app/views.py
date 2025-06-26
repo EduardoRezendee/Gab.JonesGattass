@@ -9,130 +9,11 @@ from django.db.models.functions import Left
 # MODELS
 from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo
 from accounts.models import UserProfile
-
-from django.contrib.auth import get_user_model
-import datetime
-from datetime import datetime, timedelta
-
-User = get_user_model()
-
-def get_revisoes_hoje_data(request):
-    hoje = timezone.localtime(timezone.now())
-    data_str = request.GET.get('data', hoje.strftime('%Y-%m-%d'))
-
-    try:
-        data = timezone.datetime.strptime(data_str, '%Y-%m-%d')
-    except ValueError:
-        data = hoje
-
-    local_tz = timezone.get_current_timezone()
-    local_data_inicio = timezone.make_aware(timezone.datetime(data.year, data.month, data.day, 0, 0, 0), local_tz)
-    local_data_fim = timezone.make_aware(timezone.datetime(data.year, data.month, data.day, 23, 59, 59), local_tz)
-
-    data_inicio = local_data_inicio.astimezone(datetime.timezone.utc)
-    data_fim = local_data_fim.astimezone(datetime.timezone.utc)
-
-    enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão Des",
-        dt_criacao__range=(data_inicio, data_fim)
-    ).values(
-        'processo_usuario_id',
-        'processo_usuario_first_name',
-        'processo_usuario_last_name'
-    ).annotate(
-        enviados_des=Count('processo', distinct=True)
-    ).order_by('processo_usuariofirst_name', 'processousuario_last_name')
-
-    meta = 5
-    labels, data_enviados, photo_urls = [], [], []
-
-    for assessor in enviados_por_assessor:
-        user_id = assessor['processo_usuario_id']
-        first_name = assessor['processo_usuario_first_name']
-        last_name = assessor['processo_usuario_last_name']
-        enviados = assessor['enviados_des']
-
-        labels.append(f"{first_name} {last_name}")
-        data_enviados.append(enviados)
-
-        try:
-            user = User.objects.get(id=user_id)
-            photo_url = (
-                user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo
-                else f"https://via.placeholder.com/60/083464/FFFFFF?text={first_name[0].upper()}"
-            )
-        except User.DoesNotExist:
-            photo_url = f"https://via.placeholder.com/60/083464/FFFFFF?text={first_name[0].upper()}"
-
-        photo_urls.append(photo_url)
-
-    data_meta = [meta] * len(labels)
-
-    response_data = {
-        'labels': labels,
-        'datasets': [
-            {'label': f'Enviados para Revisão Des ({data.strftime("%d/%m/%Y")})', 'data': data_enviados, 'photo_urls': photo_urls},
-            {'label': 'Meta', 'data': data_meta}
-        ]
-    }
-    return JsonResponse(response_data)
-
-def get_revisoes_semana_data(request):
-    hoje = timezone.localtime(timezone.now())
-    inicio_semana = hoje - timedelta(days=hoje.weekday())  # segunda-feira
-    fim_semana = inicio_semana + timedelta(days=6)  # domingo
-
-    local_tz = timezone.get_current_timezone()
-    local_data_inicio = timezone.make_aware(timezone.datetime(inicio_semana.year, inicio_semana.month, inicio_semana.day, 0, 0, 0), local_tz)
-    local_data_fim = timezone.make_aware(timezone.datetime(fim_semana.year, fim_semana.month, fim_semana.day, 23, 59, 59), local_tz)
-
-    data_inicio = local_data_inicio.astimezone(datetime.timezone.utc)
-    data_fim = local_data_fim.astimezone(datetime.timezone.utc)
-
-    enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão Des",
-        dt_criacao__range=(data_inicio, data_fim)
-    ).values(
-        'processo_usuario_id',
-        'processo_usuario_first_name',
-        'processo_usuario_last_name'
-    ).annotate(
-        enviados_des=Count('processo', distinct=True)
-    ).order_by('processo_usuario_first_name')
-
-    labels, data_enviados, photo_urls, medias_diarias = [], [], [], []
-
-    for item in enviados_por_assessor:
-        user_id = item['processo_usuario_id']
-        first_name = item['processo_usuario_first_name']
-        last_name = item['processo_usuario_last_name']
-        enviados = item['enviados_des']
-
-        media_dia = enviados / 5  # média considerando 5 dias úteis (segunda a sexta)
-        media_dia = round(media_dia, 2)  # arredonda para 2 casas decimais
-
-        try:
-            user = User.objects.get(id=user_id)
-            photo_url = (
-                user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo
-                else '/static/default-profile.png'
-            )
-        except User.DoesNotExist:
-            photo_url = '/static/default-profile.png'
-
-        labels.append(f"{first_name} {last_name}")
-        data_enviados.append(enviados)
-        photo_urls.append(photo_url)
-        medias_diarias.append(media_dia)
-
-    response_data = {
-        'labels': labels,
-        'datasets': [
-            {'label': 'Enviados para Revisão Des na Semana', 'data': data_enviados, 'photo_urls': photo_urls},
-            {'label': 'Média por Dia', 'data': medias_diarias}
-        ]
-    }
-    return JsonResponse(response_data)
+from django.utils import timezone
+from django.http import JsonResponse
+from django.db.models import Count
+from datetime import datetime, timedelta, timezone as dt_timezone
+from processos.models import ProcessoAndamento, User
 
 # MÉTRICAS E GAMIFICAÇÃO
 from .metrics import (
@@ -775,3 +656,129 @@ def get_user_daily_productivity_data(request):
         return JsonResponse(data)
     return JsonResponse({'error': 'Usuário não autenticado'}, status=403)
 
+def get_revisoes_hoje_data(request):
+    hoje = timezone.localtime(timezone.now())
+    data_str = request.GET.get('data', hoje.strftime('%Y-%m-%d'))
+
+    try:
+        data = datetime.strptime(data_str, '%Y-%m-%d')
+    except ValueError:
+        data = hoje
+
+    local_tz = timezone.get_current_timezone()
+    local_data_inicio = timezone.make_aware(datetime(data.year, data.month, data.day, 0, 0, 0), local_tz)
+    local_data_fim = timezone.make_aware(datetime(data.year, data.month, data.day, 23, 59, 59), local_tz)
+
+    data_inicio = local_data_inicio.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
+    data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
+
+    enviados_por_assessor = ProcessoAndamento.objects.filter(
+        fase__fase="Revisão",
+        dt_criacao__range=(data_inicio, data_fim),
+        processo__usuario__isnull=False
+    ).values(
+        'processo__usuario__id',
+        'processo__usuario__first_name',
+        'processo__usuario__last_name'
+    ).annotate(
+        enviados_des=Count('processo', distinct=True)
+    ).order_by('processo__usuario__first_name', 'processo__usuario__last_name')
+
+    meta = 5
+    labels, data_enviados, photo_urls = [], [], []
+
+    for assessor in enviados_por_assessor:
+        user_id = assessor['processo__usuario__id']
+        first_name = assessor['processo__usuario__first_name'] or 'Sem Nome'
+        last_name = assessor['processo__usuario__last_name'] or ''
+        enviados = assessor['enviados_des']
+
+        labels.append(f"{first_name} {last_name}")
+        data_enviados.append(enviados)
+
+        try:
+            user = User.objects.get(id=user_id)
+            photo_url = (
+                user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo
+                else f"https://via.placeholder.com/60/083464/FFFFFF?text={first_name[0].upper()}"
+            )
+        except User.DoesNotExist:
+            photo_url = f"https://via.placeholder.com/60/083464/FFFFFF?text={first_name[0].upper()}"
+
+        photo_urls.append(photo_url)
+
+    data_meta = [meta] * len(labels)
+
+    response_data = {
+        'labels': labels,
+        'datasets': [
+            {'label': f'Enviados para Revisão Des ({data.strftime("%d/%m/%Y")})', 'data': data_enviados, 'photo_urls': photo_urls},
+            {'label': 'Meta', 'data': data_meta}
+        ]
+    }
+    return JsonResponse(response_data)
+
+
+from django.utils import timezone
+from django.http import JsonResponse
+from django.db.models import Count
+from datetime import datetime, timedelta, timezone as dt_timezone 
+from processos.models import ProcessoAndamento, User
+
+def get_revisoes_semana_data(request):
+    hoje = timezone.localtime(timezone.now())
+    inicio_semana = hoje - timedelta(days=hoje.weekday())  # segunda-feira
+    fim_semana = inicio_semana + timedelta(days=6)  # domingo
+
+    local_tz = timezone.get_current_timezone()
+    local_data_inicio = timezone.make_aware(datetime(inicio_semana.year, inicio_semana.month, inicio_semana.day, 0, 0, 0), local_tz)
+    local_data_fim = timezone.make_aware(datetime(fim_semana.year, fim_semana.month, fim_semana.day, 23, 59, 59), local_tz)
+
+    data_inicio = local_data_inicio.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
+    data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
+
+    enviados_por_assessor = ProcessoAndamento.objects.filter(
+        fase__fase="Revisão",
+        dt_criacao__range=(data_inicio, data_fim),
+        processo__usuario__isnull=False  # Evita processos sem usuário
+    ).values(
+        'processo__usuario__id',
+        'processo__usuario__first_name',
+        'processo__usuario__last_name'
+    ).annotate(
+        enviados_des=Count('processo', distinct=True)
+    ).order_by('processo__usuario__first_name')
+
+    labels, data_enviados, photo_urls, medias_diarias = [], [], [], []
+
+    for item in enviados_por_assessor:
+        user_id = item['processo__usuario__id']
+        first_name = item['processo__usuario__first_name'] or 'Sem Nome'
+        last_name = item['processo__usuario__last_name'] or ''
+        enviados = item['enviados_des']
+
+        media_dia = enviados / 4  # média considerando 5 dias úteis (segunda a sexta)
+        media_dia = round(media_dia, 2)  # arredonda para 2 casas decimais
+
+        try:
+            user = User.objects.get(id=user_id)
+            photo_url = (
+                user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo
+                else '/static/default-profile.png'
+            )
+        except User.DoesNotExist:
+            photo_url = '/static/default-profile.png'
+
+        labels.append(f"{first_name} {last_name}")
+        data_enviados.append(enviados)
+        photo_urls.append(photo_url)
+        medias_diarias.append(media_dia)
+
+    response_data = {
+        'labels': labels,
+        'datasets': [
+            {'label': 'Enviados para Revisão na Semana', 'data': data_enviados, 'photo_urls': photo_urls},
+            {'label': 'Média por Dia', 'data': medias_diarias}
+        ]
+    }
+    return JsonResponse(response_data)

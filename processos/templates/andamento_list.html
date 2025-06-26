@@ -2,7 +2,6 @@
 {% load custom_filters %}
 
 {% block content %}
-
 <div class="container-fluid mt-4">
     <!-- Informações do Processo -->
     <div class="bg-white p-4 rounded shadow-sm mb-4 border-start border-4 d-flex flex-wrap align-items-center justify-content-between"
@@ -408,17 +407,23 @@
 </button>
 
 <!-- Caixa de Comentários -->
-<div id="comment-box" class="position-fixed end-0 bottom-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-     style="width: 450px; height: 80vh; max-height: 80vh; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6f745d;">
+<div id="comment-box"
+     class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+     style="width: 450px; top: 50%; transform: translateY(-50%); bottom: auto; z-index: 1050; display: flex; flex-direction: column; border-top: 4px solid #2f2f2f;">
+     
     <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold m-0" style="color: #2f2f2f;"><i class="bi bi-chat-dots me-2"></i> Comentários</h6>
-        <button id="close-comments" class="btn btn-sm btn-outline-secondary shadow-sm" style="border-radius: 20px;">Fechar</button>
+        <h6 class="fw-bold m-0" style="color: #2f2f2f;">
+            <i class="bi bi-chat-dots me-2"></i> Comentários
+        </h6>
+        <button id="close-comments" class="btn btn-sm btn-outline-secondary shadow-sm" style="border-radius: 20px;">
+            Fechar
+        </button>
     </div>
 
     <!-- Histórico de Comentários -->
-    <div id="comentarios-{{ processo.id }}" class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
-         style="max-width: 100%; min-height: 65vh; background-color: #f8f9fa;">
+    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3"
+         style="background-color: #f8f9fa;">
         {% for comentario in processo.comentarios.all %}
         <div class="d-flex align-items-start border-bottom pb-2 mb-2">
             <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
@@ -437,9 +442,35 @@
     <!-- Formulário de Novo Comentário -->
     <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
         {% csrf_token %}
-        <textarea name="texto" class="form-control me-2 border rounded small" rows="1" placeholder="Escreva seu comentário..." style="border-radius: 10px;"></textarea>
-        <button type="submit" class="btn btn-outline-primary shadow-sm" style="border-radius: 20px;">Enviar</button>
+        <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+                  placeholder="Escreva seu comentário..." style="border-radius: 10px;"></textarea>
+        <button type="submit" class="btn btn-outline-primary shadow-sm" style="border-radius: 20px;">
+            Enviar
+        </button>
     </form>
+</div>
+
+<!-- Modal de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza de que deseja excluir o andamento <strong id="andamentoName"></strong>?</p>
+                <p>Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -447,6 +478,23 @@
 .col-kanban {
     flex: 0 0 20%;
     max-width: 20%;
+}
+
+/* Ajustes para a Caixa de Comentários */
+#comment-box {
+    width: 450px;
+    max-height: 80vh;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    border-top: 4px solid #2f2f2f;
+}
+
+#comment-box .overflow-auto {
+    max-height: 50vh;
 }
 
 /* Ajustes para Responsividade */
@@ -470,8 +518,16 @@
     }
     #comment-box {
         width: 100%;
-        height: 60vh;
         max-height: 60vh;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 0;
+        left: 0;
+        margin: 0;
+        border-radius: 0;
+    }
+    #comment-box .overflow-auto {
+        max-height: 40vh;
     }
     .col-kanban {
         flex: 0 0 100%;
@@ -484,6 +540,8 @@
     border-radius: 12px;
     border: none;
 }
+
+/* Estilos para o Chat */
 .chat-container {
     max-height: 250px;
     overflow-y: auto;
@@ -494,7 +552,7 @@
 
 .chat-message {
     background: #ffffff;
-    border-left: 5px solid #083464;
+    border-left: 5px solid #08720f;
     padding: 10px 12px;
     border-radius: 8px;
     margin-bottom: 10px;
@@ -507,7 +565,7 @@
     align-items: center;
     gap: 10px;
     font-size: 0.9rem;
-    color: #083464;
+    color: #08720f;
     margin-bottom: 5px;
 }
 
@@ -574,82 +632,41 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Simulação: Verifica se há novos comentários (pode ser substituído por AJAX real)
+    // Simulação: Verifica se há novos comentários
     let novosComentarios = {{ processo.comentarios.count }};
     atualizarNotificacao(novosComentarios);
 });
 </script>
 
-
-<!-- Modal de Exclusão -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza de que deseja excluir o andamento <strong id="andamentoName"></strong>?</p>
-                <p>Esta ação não pode ser desfeita.</p>
-            </div>
-            <div class="modal-footer">
-                <form id="deleteForm" method="post">
-                    {% csrf_token %}
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<script>
-    const deleteModal = document.getElementById('deleteModal');
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const id = button.getAttribute('data-id');
-        const name = button.getAttribute('data-name');
-
-        // Atualiza o nome do andamento no modal
-        document.getElementById('andamentoName').textContent = name;
-
-        // Atualiza a URL do formulário de exclusão
-        const form = document.getElementById('deleteForm');
-        form.action = `/andamentos/${id}/deletar/`;
-    });
-</script>
-
 <!-- Script para iniciar andamento via AJAX -->
 <script>
-    function startAndamento(andamentoId) {
-        const form = document.getElementById(`startAndamentoForm-${andamentoId}`);
-        const formData = new FormData(form);
+function startAndamento(andamentoId) {
+    const form = document.getElementById(`startAndamentoForm-${andamentoId}`);
+    const formData = new FormData(form);
 
-        fetch(form.action, {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => {
-            if (response.ok) {
-                // Atualizar a área do card após o sucesso
-                location.reload(); // Aqui recarrega a página, mas pode ser adaptado para atualizar somente o card
-            } else {
-                alert('Erro ao iniciar o andamento.');
-            }
-        })
-        .catch(error => {
-            console.error('Erro:', error);
-            alert('Erro ao processar a solicitação.');
-        });
-    }
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Erro ao iniciar o andamento.');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao processar a solicitação.');
+    });
+}
 </script>
+
 <script>
-    function toggleButton(textarea) {
-        let botao = textarea.closest("form").querySelector("button");
-        botao.disabled = !textarea.value.trim();
-    }
+function toggleButton(textarea) {
+    let botao = textarea.closest("form").querySelector("button");
+    botao.disabled = !textarea.value.trim();
+}
 </script>
 
 <script>
@@ -702,64 +719,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
-    
-<style>
-.chat-container {
-    max-height: 250px;
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-}
 
-.chat-message {
-    background: #ffffff;
-    border-left: 5px solid #08720f;
-    padding: 10px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    animation: fadeIn 0.3s ease-in-out;
-}
+<!-- Script para o Modal de Exclusão -->
+<script>
+const deleteModal = document.getElementById('deleteModal');
+deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const id = button.getAttribute('data-id');
+    const name = button.getAttribute('data-name');
 
-.chat-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: #08720f;
-    margin-bottom: 5px;
-}
+    // Atualiza o nome do andamento no modal
+    document.getElementById('andamentoName').textContent = name;
 
-.chat-avatar {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    object-fit: cover;
-}
+    // Atualiza a URL do formulário de exclusão
+    const form = document.getElementById('deleteForm');
+    form.action = `/andamentos/${id}/deletar/`;
+});
+</script>
 
-.chat-text {
-    font-size: 0.95rem;
-    margin: 0;
-}
-
-.chat-input {
-    resize: none;
-    font-size: 0.95rem;
-    padding: 8px;
-    border-radius: 5px;
-}
-
-.input-group button {
-    border-radius: 0 6px 6px 0;
-    padding: 10px 15px;
-}
-
-/* Efeito de Fade-In para novos comentários */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-</style>
-    
 {% endblock %}

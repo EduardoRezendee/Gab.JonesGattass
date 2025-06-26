@@ -361,47 +361,48 @@
                     </div>
                     {% endif %}
 
-                    <!-- Caixa de Comentários Flutuante -->
-                    <div id="comment-box-{{ processo.pk }}"
-                         class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate_animated animate_fadeIn"
-                         style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
-                      <!-- Cabeçalho -->
-                      <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold m-0" style="color: #1F2937;">
-                          <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ processo.numero_processo }}
-                        </h6>
-                        <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
-                                data-processo-id="{{ processo.pk }}"
-                                style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
-                      </div>
+    <!-- Caixa de Comentários -->
+<div id="comment-box"
+    class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+    style="width: 450px; top: 100px; height: calc(100vh - 120px); z-index: 1050; display: flex; flex-direction: column; border-top: 4px solid #2f2f2f;">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold m-0" style="color: #2f2f2f;">
+            <i class="bi bi-chat-dots me-2"></i> Comentários
+        </h6>
+        <button id="close-comments" class="btn btn-sm btn-outline-secondary shadow-sm" style="border-radius: 20px;">
+            Fechar
+        </button>
+    </div>
 
-                      <!-- Histórico de Comentários -->
-                      <div id="comentarios-{{ processo.pk }}"
-                           class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
-                           style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
-                        {% for comentario in processo.comentarios %}
-                          <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #6B7280;">
-                            <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                                 alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; border: 2px solid #083464;">
-                            <div class="w-100">
-                              <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
-                              <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                              <p class="mb-0 small bg-light p-2 rounded" style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
-                            </div>
-                          </div>
-                        {% empty %}
-                          <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
-                        {% endfor %}
-                      </div>
+    <!-- Histórico de Comentários -->
+    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3"
+         style="background-color: #f8f9fa; min-height: 0;">
+        {% for comentario in processo.comentarios.all %}
+        <div class="d-flex align-items-start border-bottom pb-2 mb-2">
+            <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+                 alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+            <div class="w-100">
+                <strong>{{ comentario.usuario.get_full_name }}</strong>
+                <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+        {% endfor %}
+    </div>
 
-                      <!-- Formulário de Novo Comentário -->
-                      <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.pk }}" style="border-color: #6B7280;">
-                        {% csrf_token %}
-                        <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                                  placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
-                        <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
-                      </form>
-                    </div>
+    <!-- Formulário de Novo Comentário -->
+    <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
+        {% csrf_token %}
+        <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+                  placeholder="Escreva seu comentário..." style="border-radius: 10px;"></textarea>
+        <button type="submit" class="btn btn-outline-primary shadow-sm" style="border-radius: 20px;">
+            Enviar
+        </button>
+    </form>
+</div>
                   {% endfor %}
                 </div>
               </div>
