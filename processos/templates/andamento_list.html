@@ -263,7 +263,7 @@
                                                                         <div class="mb-3">
                                                                             <label for="link_doc_{{ andamento.pk }}" class="form-label fw-semibold" style="color: #2f2f2f;">Link do Documento</label>
                                                                             <input type="url" id="link_doc_{{ andamento.pk }}" name="link_doc" class="form-control shadow-sm" 
-                                                                                   value="{{ andamento.link_doc }}" style="border-radius: 10px;">
+                                                                                value="{{ andamento.link_doc }}" style="border-radius: 10px;">
                                                                         </div>
                                                                         <div class="modal-footer">
                                                                             <button type="button" class="btn btn-outline-secondary shadow-sm" 
@@ -297,12 +297,12 @@
                                                 </button>
                                             </h2>
                                             <div id="collapseConcluidos{{ item.fase.id }}" 
-                                                 class="accordion-collapse collapse" 
-                                                 aria-labelledby="headingConcluidos{{ item.fase.id }}">
+                                                class="accordion-collapse collapse" 
+                                                aria-labelledby="headingConcluidos{{ item.fase.id }}">
                                                 <div class="accordion-body" style="padding: 15px;">
                                                     {% for andamento in item.concluidos %}
                                                     <div class="card mb-3 shadow-sm border-0" 
-                                                         style="border-radius: 8px; border-left: 5px solid #198754;">
+                                                        style="border-radius: 8px; border-left: 5px solid #198754;">
                                                         <div class="card-body p-3">
                                                             <h6 class="card-title text-success mb-2" style="font-size: 1rem; font-weight: bold;">
                                                                 {{ andamento.andamento }}

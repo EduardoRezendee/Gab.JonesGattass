@@ -150,6 +150,7 @@
       </div>
     </div>
   </div>
+  
 
   <!-- Visão da Desembargadora -->
   {% if is_desembargador %}
@@ -164,6 +165,85 @@
       Chefe de Gabinete
       <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
     </h2>
+
+    <div class="mt-5">
+      <h3 class="text-center mb-4 section-title">
+        Processos com +30 dias no gabinete
+        <span class="badge ms-2" style="background:#CFE2FF;color:#083464;">
+          {{ total_atrasados }}
+        </span>
+      </h3>
+
+      {% with dados=processos_mais_30_por_assessor|default:atrasados_por_assessor %}
+        {% if dados %}
+          <div class="row g-4">
+            {% for entry in dados %}
+              {% with assessor=entry.assessor lista=entry.processos %}
+                <div class="col-12 col-md-6 col-lg-4">
+                  <div class="card shadow-sm h-100 border-start border-4"
+                      style="border-color:#083464;">
+
+                    <!-- Cabeçalho clicável -->
+                    <button class="btn btn-link w-100 text-start p-3 d-flex
+                                  justify-content-between align-items-center"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                            aria-expanded="false">
+                      <span class="fw-semibold">{{ assessor }}</span>
+                      <span class="badge"
+                            style="background:#CFE2FF;color:#083464;">{{ lista|length }}</span>
+                    </button>
+
+                    <!-- Lista de processos -->
+                    <div class="collapse"
+                        id="assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                      <ul class="list-group list-group-flush small">
+                        {% for p in lista %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">
+                              {{ p.numero_processo }}
+                              <small class="text-muted">({{ p.especie }})</small>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                              <span class="badge bg-light text-dark">
+                                {{ p.dias_no_gabinete }} dias
+                              </span>
+                              <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                                {{ p.fase_atual }}
+                              </span>
+                              <span class="badge"
+                                    style="background:#CFE2FF;color:#083464;">
+                                {{ p.tipo }}
+                              </span>
+
+                              {% if p.is_liminar %}
+                                <span class="badge bg-info text-dark">Liminar</span>
+                              {% endif %}
+                              {% if p.prioridade == 'U' %}
+                                <span class="badge bg-danger-subtle text-danger-emphasis">Urgente</span>
+                              {% elif p.prioridade == 'P' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis">Prioridade</span>
+                              {% endif %}
+                            </div>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              {% endwith %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-center">
+            Nenhum processo com mais de 30 dias encontrado.
+          </p>
+        {% endif %}
+      {% endwith %}
+    </div>
+
+
 
     <!-- Seção de Gráficos -->
     <div class="row g-4">
@@ -812,6 +892,7 @@
   </h3>
   <div id="revisoesSemanaContainer" class="revisoes-container"></div>
 </div>
+
 
 <style>
 .revisoes-container {

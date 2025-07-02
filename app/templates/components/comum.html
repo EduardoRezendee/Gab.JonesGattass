@@ -15,6 +15,93 @@
   >
     <i class="bi bi-clipboard-check me-2"></i> Ver Meta Semana
   </button>
+{% if processos_atrasados %}
+  <button type="button"
+          class="btn position-relative shadow-sm rounded-pill"
+          style="background:linear-gradient(90deg,#FFE5E5,#F5BDBD);
+                 color:#842029;font-weight:600;font-size:1rem;"
+          data-bs-toggle="modal"
+          data-bs-target="#processosAtrasadosModal">
+    <i class="bi bi-emoji-frown-fill me-2"></i>
+    Você tem {{ processos_atrasados|length }} processo{{ processos_atrasados|length|pluralize:"s" }} +30 dias
+    <span class="badge bg-danger-subtle text-danger-emphasis ms-2">
+      {{ processos_atrasados|length }}
+    </span>
+  </button>
+{% else %}
+  <button type="button"
+          class="btn position-relative shadow-sm rounded-pill"
+          style="background:linear-gradient(90deg,#D1E7DD,#BFE2C1);
+                 color:#0F5132;font-weight:600;font-size:1rem;"
+          data-bs-toggle="modal"
+          data-bs-target="#processosAtrasadosModal">
+    <i class="bi bi-emoji-smile-fill me-2"></i>
+    Nenhum processo +30 dias
+  </button>
+{% endif %}
+
+</button>
+</div>
+<!-- Modal: Processos Atrasados -->
+<div class="modal fade" id="processosAtrasadosModal" tabindex="-1"
+     aria-labelledby="processosAtrasadosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+    <div class="modal-header
+        {% if processos_atrasados %}bg-danger-subtle{% else %}bg-success-subtle{% endif %}">
+      <h5 id="processosAtrasadosModalLabel"
+          class="modal-title d-flex align-items-center gap-2 text-white">
+        {% if processos_atrasados %}
+          <i class="bi bi-emoji-frown-fill"></i>
+          Você tem {{ processos_atrasados|length }}
+          processo{{ processos_atrasados|length|pluralize:"s" }} com +30 dias
+        {% else %}
+          <i class="bi bi-emoji-smile-fill"></i>
+          Você não tem nenhum processo com +30 dias – parabéns!
+        {% endif %}
+      </h5>
+
+      <!-- fecha modal com ícone em branco -->
+      <button type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"></button>
+    </div>
+
+
+      <div class="modal-body">
+        {% if processos_atrasados %}
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Nº do Processo</th>
+                  <th>Espécie</th>
+                  <th>Dias no Gabinete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in processos_atrasados %}
+                  <tr>
+                    <td>{{ p.numero_processo }}</td>
+                    <td>{{ p.especie }}</td>
+                    <td>{{ p.dias_no_gabinete }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+                data-bs-dismiss="modal">Fechar</button>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%; background-color: #CFE2FF;">
@@ -28,6 +115,7 @@
     </h2>
     <div id="collapseProcessos" class="accordion-collapse collapse show">
       <div class="accordion-body">
+        
         <!-- FILTRO: Pesquisa + Tema -->
         <div class="mb-4">
           <form method="GET" action="{% url 'home' %}" class="d-flex flex-wrap align-items-center gap-2 justify-content-center">

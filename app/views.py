@@ -14,6 +14,10 @@ from django.http import JsonResponse
 from django.db.models import Count
 from datetime import datetime, timedelta, timezone as dt_timezone
 from processos.models import ProcessoAndamento, User
+from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value
+from django.db.models.functions import Cast
+from collections import defaultdict
+
 
 # MÉTRICAS E GAMIFICAÇÃO
 from .metrics import (
@@ -29,6 +33,9 @@ from .metrics import (
 @login_required(login_url='login')
 def home(request):
     user = request.user
+    
+    atrasados_por_assessor_detalhado: list[dict] = []
+    total_atrasados: int = 0
 
     # Verificar roles do usuário (cache simples)
     cache_key_roles = f'user_roles_{user.id}'
@@ -49,6 +56,8 @@ def home(request):
 
     # Inicializar variáveis
     andamento_metrics = []
+    numero_de_processos_em_revisao = 0
+    numero_de_processos_em_revisao_des = 0
     active_tab = None
     fases = None
     hoje = timezone.now()
@@ -60,6 +69,8 @@ def home(request):
     processos_revisao_des_detalhados = []
     tarefas_detalhadas = []
     tarefas_ids = []
+    
+
 
     # Métricas diárias
     revisoes_hoje = ProcessoAndamento.objects.filter(
@@ -191,6 +202,7 @@ def home(request):
                     ],
                     'revisoes_des': revisoes_des_count,
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
+                    'camara' : processo.camara.camara if processo.camara else "Sem câmara",
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['tipo'] == "Plantão" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
         
@@ -267,12 +279,62 @@ def home(request):
                 'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
             })
+             # Processos com +30 dias por assessor
+        processos_mais_30 = (
+            Processo.objects
+            .filter(concluido=False, antigo__isnull=False, usuario__isnull=False)
+            .annotate(
+                antigo_date=Cast('antigo', output_field=DateField()),
+                dias_no_gabinete=ExpressionWrapper(
+                    timezone.now().date() - F('antigo_date'),
+                    output_field=DurationField()
+                )
+            )
+            .filter(dias_no_gabinete__gt=timedelta(days=30))
+            .select_related('usuario', 'especie', 'tipo')
+            .prefetch_related('andamentos', 'andamentos__fase')
+        )
+
+        # Agrupar por assessor com contagem
+        atrasados_por_assessor = defaultdict(list)
+        for p in processos_mais_30:
+            nome_assessor = p.usuario.get_full_name()
+            ultimo_andamento = p.andamentos.order_by('-dt_criacao').first()
+            atrasados_por_assessor[nome_assessor].append({
+                'numero_processo': p.numero_processo,
+                'dias_no_gabinete': p.dias_no_gabinete.days,
+                'especie': p.especie.sigla if p.especie else '—',
+                'tipo': p.tipo.tipo if p.tipo else 'Sem tipo',
+                'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else 'Sem fase',
+                'is_liminar': p.tipo.tipo == "Liminar" if p.tipo else False
+            })
+
+        # Criar lista estruturada para o template
+        atrasados_por_assessor_detalhado = [
+            {
+                'assessor': nome,
+                'quantidade': len(processos),
+                'processos': sorted(
+                    processos,
+                    key=lambda x: (
+                        0 if x['is_liminar'] else 1,  # Priorizar liminares
+                        -x['dias_no_gabinete']  # Maior tempo no gabinete
+                    )
+                )
+            }
+            for nome, processos in atrasados_por_assessor.items()
+        ]
+        
+        # Ordenar assessores por quantidade de processos atrasados (descendente) ou nome
+        atrasados_por_assessor_detalhado.sort(key=lambda x: (-x['quantidade'], x['assessor']))
+
+        # Quantitativo total
+        total_atrasados = processos_mais_30.count()
 
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
         numero_processo = request.GET.get('numero_processo', '').strip()
         despacho = request.GET.get('despacho', '').strip()
-        prioridade = request.GET.get('prioridade', '').strip()
         tipo = request.GET.get('tipo', '').strip()
         especie = request.GET.get('especie', '').strip()  # Novo parâmetro para espécie
 
@@ -294,11 +356,6 @@ def home(request):
                 processos_nao_concluidos = processos_nao_concluidos.filter(despacho=True)
             elif despacho.lower() == 'nao':
                 processos_nao_concluidos = processos_nao_concluidos.filter(despacho=False)
-        if prioridade:
-            if prioridade.lower() == 'sim':
-                processos_nao_concluidos = processos_nao_concluidos.filter(prioridade_urgente=True)
-            elif prioridade.lower() == 'nao':
-                processos_nao_concluidos = processos_nao_concluidos.filter(prioridade_urgente=False)
         if tipo:
             processos_nao_concluidos = processos_nao_concluidos.filter(tipo__tipo__icontains=tipo)
         if especie:  # Novo filtro por espécie
@@ -430,6 +487,29 @@ def home(request):
         }
         tarefas_detalhadas.append(tarefa_dict)
     tarefas_ids = [tarefa['processo']['id'] for tarefa in tarefas_detalhadas if tarefa['processo']['id']]
+    
+    # Processos de todas as espécies com mais de 30 dias
+    processos_queryset = (
+        Processo.objects
+        .filter(usuario=user, concluido=False, antigo__isnull=False)
+        .annotate(
+            antigo_date = Cast('antigo', output_field=DateField()),
+            dias_no_gabinete = ExpressionWrapper(
+                timezone.now().date() - F('antigo_date'), output_field=DurationField()
+            )
+        )
+        .filter(dias_no_gabinete__gt=timedelta(days=30))
+        .select_related('especie')
+    )
+
+    processos_atrasados = [
+        {
+            "numero_processo": p.numero_processo,
+            "dias_no_gabinete": p.dias_no_gabinete.days,
+            "especie": p.especie.sigla,
+        }
+        for p in processos_queryset
+    ]
 
     # Métricas e Gamificação (comum a todos os papéis)
     process_metrics = get_process_metrics(user)
@@ -466,6 +546,10 @@ def home(request):
         'processos_liminares_detalhados': processos_liminares_detalhados,
         'processos_concluidos_detalhados': processos_concluidos_detalhados,
         'processos_revisao_des_detalhados': processos_revisao_des_detalhados,
+        'numero_de_processos_em_revisao_des': numero_de_processos_em_revisao_des,
+        "processos_atrasados": processos_atrasados,
+        'atrasados_por_assessor': atrasados_por_assessor_detalhado,
+        'total_atrasados': total_atrasados,
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:
