@@ -123,15 +123,15 @@
                         {% if tarefa.processo.fase_atual == 'Elaboração' %}
                           <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
                             {% csrf_token %}
-                            <input type="hidden" name="nova_fase" value="Revisão">
+                            <input type="hidden" name="nova_fase" value="Revisão Des">
                             <input type="hidden" name="origem" value="home">
                             <button type="submit" class="btn btn-sm btn-primary shadow-sm"
                                     onclick="return confirm('Tem certeza que deseja enviar para Revisão Des.?');"
                                     style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
+                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão Des
                             </button>
                           </form>
-                        {% elif tarefa.processo.fase_atual == 'Correção' %}
+                        <!--{% elif tarefa.processo.fase_atual == 'Correção' %}
                           <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
                             {% csrf_token %}
                             <input type="hidden" name="nova_fase" value="Revisão">
@@ -141,7 +141,7 @@
                                     style="border-radius: 20px; padding: 0.25rem 0.75rem;">
                               <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
                             </button>
-                          </form>
+                          </form>-->
                         {% elif tarefa.processo.fase_atual == 'Devolvido' %}
                           <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
                             {% csrf_token %}
