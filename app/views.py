@@ -757,7 +757,7 @@ def get_revisoes_hoje_data(request):
     data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
 
     enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão",
+        fase__fase="Revisão Des",
         dt_criacao__range=(data_inicio, data_fim),
         processo__usuario__isnull=False
     ).values(
@@ -822,7 +822,7 @@ def get_revisoes_semana_data(request):
     data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
 
     enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão",
+        fase__fase="Revisão Des",
         dt_criacao__range=(data_inicio, data_fim),
         processo__usuario__isnull=False  # Evita processos sem usuário
     ).values(
