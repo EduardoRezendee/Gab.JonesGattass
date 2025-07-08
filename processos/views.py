@@ -1615,7 +1615,7 @@ def calcular_progresso_meta(meta, hoje):
         ProcessoAndamento.objects
         .filter(
             processo__in=processos_meta,
-            fase__fase="Revisão",
+            fase__fase="Revisão Des",
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
         )
         .values('processo')
@@ -1687,7 +1687,7 @@ def calcular_processos_concluidos(meta, hoje):
         ProcessoAndamento.objects
         .filter(
             processo__in=processos_meta,
-            fase__fase="Revisão",
+            fase__fase="Revisão Des",
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
         )
         .values('processo')
@@ -1769,7 +1769,7 @@ def api_meta_processos(request):
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão",
+                fase__fase="Revisão Des",
                 dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
             ).values_list('processo', flat=True)
         )
@@ -2023,7 +2023,7 @@ def ver_todos_processos_meta(request):
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão",
+                fase__fase="Revisão Des",
                 dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
             ).values_list('processo', flat=True)
         )
@@ -2183,7 +2183,7 @@ def api_detalhes_meta(request):
             revisados_ids = set(
                 ProcessoAndamento.objects.filter(
                     processo__in=processos_meta,
-                    fase__fase="Revisão",
+                    fase__fase="Revisão Des",
                     dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
                 ).values_list('processo', flat=True)
             )
@@ -2277,7 +2277,7 @@ def minhas_metas(request):
         concluidos_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão",
+                fase__fase="Revisão Des",
                 dt_criacao__range=(inicio_semana, fim_semana)
             ).values_list('processo', flat=True).distinct()
         )
@@ -2322,7 +2322,7 @@ def minhas_metas(request):
         # Busca processos enviados para Revisão Desa fora da meta
         processos_fora = ProcessoAndamento.objects.filter(
             processo__usuario=user,
-            fase__fase="Revisão",
+            fase__fase="Revisão Des",
             dt_criacao__range=(inicio_semana, fim_semana)
         ).exclude(
             processo__in=[p.id for p in processos]
