@@ -273,13 +273,19 @@
                                 </span>
                               {% endif %}
                               {% if processo.tipo %}
-                                <span class="badge bg-secondary rounded-pill d-flex align-items-center" style="font-size: 0.9rem;" title="Tipo">
-                                  <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
-                                  {% if processo.tipo.tipo == "Urgentíssimo" %}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Urgentíssimo"></i>
-                                  {% endif %}
-                                </span>
+                            <span class="badge 
+                                        {% if processo.tipo == 'Urgentissímo' %}
+                                          bg-danger-subtle text-danger
+                                        {% else %}
+                                          bg-secondary-subtle text-secondary
+                                        {% endif %}
+                                        rounded-pill px-2 py-1 d-flex align-items-center" title="Tipo">
+                              <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
+                              {% if processo.tipo == "Urgentissímo" %}
+                                <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Urgentissímo"></i>
                               {% endif %}
+                            </span>
+                              {% endif %}
                             </p>
                           {% endif %}
                           <p class="mb-1" style="color: #1F2937;">
