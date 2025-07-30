@@ -1,44 +1,7 @@
 from django.contrib import admin
 from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, ProcessoAndamento, HistoricoAndamento, Tema
 
-@admin.register(Objetivo)
-class ObjetivoAdmin(admin.ModelAdmin):
-    list_display  = ("usuario", "get_periodo", "quantidade", "atualizado_em")
-    list_filter   = ("tipo_periodo",)
-    search_fields = (
-        "usuario__username",
-        "usuario__first_name",
-        "usuario__last_name",
-    )
-    autocomplete_fields = ("usuario",)
-    ordering = ("usuario__first_name", "tipo_periodo")
-    list_editable = ("quantidade",)
 
-    @admin.display(description="Período", ordering="tipo_periodo")
-    def get_periodo(self, obj):
-        return obj.get_tipo_periodo_display()
-
-    @admin.display(description="Atualizado em")
-    def atualizado_em(self, obj):
-        return obj.atualizado_em.strftime("%d/%m/%Y %H:%M")
-
-class ObjetivoInline(admin.TabularInline):
-    model  = Objetivo
-    extra  = 0        
-    min_num = 0
-    max_num = 2        
-    verbose_name = "Meta"
-    verbose_name_plural = "Metas (diária / semanal)"
-    autocomplete_fields = ("usuario",)
-
-
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User as DjangoUser
-
-try:
-    admin.site.unregister(DjangoUser)      
-except admin.sites.NotRegistered:
-    pass
 
 @admin.register(Tema)
 class TemaAdmin(admin.ModelAdmin):
