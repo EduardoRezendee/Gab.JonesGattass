@@ -391,12 +391,8 @@ def home(request):
                             for c in comentarios_dict.get(processo.pk, [])
                         ]
                     })
-            processos_detalhados.sort(
-    key=lambda p: (
-        0 if p['tipo'] == "Urgentíssimo" else (1 if p['especie'] == "Liminar" else 2),
-        -(p['dias_no_gabinete'] or 0)
-    )
-)
+                    processos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else (1 if p['especie'] == "Liminar" else 2),-(p['dias_no_gabinete'] or 0))
+                    )
 
             fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Des', 'Devolvido', 'L. PJE']
             phase_dict = {}
