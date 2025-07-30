@@ -483,7 +483,7 @@ def importar_processos_view(request):
                             }
                         )
 
-                     #Marcar despacho como True
+                    #Marcar despacho como True
                     despacho = False
                     if pd.notna(row.get('nomeTarefa')) and 'Minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
                         despacho = True

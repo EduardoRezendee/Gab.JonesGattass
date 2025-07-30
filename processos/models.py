@@ -4,6 +4,24 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import models
 
+
+class Objetivo(models.Model):
+    TIPO_CHOICES = [
+        ('D', 'Diário'),
+        ('S', 'Semanal'),
+    ]
+    usuario      = models.ForeignKey(User, on_delete=models.CASCADE, related_name='objetivos')
+    tipo_periodo = models.CharField(max_length=1, choices=TIPO_CHOICES, default='D')
+    quantidade   = models.PositiveIntegerField(default=4)
+    criado_em    = models.DateTimeField(auto_now_add=True)
+    atualizado_em= models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('usuario', 'tipo_periodo')  # um objetivo diário e um semanal por usuário
+
+    def _str_(self):
+        return f"{self.usuario} • {self.get_tipo_periodo_display()} = {self.quantidade}"
+    
 class MetaSemanal(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metas_semanal')
     processos = models.ManyToManyField('Processo', related_name='metas_semanal')
