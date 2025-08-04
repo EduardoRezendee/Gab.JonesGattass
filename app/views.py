@@ -204,7 +204,7 @@ def home(request):
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
                     'camara' : processo.camara.camara if processo.camara else "Sem câmara",
                 })
-        andamento_metrics.sort(key=lambda p: (0 if p['tipo'] == "Plantão" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
+        andamento_metrics.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
         
         processos_mais_antigos = Processo.objects.filter(
             concluido=False,
@@ -224,7 +224,7 @@ def home(request):
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                 'tipo': tipo_nome,
             })
-        processos_antigos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Plantão" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
+        processos_antigos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
         
         processos_liminares = Processo.objects.filter(
             concluido=False,
@@ -243,7 +243,7 @@ def home(request):
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                 'tipo': tipo_nome,
             })
-        processos_liminares_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Plantão" else 1, -(p['dias_no_gabinete'] or 0)))
+        processos_liminares_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, -(p['dias_no_gabinete'] or 0)))
 
     # VISÃO DO CHEFE DE GABINETE
     elif is_chefe:
@@ -279,7 +279,7 @@ def home(request):
                 'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
             })
-             # Processos com +30 dias por assessor
+            # Processos com +30 dias por assessor
         processos_mais_30 = (
             Processo.objects
             .filter(concluido=False, antigo__isnull=False, usuario__isnull=False)
