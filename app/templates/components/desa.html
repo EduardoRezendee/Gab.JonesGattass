@@ -36,9 +36,9 @@
           <div class="list-group">
             {% for andamento in andamento_metrics %}
               <div id="processo-{{ andamento.processo_pk }}"
-                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
-                   {% if andamento.especie == 'Liminar' %}border border-danger text-danger{% endif %}"
-                   style="display: flex; flex-direction: column; gap: 10px;">
+                  class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
+                  {% if andamento.tipo == 'Urgentíssimo' %}border border-danger text-danger{% endif %}"
+                  style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
                 <span style="
                   position: absolute;
