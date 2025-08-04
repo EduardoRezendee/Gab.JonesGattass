@@ -1078,6 +1078,11 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
         processo.dt_atualizacao = now()
         processo.dt_conclusao = now()
         processo.save()
+        processo.save(update_fields=['concluido', 'dt_conclusao', 'dt_atualizacao'])  # salva apenas esses campos
+
+        # Verificação (debug temporário)
+        processo.refresh_from_db()
+        print(f"[DEBUG] Processo {processo.pk} marcado como concluído: {processo.concluido}")
 
         # **Corrigir a fase do andamento "Processo concluído"**
         fase_concluido, _ = Fase.objects.get_or_create(fase="Processo Concluído")
