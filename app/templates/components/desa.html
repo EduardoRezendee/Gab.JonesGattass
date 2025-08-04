@@ -46,7 +46,7 @@
                   left: 0;
                   width: 5px;
                   height: 100%;
-                  background-color: {% if andamento.especie == 'Liminar' %}#EF4444{% else %}#083464{% endif %};
+                  background-color: {% if andamento.tipo == 'Urgentíssimo' %}#EF4444{% else %}#083464{% endif %};
                   border-radius: 2px;">
                 </span>
 
@@ -69,7 +69,7 @@
                     <p class="mb-1">
                       <i class="bi bi-box-seam me-2"></i>
                       <strong>Espécie:</strong>
-                      <span class="ms-1 {% if andamento.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}">
+                      <span class="ms-1 {% if andamento.tipo == 'Urgentíssimo' %}text-danger fw-bold{% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
                     </p>
@@ -142,7 +142,7 @@
                       </button>
                     </form>
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <i class="bi bi-arrow-right {% if andamento.especie == 'Liminar' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
+                      <i class="bi bi-arrow-right {% if andamento.tipo == 'Urgentíssimo' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
                     </a>
                   </div>
                 </div>
