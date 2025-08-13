@@ -31,6 +31,12 @@
           </form>
         </div>
 
+        <!-- Total de processos em revisão -->
+        <p class="fw-bold text-dark" style="font-size: 1.5rem;">
+          Total de processos em Revisão Des:
+          <span class="badge bg-primary fs-4">{{ numero_de_processos_em_revisao_des|default:0 }}</span>
+        </p>
+
         <!-- Lista de Processos -->
         {% if andamento_metrics %}
           <div class="list-group">

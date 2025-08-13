@@ -14,9 +14,10 @@ from django.http import JsonResponse
 from django.db.models import Count
 from datetime import datetime, timedelta, timezone as dt_timezone
 from processos.models import ProcessoAndamento, User
-from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value
+from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value, Max
 from django.db.models.functions import Cast
 from collections import defaultdict
+from processos.models import ProcessoAndamento
 
 
 # MÉTRICAS E GAMIFICAÇÃO
@@ -69,7 +70,7 @@ def home(request):
     processos_revisao_des_detalhados = []
     tarefas_detalhadas = []
     tarefas_ids = []
-    
+    numero_de_processos_em_revisao_des = 0
 
 
     # Métricas diárias
@@ -151,35 +152,57 @@ def home(request):
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, p['data_dist']))
 
-    # VISÃO DA DESEMBARGADORA
+ # --- VISÃO DA DESEMBARGADORA ---
+
     elif is_desembargador:
         numero_processo = request.GET.get('numero_processo', '').strip()
-        processos_em_revisao_des = Processo.objects.filter(
-            andamentos__fase__fase="Revisão Des",
-            andamentos__usuario=user,
-            concluido=False
-        ).distinct().select_related('especie', 'usuario', 'tipo').prefetch_related(
-            'andamentos', 'andamentos__fase', 'andamentos__status', 'andamentos__usuario'
+
+        # Pegamos somente processos com último andamento em "Revisão Des",
+        # do próprio usuário (desembargadora), e com status "Não iniciado" ou "Em andamento".
+        processos_em_revisao_des = (
+            Processo.objects
+            .filter(
+                concluido=False,
+                andamentos__fase__fase="Revisão Des",
+                andamentos__usuario=user,
+            )
+            .annotate(
+                max_dt_criacao=Max('andamentos__dt_criacao')
+            )
+            .filter(
+                andamentos__dt_criacao=F('max_dt_criacao'),
+                andamentos__status__status__in=["Não iniciado", "Em andamento"]
+            )
+            .distinct()
+            .select_related('especie', 'usuario', 'tipo')
+            .prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status', 'andamentos__usuario')
         )
+
         if numero_processo:
             processos_em_revisao_des = processos_em_revisao_des.filter(numero_processo__icontains=numero_processo)
-        
+
+        numero_de_processos_em_revisao_des = processos_em_revisao_des.count()
+
         comentarios_dict = {
             p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
             for p in processos_em_revisao_des
         }
+
         andamento_metrics = []
         for processo in processos_em_revisao_des:
+            # Último andamento em Revisão Des desta desembargadora (em aberto)
             ultimo_andamento = processo.andamentos.filter(
                 fase__fase="Revisão Des",
                 usuario=user,
                 status__status__in=["Não iniciado", "Em andamento"]
             ).order_by('-dt_criacao').first()
+
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
                 tipo_nome = processo.tipo.tipo if processo.tipo else "Sem tipo"
                 comentarios = comentarios_dict.get(processo.pk, [])
                 revisoes_des_count = processo.andamentos.filter(fase__fase="Revisão Des").count()
+
                 andamento_metrics.append({
                     'pk': ultimo_andamento.pk,
                     'processo_pk': processo.pk,
@@ -202,14 +225,22 @@ def home(request):
                     ],
                     'revisoes_des': revisoes_des_count,
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
-                    'camara' : processo.camara.camara if processo.camara else "Sem câmara",
+                    'camara': processo.camara.camara if getattr(processo, 'camara', None) else "Sem câmara",
                 })
-        andamento_metrics.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
-        
-        processos_mais_antigos = Processo.objects.filter(
-            concluido=False,
-            antigo__isnull=False
-        ).select_related('especie', 'usuario', 'tipo').order_by('antigo')[:10]
+
+        # Ordenação: Plantão primeiro, depois Liminar, depois mais tempo no gabinete
+        andamento_metrics.sort(
+            key=lambda p: (0 if p['tipo'] == "Plantão" else 1,
+                        0 if p['especie'] == "Liminar" else 1,
+                        -(p['dias_no_gabinete'] or 0))
+        )
+
+        # Lista de mais antigos
+        processos_mais_antigos = (
+            Processo.objects.filter(concluido=False, antigo__isnull=False)
+            .select_related('especie', 'usuario', 'tipo')
+            .order_by('antigo')[:10]
+        )
         processos_antigos_detalhados = []
         for processo in processos_mais_antigos:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
@@ -224,12 +255,18 @@ def home(request):
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                 'tipo': tipo_nome,
             })
-        processos_antigos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, 0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
-        
-        processos_liminares = Processo.objects.filter(
-            concluido=False,
-            especie__especie="Liminar"
-        ).select_related('especie', 'usuario', 'tipo').order_by('antigo')
+        processos_antigos_detalhados.sort(
+            key=lambda p: (0 if p['tipo'] == "Plantão" else 1,
+                        0 if p['especie'] == "Liminar" else 1,
+                        -(p['dias_no_gabinete'] or 0))
+        )
+
+        # Lista de liminares
+        processos_liminares = (
+            Processo.objects.filter(concluido=False, especie__especie="Liminar")
+            .select_related('especie', 'usuario', 'tipo')
+            .order_by('antigo')
+        )
         processos_liminares_detalhados = []
         for processo in processos_liminares:
             ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
@@ -243,7 +280,9 @@ def home(request):
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                 'tipo': tipo_nome,
             })
-        processos_liminares_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, -(p['dias_no_gabinete'] or 0)))
+        processos_liminares_detalhados.sort(
+            key=lambda p: (0 if p['tipo'] == "Plantão" else 1, -(p['dias_no_gabinete'] or 0))
+        )
 
     # VISÃO DO CHEFE DE GABINETE
     elif is_chefe:
@@ -279,7 +318,7 @@ def home(request):
                 'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
                 'usuario': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
             })
-            # Processos com +30 dias por assessor
+             # Processos com +30 dias por assessor
         processos_mais_30 = (
             Processo.objects
             .filter(concluido=False, antigo__isnull=False, usuario__isnull=False)
@@ -391,8 +430,7 @@ def home(request):
                             for c in comentarios_dict.get(processo.pk, [])
                         ]
                     })
-                    processos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else (1 if p['especie'] == "Liminar" else 2),-(p['dias_no_gabinete'] or 0))
-                    )
+            processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, -(p['dias_no_gabinete'] or 0)))
 
             fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Des', 'Devolvido', 'L. PJE']
             phase_dict = {}
@@ -551,6 +589,7 @@ def home(request):
         "processos_atrasados": processos_atrasados,
         'atrasados_por_assessor': atrasados_por_assessor_detalhado,
         'total_atrasados': total_atrasados,
+        'numero_de_processos_em_revisao_des': numero_de_processos_em_revisao_des,
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:

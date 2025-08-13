@@ -50,5 +50,6 @@ urlpatterns = [
     path('processo/<int:processo_id>/remover-meta/', views.remover_processo_meta, name='remover_processo_meta'),
     path('meta-semanal/status/', views.status_meta_semanal, name='status_meta_semanal'),
     path('configurar-meta-semanal/', configurar_meta_semanal, name='configurar_meta_semanal'),
+    
 
 ]
