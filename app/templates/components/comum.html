@@ -232,7 +232,7 @@
                         left: 0;
                         width: 5px;
                         height: 100%;
-                        background-color: {% if processo.especie == 'Liminar' %}#EF4444{% else %}#083464{% endif %};
+                        background-color: {% if processo.tipo == 'Urgentíssimo' or processo.especie == 'EDCIV' %}#EF4444{% else %}#083464{% endif %};
                         border-radius: 2px;">
                       </span>
 
@@ -274,7 +274,7 @@
                               {% endif %}
                               {% if processo.tipo %}
                                         <span class="badge 
-                                          {% if processo.tipo == 'Urgentissímo' %}
+                                          {% if processo.tipo == 'Urgentíssimo' or processo.especie == 'EDCIV'%}
                                             bg-danger-subtle text-danger
                                           {% else %}
                                             bg-secondary-subtle text-secondary

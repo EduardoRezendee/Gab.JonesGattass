@@ -43,7 +43,7 @@
             {% for andamento in andamento_metrics %}
               <div id="processo-{{ andamento.processo_pk }}"
                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
-                  {% if andamento.tipo == 'Urgentíssimo' %}border border-danger text-danger{% endif %}"
+                  {% if andamento.tipo == 'Urgentíssimo' or andamento.especie == 'EDCIV' %}border border-danger text-danger{% endif %}"
                   style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
                 <span style="
@@ -52,7 +52,7 @@
                   left: 0;
                   width: 5px;
                   height: 100%;
-                  background-color: {% if andamento.tipo == 'Urgentíssimo' %}#EF4444{% else %}#083464{% endif %};
+                  background-color: {% if andamento.tipo == 'Urgentíssimo' or andamento.especie == 'EDCIV' %}#EF4444{% else %}#083464{% endif %};
                   border-radius: 2px;">
                 </span>
 
@@ -75,7 +75,7 @@
                     <p class="mb-1">
                       <i class="bi bi-box-seam me-2"></i>
                       <strong>Espécie:</strong>
-                      <span class="ms-1 {% if andamento.tipo == 'Urgentíssimo' %}text-danger fw-bold{% else %}text-black{% endif %}">
+                      <span class="ms-1 {% if andamento.tipo == 'Urgentíssimo' or andamento.especie == 'EDCIV' %}text-danger fw-bold{% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
                     </p>
@@ -148,7 +148,7 @@
                       </button>
                     </form>
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <i class="bi bi-arrow-right {% if andamento.tipo == 'Urgentíssimo' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
+                      <i class="bi bi-arrow-right {% if andamento.tipo == 'Urgentíssimo' or andamento.especie == 'EDCIV' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
                     </a>
                   </div>
                 </div>
