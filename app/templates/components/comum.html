@@ -232,7 +232,9 @@
                         left: 0;
                         width: 5px;
                         height: 100%;
-                        background-color: {% if processo.tipo == 'Urgentíssimo' or processo.especie == 'EDCIV' %}#EF4444{% else %}#083464{% endif %};
+                         background-color: {% if processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %}#EF4444
+                         {% elif processo.tipo == 'Prioridade' %}#FACC15
+                         {% else %}#083464{% endif %};
                         border-radius: 2px;">
                       </span>
 
@@ -273,25 +275,38 @@
                                 </span>
                               {% endif %}
                               {% if processo.tipo %}
-                                        <span class="badge 
-                                          {% if processo.tipo == 'Urgentíssimo' or processo.especie == 'EDCIV'%}
-                                            bg-danger-subtle text-danger
-                                          {% else %}
-                                            bg-secondary-subtle text-secondary
-                                          {% endif %}
-                                          rounded-pill px-2 py-1 d-flex align-items-center" title="Tipo">
-                                        <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
-                                        {% if processo.tipo == "Urgentissímo" %}
-                                <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Urgentissímo"></i>
+                                <span class="badge 
+                                  {% if processo.tipo == 'Prioridade' %}
+                                    bg-warning-subtle text-warning
+                                  {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %}
+                                    bg-danger-subtle text-danger
+                                  {% else %}
+                                    bg-secondary-subtle text-secondary
+                                  {% endif %}
+                                  rounded-pill px-2 py-1 d-flex align-items-center" title="Tipo">
+                                  
+                                  <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
+
+                                  {% if processo.tipo == "Prioridade" %}
+                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
+                                  {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" %}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV"></i>
+                                  {% endif %}
+                                </span>
                               {% endif %}
-                            </span>
-                              {% endif %}
                             </p>
                           {% endif %}
                           <p class="mb-1" style="color: #1F2937;">
                             <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
                             <strong style="color: #1F2937;">Espécie:</strong>
-                            <span class="ms-1 {% if processo.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
+                            <span class="ms-1 
+                              {% if processo.especie == 'EDCIV' or processo.especie == 'Voto Vista' %}
+                                text-danger fw-bold
+                              {% elif processo.tipo == 'Prioridade' %}
+                                text-warning fw-bold
+                              {% else %}
+                                text-black
+                              {% endif %}">
                               {{ processo.especie }}
                             </span>
                           </p>

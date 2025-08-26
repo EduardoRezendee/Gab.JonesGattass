@@ -230,8 +230,9 @@ def home(request):
 
         # Ordenação: Plantão primeiro, depois Liminar, depois mais tempo no gabinete
         andamento_metrics.sort(
-            key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1,
+            key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
+                        0 if p['tipo'] == "Prioridade" else 3,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -256,8 +257,9 @@ def home(request):
                 'tipo': tipo_nome,
             })
         processos_antigos_detalhados.sort(
-            key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1,
-                        0 if p['especie'] == "EDCIV" else 1,
+            key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
+                        0 if p['especie'] == "EDCIV" else 2,
+                        0 if p['tipo'] == "Prioridade" else 3,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -281,7 +283,7 @@ def home(request):
                 'tipo': tipo_nome,
             })
         processos_liminares_detalhados.sort(
-            key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1, -(p['dias_no_gabinete'] or 0))
+            key=lambda p: (0 if p['tipo'] == "Prioridade" else 1, -(p['dias_no_gabinete'] or 0))
         )
 
     # VISÃO DO CHEFE DE GABINETE
@@ -430,8 +432,9 @@ def home(request):
                             for c in comentarios_dict.get(processo.pk, [])
                         ]
                     })
-            processos_detalhados.sort(key=lambda p: (0 if p['tipo'] == "Urgentíssimo" else 1,
+            processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
+                        0 if p['tipo'] == "Prioridade" else 3,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
