@@ -43,7 +43,7 @@
             {% for andamento in andamento_metrics %}
               <div id="processo-{{ andamento.processo_pk }}"
                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
-                  {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' %}border border-danger text-danger
+                  {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}border border-danger text-danger
                   {% elif andamento.tipo == 'Prioridade' %}border border-warning text-warning{% endif %}"
                   style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
@@ -53,7 +53,7 @@
                   left: 0;
                   width: 5px;
                   height: 100%;
-                  background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' %}#EF4444
+                  background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}#EF4444
                   {% elif andamento.tipo == 'Prioridade' %}#FACC15
                   {% else %}#083464{% endif %};
                   border-radius: 2px;">
@@ -78,16 +78,16 @@
                     <p class="mb-1">
                       <i class="bi bi-box-seam me-2"></i>
                       <strong>Espécie:</strong>
-                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' %}text-danger fw-bold
+                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}text-danger fw-bold
                       {% elif andamento.tipo == 'Prioridade' %}text-warning
                       {% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
                     </p>
                     <p class="mb-1">
-                      <i class="bi bi-calendar2-date me-2"></i>
-                      <strong>Data Distribuição:</strong>
-                      <span class="ms-1">{{ andamento.data_dist|date:"d/m/Y" }}</span>
+                      <i class="bi bi-tag me-2"></i>
+                      <strong>Tema:</strong>
+                      <span class="ms-1">{{ andamento.tema|default:"Sem tema" }}</span>
                     </p>
                     <p class="mb-1">
                       <i class="bi bi-clock me-2"></i>
@@ -153,7 +153,7 @@
                       </button>
                     </form>
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
+                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
                     </a>
                   </div>
                 </div>

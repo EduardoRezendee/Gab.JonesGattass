@@ -148,6 +148,7 @@ def home(request):
                     'especie': especie_nome,
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
                     'data_envio_revisao': ultimo_andamento.dt_criacao,
+                    'tema': processo.tema.nome if processo.tema else None,
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios]
                 })
         andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, p['data_dist']))
@@ -225,6 +226,7 @@ def home(request):
                     ],
                     'revisoes_des': revisoes_des_count,
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
+                    'tema': processo.tema.nome if processo.tema else None,
                     'camara': processo.camara.camara if getattr(processo, 'camara', None) else "Sem câmara",
                 })
 
@@ -232,7 +234,8 @@ def home(request):
         andamento_metrics.sort(
             key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['tipo'] == "Prioridade" else 3,                       
+                        0 if p['especie'] == "Revisitado" else 3,
+                        0 if p['tipo'] == "Prioridade" else 4,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -259,7 +262,8 @@ def home(request):
         processos_antigos_detalhados.sort(
             key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['tipo'] == "Prioridade" else 3,                       
+                        0 if p['especie'] == "Revisitado" else 3,
+                        0 if p['tipo'] == "Prioridade" else 4,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -434,7 +438,8 @@ def home(request):
                     })
             processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['tipo'] == "Prioridade" else 3,                       
+                        0 if p['especie'] == "Revisitado" else 3,
+                        0 if p['tipo'] == "Prioridade" else 4,                       
                         -(p['dias_no_gabinete'] or 0))
         )
 
