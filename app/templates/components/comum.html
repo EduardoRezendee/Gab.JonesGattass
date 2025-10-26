@@ -278,7 +278,7 @@
                                 <span class="badge 
                                   {% if processo.tipo == 'Prioridade' %}
                                     bg-warning-subtle text-warning
-                                  {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %}
+                                  {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Revisitado'%}
                                     bg-danger-subtle text-danger
                                   {% else %}
                                     bg-secondary-subtle text-secondary
@@ -289,8 +289,8 @@
 
                                   {% if processo.tipo == "Prioridade" %}
                                     <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
-                                  {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" %}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV"></i>
+                                  {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" or processo.especie == 'Revisitado'%}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado"></i>
                                   {% endif %}
                                 </span>
                               {% endif %}
@@ -300,7 +300,7 @@
                             <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
                             <strong style="color: #1F2937;">Espécie:</strong>
                             <span class="ms-1 
-                              {% if processo.especie == 'EDCIV' or processo.especie == 'Voto Vista' %}
+                              {% if processo.especie == 'EDCIV' or processo.especie == 'Voto Vista' or processo.especie == 'Revisitado' %}
                                 text-danger fw-bold
                               {% elif processo.tipo == 'Prioridade' %}
                                 text-warning fw-bold

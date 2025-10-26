@@ -59,6 +59,48 @@
                   border-radius: 2px;">
                 </span>
 
+                <!-- Novos indicadores: despacho, prioridade e tipo -->
+                          {% if andamento.despacho or andamento.prioridade_urgente or andamento.tipo or andamento.especie %}
+                            <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
+                              {% if andamento.despacho %}
+                                <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
+                                  <i class="bi bi-file-earmark-text"></i>
+                                </span>
+                              {% endif %}
+                              {% if andamento.prioridade_urgente %}
+                                <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Sino -->
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    <!-- Ondas -->
+                                    <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
+                                  </svg>
+                                </span>
+                              {% endif %}
+                              {% if andamento.tipo %}
+                                <span class="badge 
+                                  {% if andamento.tipo == 'Prioridade' %}
+                                    bg-warning-subtle text-warning
+                                  {% elif andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado'%}
+                                    bg-danger-subtle text-danger
+                                  {% else %}
+                                    bg-secondary-subtle text-secondary
+                                  {% endif %}
+                                  rounded-pill px-3 py-2 d-flex align-items-center" title="Tipo">
+                                  
+                                  <i class="bi bi-briefcase me-1"></i> {{ andamento.tipo }}
+
+                                  {% if andamento.tipo == "Prioridade" %}
+                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
+                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado'%}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado"></i>
+                                  {% endif %}
+                                </span>
+                              {% endif %}
+                            </p>
+                          {% endif %}
+
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <!-- Informações à esquerda -->
                   <div class="flex-grow-1">
