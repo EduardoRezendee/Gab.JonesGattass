@@ -148,16 +148,23 @@
 
                   <!-- Revisão e Lembrete no topo direito -->
                   <div class="d-flex align-items-center gap-2">
-                    <span class="text-muted" style="font-size: 1rem;">
-                      {{ andamento.revisoes_des }}ª Revisão
-                    </span>
-                    <button type="button" class="btn btn-sm toggle-comments shadow-sm"
-                            data-processo-id="{{ andamento.processo_pk }}"
-                            style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                      <i class="bi bi-pin-angle me-1"></i> Lembrete
-                    </button>
-                  </div>
-                </div>
+
+  {% if andamento.revisoes_des >= 2 %}
+    
+    <span class="bg-secondary text-warning rounded px-2" style="font-size: 1.2rem;">
+      {{ andamento.revisoes_des }}ª Revisão
+    </span>
+
+  {% else %}
+
+    <span class="text-muted" style="font-size: 1rem;">
+      {{ andamento.revisoes_des }}ª Revisão
+    </span>
+    
+  {% endif %}
+
+</div>
+</div>    
 
                 <!-- Ações na base -->
                 <div class="d-flex justify-content-between align-items-center mt-0">

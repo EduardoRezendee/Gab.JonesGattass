@@ -330,12 +330,7 @@
                         </div>
                         <!-- Botões à direita -->
                         <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
-                          <!-- Botão Lembrete -->
-                          <button type="button" class="btn btn-sm toggle-comments shadow-sm"
-                                  data-processo-id="{{ processo.pk|default_if_none:'' }}"
-                                  style="background-color: #02448a; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
-                          </button>
+                          
                           <!-- Botão Remover/Adicionar do Meu Dia -->
                           {% if processo.pk and processo.pk|is_integer and processo.pk in tarefas_ids %}
                             <form method="post" action="{% url 'remover_tarefa' processo.pk %}" class="d-inline">
