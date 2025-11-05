@@ -1,0 +1,23 @@
+
+.logo-container::after {
+    content: ''; /* Obrigatório para ::after funcionar */
+    position: absolute; /* Posição flutuante */
+    
+    /* URL da sua imagem de gorro */
+    background-image: url('/static/app/images/gorro.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+
+    /* Tamanho do gorro (AJUSTE CONFORME NECESSÁRIO) */
+    width: 120px;
+    height: 120px;
+
+    /* Posição do gorro (AJUSTE CONFORME NECESSÁRIO) */
+    /* Estes valores são um ponto de partida */
+    top: -25px;  /* Move 15px para CIMA do topo do logo */
+    left: -50px;  /* Move 20px para a DIREITA da borda esquerda */
+
+    z-index: 10; /* Garante que o gorro fique por cima do logo */
+    transform: rotate(-15deg);
+}
+

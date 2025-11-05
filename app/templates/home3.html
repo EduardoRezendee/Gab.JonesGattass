@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-lg rounded-4 border-0 bg-light">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-mortarboard-fill fs-3 me-3 text-primary"></i>
+                <h1 class="display-5 fw-bold mb-0 text-gradient">Notebook LM</h1>
+            </div>
+
+        </div>
+        <div class="card-body px-4 pb-4">
+            <div class="row g-4">
+                {% with links=prompts %}
+                {% for link in links %}
+                <div class="col-md-6">
+                    <a href="{{ link.url }}" 
+                       target="_blank" 
+                       class="prompt-card text-decoration-none">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <!--<div class="icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
+                                        <i class="bi bi-file-earmark-text text-primary"></i>
+                                    </div>-->
+                                    <div class="icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
+                                        <i class="bi bi-file-earmark-text text-success"></i>
+                                    </div>   
+                                    <!--<h5 class="card-title mb-0 fw-bold text-primary">{{ link.title }}</h5>-->
+                                    <h5 class="card-title mb-0 fw-bold text-success">{{ link.title }}</h5>
+                                </div>
+                                <!--<p class="card-text text-muted small">{{ link.description }}</p>-->
+                                <p class="card-text text-muted small">{{ link.description }}</p>
+                            </div>
+                            <div class="card-footer bg-transparent border-0 text-end">
+                                <span class="btn btn-sm btn-outline-primary rounded-pill">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Acessar
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-gradient {
+        background: linear-gradient(45deg, #2f2f2f, #7f7f7f);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .icon-box {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .transition {
+        transition: all 0.3s ease;
+    }
+    
+    .prompt-card:hover .btn-outline-primary {
+        background-color: #18432a;
+        color: white;
+    }
+    
+    @media (max-width: 767.98px) {
+        .display-5 {
+            font-size: 1.8rem;
+        }
+        
+        .lead {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<script>
+    // Adicione estes dados ao seu contexto do Django ou use JavaScript para renderizar
+    document.addEventListener('DOMContentLoaded', function() {
+            const prompts = [
+        {
+            title: "BANCO DE ACÓRDÃOS",
+            url: "https://notebooklm.google.com/notebook/462a92a1-76e7-48cf-ac4d-32d7d8f16ca3",
+            description: "Banco de acórdãos com a jurisprudência do gabinete do Des. Jones Gattass Dias"
+        },
+        {
+            title: "REGIMENTO TJMT",
+            url: "https://notebooklm.google.com/notebook/619ba683-1f0c-494c-98b6-721b23701c68",
+            description: "Regimento interno do Tribunal de Justiça do Mato Grosso"
+        },
+        {
+            title: "LEGISLAÇÃO PREVIDENCIÁRIA",
+            url: "https://notebooklm.google.com/notebook/d63add00-88af-49dd-b272-89c59b7c41f1",
+            description: "Legislação previdenciária atualizada para consultas rápidas"
+        },
+        {
+            title: "BOLETIM NUGEPNAC 2025",
+            url: "https://notebooklm.google.com/notebook/c21f5202-dc3e-475d-81c6-1aa68bb3c093",
+            description: "Boletim do NUGEPNAC com atualizações e notícias jurídicas de 2025"
+        },
+    ];
+
+        // Se você não estiver usando o contexto do Django para passar os dados,
+        // você pode usar este código para renderizar dinamicamente
+        if (document.querySelectorAll('.row.g-4 .col-md-6').length === 0) {
+            const container = document.querySelector('.row.g-4');
+            
+            prompts.forEach(item => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6';
+                col.innerHTML = `
+                    <a href="${item.url}" 
+                       target="_blank" 
+                       class="prompt-card text-decoration-none">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
+                                        <i class="bi bi-file-earmark-text text-primary"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0 fw-bold text-primary">${item.title}</h5>
+                                </div>
+                                <p class="card-text text-muted small">${item.description}</p>
+                            </div>
+                            <div class="card-footer bg-transparent border-0 text-end">
+                                <span class="btn btn-sm btn-outline-primary rounded-pill">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Acessar
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+                container.appendChild(col);
+            });
+        }
+    });
+</script>
+{% endblock %}
