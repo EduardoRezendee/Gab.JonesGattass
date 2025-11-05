@@ -94,11 +94,11 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 DATABASES = {
 'default': {
- 'ENGINE': 'django.db.backends.postgresql',
- 'NAME': 'gabjonesgattass',
- 'USER': 'postgres',
+'ENGINE': 'django.db.backends.postgresql',
+'NAME': 'gabjonesgattass',
+'USER': 'postgres',
 'PASSWORD': 'G@b202025',
- 'HOST': 'localhost',
+'HOST': 'localhost',
 'PORT': '5432',
 }
 }

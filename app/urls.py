@@ -35,7 +35,7 @@ urlpatterns = [
     
     path('', include('processos.urls')),
     path('', include('publico.urls')),
-
+    path('home3/', views.home3, name='home3'),
 
     # Alteração de senha
     path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change.html'), name='password_change'),

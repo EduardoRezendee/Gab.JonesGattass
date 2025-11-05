@@ -37,6 +37,12 @@
         </a>
       </li>
 
+    <li class="nav-item">
+        <a href="{% url 'home3' %}" class="nav-link {% if request.path == '/home3/' %}active{% endif %}">
+            <i class="bi bi-exclamation-triangle fs-4"></i> <span class="nav-text">Notebook LM</span>
+        </a>
+      </li>
+
     <!-- Perfil e Configurações -->
     <li class="nav-item mt-auto">
       <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">

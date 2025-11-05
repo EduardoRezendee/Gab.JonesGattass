@@ -19,7 +19,8 @@ from django.db.models.functions import Cast
 from collections import defaultdict
 from processos.models import ProcessoAndamento
 
-
+def home3(request):
+    return render(request, 'home3.html')
 # MÉTRICAS E GAMIFICAÇÃO
 from .metrics import (
     get_process_metrics,
