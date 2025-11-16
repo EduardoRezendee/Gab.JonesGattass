@@ -236,7 +236,8 @@ def home(request):
             key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
                         0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['tipo'] == "Prioridade" else 4,                       
+                        0 if p['tipo'] == "Prioridade" else 4,  
+                         0 if p['tipo'] == "Monocrática" else 5,                    
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -264,7 +265,8 @@ def home(request):
             key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
                         0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['tipo'] == "Prioridade" else 4,                       
+                        0 if p['tipo'] == "Prioridade" else 4, 
+                        0 if p['tipo'] == "Monocrática" else 5,                      
                         -(p['dias_no_gabinete'] or 0))
         )
 
@@ -440,7 +442,8 @@ def home(request):
             processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
                         0 if p['especie'] == "EDCIV" else 2,
                         0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['tipo'] == "Prioridade" else 4,                       
+                        0 if p['tipo'] == "Prioridade" else 4,
+                        0 if p['tipo'] == "Monocrática" else 5,                      
                         -(p['dias_no_gabinete'] or 0))
         )
 

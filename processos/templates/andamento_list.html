@@ -154,6 +154,18 @@
                                                                     </button>
                                                                     <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
                                                                         {% if andamento.fase.fase == "Elaboração" %}
+                                                                            {% if processo.tipo and processo.tipo.tipo == "Monocrática" %}
+                                                                            <li>
+                                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button type="submit" class="dropdown-item text-success">
+                                                                                        <i class="bi bi-check-circle me-1"></i> Concluir Processo
+                                                                                    </button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% else %}
+                                                                            
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
@@ -163,6 +175,8 @@
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
+                                                                        {% endif %}
+
 
                                                                         <!--{% if andamento.fase.fase == "Revisão" %}
                                                                             <li>
@@ -247,6 +261,7 @@
                                                                 </div>
                                                                 {% endif %}
                                                             </div>
+                                                            
                                                         </div>
                                                     </div>
 

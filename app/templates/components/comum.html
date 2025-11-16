@@ -234,6 +234,7 @@
                         height: 100%;
                          background-color: {% if processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %}#EF4444
                          {% elif processo.tipo == 'Prioridade' %}#FACC15
+                         {% elif processo.tipo == 'Monocrática' %}#0DCAF0
                          {% else %}#083464{% endif %};
                         border-radius: 2px;">
                       </span>
@@ -280,6 +281,8 @@
                                     bg-warning-subtle text-warning
                                   {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Revisitado'%}
                                     bg-danger-subtle text-danger
+                                  {% elif processo.tipo == 'Monocrática' %}
+                                    bg-info-subtle text-info
                                   {% else %}
                                     bg-secondary-subtle text-secondary
                                   {% endif %}
@@ -287,8 +290,10 @@
                                   
                                   <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
 
-                                  {% if processo.tipo == "Prioridade" %}
+                                  {% if processo.tipo == "Prioridade"%}
                                     <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
+                                  {% elif processo.tipo == "Monocrática"%}
+                                    <i class="bi bi-exclamation-circle-fill text-info ms-1" title="Monocrática"></i>
                                   {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" or processo.especie == 'Revisitado'%}
                                     <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado"></i>
                                   {% endif %}
@@ -302,6 +307,8 @@
                             <span class="ms-1 
                               {% if processo.especie == 'EDCIV' or processo.especie == 'Voto Vista' or processo.especie == 'Revisitado' %}
                                 text-danger fw-bold
+                              {% elif processo.tipo == 'Monocrática' %}
+                                text-info fw-bold
                               {% elif processo.tipo == 'Prioridade' %}
                                 text-warning fw-bold
                               {% else %}
@@ -375,51 +382,55 @@
                           </button>
                         </div>
                         <div class="d-flex gap-2 align-items-center">
-                          <!-- Botões condicionais com base na fase atual -->
                           {% if processo.fase_atual == 'Elaboração' %}
+
+                            {% if processo.tipo == 'Monocrática' %}
+                                <form method="post" action="{% url 'andamento_concluir' processo.andamento_pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="origem" value="home">
+                                    <button type="submit" class="btn btn-sm shadow-sm"
+                                            onclick="return confirm('Tem certeza que deseja concluir este processo?');"
+                                            style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                                        <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
+                                    </button>
+                                </form>
+
+                            {% else %}
+                                <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="nova_fase" value="Revisão Des">
+                                    <input type="hidden" name="origem" value="home">
+                                    <button type="submit" class="btn btn-sm btn-primary shadow-sm"
+                                            onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
+                                            style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                        <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão Des
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% elif processo.fase_atual == 'Devolvido' %}
                             <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="nova_fase" value="Revisão Des">
-                              <input type="hidden" name="origem" value="home">
-                              <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                      onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
-                                      style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão Des
-                              </button>
+                                {% csrf_token %}
+                                <input type="hidden" name="nova_fase" value="Revisão Des">
+                                <input type="hidden" name="origem" value="home">
+                                <button type="submit" class="btn btn-sm shadow-sm"
+                                        onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
+                                        style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                                    <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Des
+                                </button>
                             </form>
-                          <!--{% elif processo.fase_atual == 'Correção' %}
-                            <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="nova_fase" value="Revisão">
-                              <input type="hidden" name="origem" value="home">
-                              <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                      onclick="return confirm('Tem certeza que deseja enviar para Revisão?');"
-                                      style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
-                              </button>
-                            </form>-->
-                          {% elif processo.fase_atual == 'Devolvido' %}
-                            <form method="post" action="{% url 'andamento_enviar' processo.andamento_pk %}" class="d-inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="nova_fase" value="Revisão Des">
-                              <input type="hidden" name="origem" value="home">
-                              <button type="submit" class="btn btn-sm shadow-sm"
-                                      onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
-                                      style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                                <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Des
-                              </button>
-                            </form>
-                          {% elif processo.fase_atual == 'L. PJE' %}
+
+                        {% elif processo.fase_atual == 'L. PJE' %}
                             <form method="post" action="{% url 'andamento_concluir' processo.andamento_pk %}" class="d-inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="origem" value="home">
-                              <button type="submit" class="btn btn-sm shadow-sm"
-                                      onclick="return confirm('Tem certeza que deseja concluir este processo?');"
-                                      style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                                <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
-                              </button>
+                                {% csrf_token %}
+                                <input type="hidden" name="origem" value="home">
+                                <button type="submit" class="btn btn-sm shadow-sm"
+                                        onclick="return confirm('Tem certeza que deseja concluir este processo?');"
+                                        style="background: linear-gradient(135deg, #017013, #017013); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                                    <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
+                                </button>
                             </form>
-                          {% endif %}
+
+                        {% endif %}
                           <!-- Link para detalhes -->
                           <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}"
                              title="Ver detalhes"

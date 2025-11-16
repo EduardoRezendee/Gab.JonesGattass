@@ -428,7 +428,7 @@ def importar_processos_view(request):
 
 
             # Verificar colunas esperadas
-            colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade']
+            colunas_esperadas = ['numeroProcesso', 'classeJudicial', 'assuntoPrincipal', 'tagsProcessoList', 'dataChegada', 'prioridade', 'nomeTarefa']
             colunas_faltando = [col for col in colunas_esperadas if col not in df.columns]
             if colunas_faltando:
                 messages.error(request, f"Colunas faltando no CSV: {', '.join(colunas_faltando)}")
@@ -443,7 +443,17 @@ def importar_processos_view(request):
 
             processos_inseridos = 0
             processos_ignorados = 0
+            try:
+                tipo_monocratica = Tipo.objects.get(tipo="Monocrática")
+            except Tipo.DoesNotExist:
+                messages.error(request, "Erro crítico: O tipo 'Monocrática' não existe no banco de dados. Cadastre-o e tente novamente.")
+                return render(request, 'importar_processos.html')
+            except Exception as e:
+                 messages.error(request, f"Erro ao buscar o tipo 'Monocrática': {str(e)}")
+                 return render(request, 'importar_processos.html')
 
+            processos_inseridos = 0
+            processos_ignorados = 0
             for index, row in df.iterrows():
                 try:
                     numero_processo = row['numeroProcesso']
@@ -483,11 +493,20 @@ def importar_processos_view(request):
                             }
                         )
 
-                    #Marcar despacho como True
+                    # Garantir que temos um valor limpo para nomeTarefa
+                    nome_tarefa_limpo = ""
+                    if pd.notna(row.get('nomeTarefa')):
+                        nome_tarefa_limpo = row['nomeTarefa'].strip() # Pega o valor e remove espaços
+
+                    # Marcar despacho como True (usando a nova variável limpa)
                     despacho = False
-                    if pd.notna(row.get('nomeTarefa')) and 'Minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
+                    if 'Minutar despacho ou decisão' in nome_tarefa_limpo.lower():
                         despacho = True
 
+                    # Processar o Tipo (Monocrática) (usando a mesma variável limpa)
+                    tipo_processo = None  # Inicia como nulo por padrão
+                    if nome_tarefa_limpo == "Minutar decisão monocrática":
+                        tipo_processo = tipo_monocratica # Atribui o objeto que buscamos
 
                     # Processar usuário a partir das tags
                     usuario = None
@@ -544,7 +563,8 @@ def importar_processos_view(request):
                             'dt_atualizacao': timezone.now(),
                             'data_dist': timezone.now(),
                             'concluido': False,
-                            'despacho': despacho,  # Marcar despacho como True se necessário
+                            'despacho': despacho,
+                            'tipo': tipo_processo,  # Marcar despacho como True se necessário
                         }
                     )
                     processos_inseridos += 1
@@ -1062,10 +1082,10 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
         andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         
         # Verificar se o processo está na fase "L. PJE"
-        if andamento.fase.fase != "L. PJE":
-            messages.error(request, "Processo só pode ser concluído na fase L. PJE.")
-            origem = request.POST.get("origem", "andamento_list")
-            return redirect("home" if origem == "home" else f"andamento_list?processo={andamento.processo.pk}")
+        #if andamento.fase.fase != "L. PJE":
+        #    messages.error(request, "Processo só pode ser concluído na fase L. PJE.")
+        #    origem = request.POST.get("origem", "andamento_list")
+        #    return redirect("home" if origem == "home" else f"andamento_list?processo={andamento.processo.pk}")
 
         # Finaliza o andamento atual
         andamento.dt_conclusao = now()
