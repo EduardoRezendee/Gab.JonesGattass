@@ -43,8 +43,13 @@
             {% for andamento in andamento_metrics %}
               <div id="processo-{{ andamento.processo_pk }}"
                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
-                  {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}border border-danger text-danger
-                  {% elif andamento.tipo == 'Prioridade' %}border border-warning text-warning{% endif %}"
+                  {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
+                    border border-danger text-danger
+                  {% elif andamento.tipo == 'Prioridade' %}
+                    border border-warning text-warning
+                  {% elif andamento.tipo == 'Urgentíssimo' %}  
+                    bg-warning text-dark border border-warning
+                  {% endif %}"
                   style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
                 <span style="
@@ -53,8 +58,9 @@
                   left: 0;
                   width: 5px;
                   height: 100%;
-                  background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}#EF4444
+                  background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}#EF4444
                   {% elif andamento.tipo == 'Prioridade' %}#FACC15
+                  {% elif andamento.tipo == 'Urgentíssimo' %}#FF8C00
                   {% else %}#083464{% endif %};
                   border-radius: 2px;">
                 </span>
@@ -82,8 +88,10 @@
                                 <span class="badge 
                                   {% if andamento.tipo == 'Prioridade' %}
                                     bg-warning-subtle text-warning
-                                  {% elif andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado'%}
+                                  {% elif andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
                                     bg-danger-subtle text-danger
+                                  {% elif andamento.tipo == 'Urgentíssimo' %}  
+                                    bg-warning text-dark border border-warning
                                   {% else %}
                                     bg-secondary-subtle text-secondary
                                   {% endif %}
@@ -93,8 +101,10 @@
 
                                   {% if andamento.tipo == "Prioridade" %}
                                     <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
-                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado'%}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado"></i>
+                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência'%}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
+                                  {% elif andamento.tipo == "Urgentíssimo" %}
+                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
                                   {% endif %}
                                 </span>
                               {% endif %}
@@ -120,8 +130,9 @@
                     <p class="mb-1">
                       <i class="bi bi-box-seam me-2"></i>
                       <strong>Espécie:</strong>
-                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}text-danger fw-bold
+                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger fw-bold
                       {% elif andamento.tipo == 'Prioridade' %}text-warning
+                      {% elif andamento.tipo == 'Urgentíssimo' %}text-laranja fw-bold
                       {% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
@@ -202,7 +213,7 @@
                       </button>
                     </form>
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
+                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
                     </a>
                   </div>
                 </div>

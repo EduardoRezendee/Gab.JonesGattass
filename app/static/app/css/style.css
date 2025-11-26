@@ -21,3 +21,12 @@
     transform: rotate(-15deg);
 }
 
+/* Isso cria o fundo laranja claro e a letra laranja escura */
+.bg-laranja-subtle {
+    background-color: #ffebd3 !important; /* Fundo Laranja clarinho */
+    color: #cc5200 !important;            /* Texto Laranja escuro */
+    border: 1px solid #ffebd3;            /* Opcional: borda para acabamento */
+}
+.text-laranja {
+    color: #fd7e14 !important; /* Cor laranja do texto */
+}
