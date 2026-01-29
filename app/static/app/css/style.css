@@ -4,22 +4,23 @@
     position: absolute; /* Posição flutuante */
     
     /* URL da sua imagem de gorro */
-    background-image: url('/static/app/images/gorro.png');
+    background-image: url('/static/app/images/coroa.png');
     background-size: contain;
     background-repeat: no-repeat;
 
     /* Tamanho do gorro (AJUSTE CONFORME NECESSÁRIO) */
-    width: 120px;
-    height: 120px;
+    width: 200px;
+    height: 200px;
 
     /* Posição do gorro (AJUSTE CONFORME NECESSÁRIO) */
     /* Estes valores são um ponto de partida */
-    top: -25px;  /* Move 15px para CIMA do topo do logo */
-    left: -50px;  /* Move 20px para a DIREITA da borda esquerda */
+    top: -45px;  /* Move 15px para CIMA do topo do logo */
+    left: -65px;  /* Move 20px para a DIREITA da borda esquerda */
 
     z-index: 10; /* Garante que o gorro fique por cima do logo */
-    transform: rotate(-15deg);
+    transform: rotate(-20deg);
 }
+
 
 /* Isso cria o fundo laranja claro e a letra laranja escura */
 .bg-laranja-subtle {
@@ -29,4 +30,22 @@
 }
 .text-laranja {
     color: #fd7e14 !important; /* Cor laranja do texto */
+}
+
+.logo-container::before {
+    content: ''; /* Obrigatório */
+    position: absolute;
+    
+    /* URL da nova imagem */
+    background-image: url('/static/app/images/mascara.png'); 
+    background-size: contain;
+    background-repeat: no-repeat;
+
+    /* Ajuste o tamanho e posição para não bater com a coroa */
+    width: 100px; 
+    height: 100px;
+    top: 20px;   /* Exemplo: posição diferente */
+    right: -10px; /* Exemplo: fixado na direita */
+    transform: rotate(-30deg);
+    z-index: 11;  /* Pode ajustar para ficar acima ou abaixo da coroa */
 }
