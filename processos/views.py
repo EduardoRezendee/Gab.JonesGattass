@@ -444,6 +444,17 @@ def importar_processos_view(request):
 
             processos_inseridos = 0
             processos_ignorados = 0
+            try:
+                tipo_monocratica = Tipo.objects.get(tipo="Monocrática")
+            except Tipo.DoesNotExist:
+                messages.error(request, "Erro crítico: O tipo 'Monocrática' não existe no banco de dados. Cadastre-o e tente novamente.")
+                return render(request, 'importar_processos.html')
+            except Exception as e:
+                 messages.error(request, f"Erro ao buscar o tipo 'Monocrática': {str(e)}")
+                 return render(request, 'importar_processos.html')
+
+            processos_inseridos = 0
+            processos_ignorados = 0
 
             for index, row in df.iterrows():
                 try:
@@ -484,10 +495,20 @@ def importar_processos_view(request):
                             }
                         )
 
-                    #Marcar despacho como True
+                      # Garantir que temos um valor limpo para nomeTarefa
+                    nome_tarefa_limpo = ""
+                    if pd.notna(row.get('nomeTarefa')):
+                        nome_tarefa_limpo = row['nomeTarefa'].strip() # Pega o valor e remove espaços
+
+                    # Marcar despacho como True (usando a nova variável limpa)
                     despacho = False
-                    if pd.notna(row.get('nomeTarefa')) and 'Minutar despacho ou decisão' in row['nomeTarefa'].strip().lower():
+                    if 'Minutar despacho ou decisão' in nome_tarefa_limpo.lower():
                         despacho = True
+
+                    # Processar o Tipo (Monocrática) (usando a mesma variável limpa)
+                    tipo_processo = None  # Inicia como nulo por padrão
+                    if nome_tarefa_limpo == "Minutar decisão monocrática":
+                        tipo_processo = tipo_monocratica 
 
 
                     # Processar usuário a partir das tags
@@ -546,7 +567,8 @@ def importar_processos_view(request):
                             #'dt_criacao': timezone.now(),#
                             'dt_atualizacao': timezone.now(),
                             'data_dist': timezone.now(),
-                            'despacho': despacho,  # Marcar despacho como True se necessário
+                            'despacho': despacho,
+                            'tipo': tipo_processo,  # Marcar despacho como True se necessário
                         }
                     )
                     processos_inseridos += 1
