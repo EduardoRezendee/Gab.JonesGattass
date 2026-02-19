@@ -1098,10 +1098,7 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
         andamento = get_object_or_404(ProcessoAndamento, pk=pk)
         
         # Verificar se o processo está na fase "L. PJE"
-        if andamento.fase.fase != "L. PJE":
-            messages.error(request, "Processo só pode ser concluído na fase L. PJE.")
-            origem = request.POST.get("origem", "andamento_list")
-            return redirect("home" if origem == "home" else f"andamento_list?processo={andamento.processo.pk}")
+        
 
         # Finaliza o andamento atual
         andamento.dt_conclusao = now()
