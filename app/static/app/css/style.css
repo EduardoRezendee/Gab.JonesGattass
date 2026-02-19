@@ -4,7 +4,7 @@
     position: absolute; /* Posição flutuante */
     
     /* URL da sua imagem de gorro */
-    background-image: url('/static/app/images/coroa.png');
+    background-image: url('');
     background-size: contain;
     background-repeat: no-repeat;
 
@@ -37,7 +37,7 @@
     position: absolute;
     
     /* URL da nova imagem */
-    background-image: url('/static/app/images/mascara.png'); 
+    background-image: url(''); 
     background-size: contain;
     background-repeat: no-repeat;
 

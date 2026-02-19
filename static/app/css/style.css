@@ -45,7 +45,7 @@
     width: 100px; 
     height: 100px;
     top: 65px;   /* Exemplo: posição diferente */
-    right: -15px; /* Exemplo: fixado na direita */
+    right: -25px; /* Exemplo: fixado na direita */
     transform: rotate(-30deg);
     z-index: 11;  /* Pode ajustar para ficar acima ou abaixo da coroa */
 }
