@@ -582,7 +582,7 @@ def importar_processos_view(request):
                             fase=fase_inicial,
                             usuario=usuario,
                             status=status_inicial,
-                            andamento="Processo importado automaticamente via CSV."
+                            andamento="Início da Elaboração"
                         )
 
                 except Exception as e:  # Linha 236 - Garantindo indentação correta

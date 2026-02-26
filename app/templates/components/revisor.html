@@ -30,12 +30,20 @@
           </form>
         </div>
 
+        <!-- Lista de Processos -->
         {% if andamento_metrics %}
           <div class="list-group">
             {% for andamento in andamento_metrics %}
-              <div id="processo-{{ andamento.pk }}"
-                   class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative"
-                   style="display: flex; flex-direction: column; gap: 10px; background-color: rgba(223, 222, 222, 0.062);">
+              <div id="processo-{{ andamento.processo_pk }}"
+                  class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
+                  {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
+                    border border-danger text-danger
+                  {% elif andamento.tipo == 'Prioridade' %}
+                    border border-warning text-warning
+                  {% elif andamento.tipo == 'Urgentíssimo' %}  
+                    bg-warning text-dark border border-warning
+                  {% endif %}"
+                  style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
                 <span style="
                   position: absolute;
@@ -43,50 +51,95 @@
                   left: 0;
                   width: 5px;
                   height: 100%;
-                  background-color: {% if andamento.especie == 'Liminar' %}#EF4444{% else %}#808000{% endif %};
+                  background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}#EF4444
+                  {% elif andamento.tipo == 'Prioridade' %}#FACC15
+                  {% elif andamento.tipo == 'Urgentíssimo' %}#FF8C00
+                  {% else %}#083464{% endif %};
                   border-radius: 2px;">
                 </span>
+
+                <!-- Novos indicadores: despacho, prioridade e tipo -->
+                          {% if andamento.despacho or andamento.prioridade_urgente or andamento.tipo or andamento.especie %}
+                            <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
+                              {% if andamento.despacho %}
+                                <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
+                                  <i class="bi bi-file-earmark-text"></i>
+                                </span>
+                              {% endif %}
+                              {% if andamento.prioridade_urgente %}
+                                <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- Sino -->
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    <!-- Ondas -->
+                                    <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
+                                  </svg>
+                                </span>
+                              {% endif %}
+                              {% if andamento.tipo %}
+                                <span class="badge 
+                                  {% if andamento.tipo == 'Prioridade' %}
+                                    bg-warning-subtle text-warning
+                                  {% elif andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
+                                    bg-danger-subtle text-danger
+                                  {% elif andamento.tipo == 'Urgentíssimo' %}  
+                                    bg-warning text-dark border border-warning
+                                  {% else %}
+                                    bg-secondary-subtle text-secondary
+                                  {% endif %}
+                                  rounded-pill px-3 py-2 d-flex align-items-center" title="Tipo">
+                                  
+                                  <i class="bi bi-briefcase me-1"></i> {{ andamento.tipo }}
+
+                                  {% if andamento.tipo == "Prioridade" %}
+                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
+                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência'%}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
+                                  {% elif andamento.tipo == "Urgentíssimo" %}
+                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
+                                  {% endif %}
+                                </span>
+                              {% endif %}
+                            </p>
+                          {% endif %}
 
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <!-- Informações à esquerda -->
                   <div class="flex-grow-1">
-                    <p class="mb-1 d-flex align-items-center" style="color: #1F2937;">
-                      <i class="bi bi-file-earmark-text me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Processo:</strong>
-                      <span id="numeroProcesso-{{ andamento.pk }}" class="ms-1" style="color: #1F2937;">{{ andamento.numero_processo }}</span>
+                    <p class="mb-1 d-flex align-items-center">
+                      <i class="bi bi-file-earmark-text me-2"></i>
+                      <strong>Processo:</strong>
+                      <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo }}</span>
                       <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
-                         onclick="copiarNumero('{{ andamento.pk }}')"
-                         title="Copiar Número"
-                         style="cursor: pointer; color: #0b3370;"></i>
+                         onclick="copiarNumero('{{ andamento.processo_pk }}')"
+                         title="Copiar Número" style="cursor: pointer;"></i>
                     </p>
-                    <p class="mb-1" style="color: #1F2937;">
-                      <i class="bi bi-person-circle me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Responsável:</strong>
-                      <span class="ms-1" style="color: #1F2937;">{{ andamento.usuario_processo }}</span>
+                    <p class="mb-1">
+                      <i class="bi bi-person-circle me-2"></i>
+                      <strong>Responsável:</strong>
+                      <span class="ms-1">{{ andamento.usuario_processo }}</span>
                     </p>
-                    <p class="mb-1" style="color: #1F2937;">
-                      <i class="bi bi-box-seam me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Espécie:</strong>
-                      <span class="ms-1 {% if andamento.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
+                    <p class="mb-1">
+                      <i class="bi bi-box-seam me-2"></i>
+                      <strong>Espécie:</strong>
+                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger fw-bold
+                      {% elif andamento.tipo == 'Prioridade' %}text-warning
+                      {% elif andamento.tipo == 'Urgentíssimo' %}text-laranja fw-bold
+                      {% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
                     </p>
-                    <p class="mb-1" style="color: #1F2937;">
-                      <i class="bi bi-calendar2-date me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Data Distribuição:</strong>
-                      <span class="ms-1" style="color: #1F2937;">{{ andamento.data_dist|date:"d/m/Y" }}</span>
+                    <p class="mb-1">
+                      <i class="bi bi-tag me-2"></i>
+                      <strong>Tema:</strong>
+                      <span class="ms-1 text-black">{{ andamento.tema|default:"Sem tema" }}</span>
                     </p>
-                    <p class="mb-1" style="color: #1F2937;">
-                      <i class="bi bi-calendar-check me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Enviado para Revisão:</strong>
-                      <span class="ms-1" style="color: #1F2937;">{{ andamento.data_envio_revisao|date:"d/m/Y H:i" }}</span>
+                    <p class="mb-1">
+                      <i class="bi bi-clock me-2"></i>
+                      <strong>Dias no Gabinete:</strong>
+                      <span class="ms-1">{{ andamento.dias_no_gabinete }}</span>
                     </p>
-                    <p class="mb-1" style="color: #1F2937;">
-                      <i class="bi bi-clock me-2" style="color: #0b3370;"></i>
-                      <strong style="color: #1F2937;">Dias no Gabinete:</strong>
-                      <span class="ms-1" style="color: #1F2937;">{{ andamento.dias_no_gabinete }}</span>
-                    </p>
-                  </div>
                   <!-- Botões à direita -->
                   <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
                     <button type="button" class="btn btn-sm toggle-comments shadow-sm"
@@ -119,16 +172,13 @@
                         </button>
                       </form>
                     {% endif %}
-                    <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}"
-                      title="Ver detalhes"
-                      class="text-decoration-none"
-                      style="color: #1F2937;">
-                      <i class="bi bi-arrow-right {% if andamento.especie == 'Liminar' %}text-danger{% else %}text-primary{% endif %}"
-                        style="font-size: 1.5rem; color: #1F2937;"></i>
+                    <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
+                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
                     </a>
                   </div>
                 </div>
               </div>
+            </div>
 
               <!-- Caixa de Comentários Flutuante -->
               <div id="comment-box-{{ andamento.pk }}"

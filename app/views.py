@@ -152,7 +152,19 @@ def home(request):
                     'tema': processo.tema.nome if processo.tema else None,
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios]
                 })
-        andamento_metrics.sort(key=lambda p: (0 if p['especie'] == "Liminar" else 1, p['data_dist']))
+        andamento_metrics.sort(
+    key=lambda p: (
+        0 if p.get('especie') == "Voto Vista" else 1,
+        0 if p.get('especie') == "EDCIV" else 2,
+        0 if p.get('especie') == "Revisitado" else 3,
+        0 if p.get('especie') == "Voto de Divergência" else 3,
+        0 if p.get('tipo') == "Urgentíssimo" else 4,
+        0 if p.get('tipo') == "Prioridade" else 5,
+        0 if p.get('tipo') == "Monocrática" else 6,                      
+        -(p.get('dias_no_gabinete') or 0)
+    )
+)
+
 
  # --- VISÃO DA DESEMBARGADORA ---
 
