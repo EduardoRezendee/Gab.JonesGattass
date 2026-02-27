@@ -564,7 +564,7 @@ def importar_processos_view(request):
                             'usuario': usuario,
                             'antigo': antigo,
                             'prioridade_urgente': prioridade_urgente,
-                            #'dt_criacao': timezone.now(),#
+                            'dt_criacao': timezone.now(),
                             'dt_atualizacao': timezone.now(),
                             'data_dist': timezone.now(),
                             'despacho': despacho,
@@ -572,18 +572,7 @@ def importar_processos_view(request):
                         }
                     )
                     processos_inseridos += 1
-                    if created:
-                        # Se o processo foi criado agora, define o status inicial
-                        fase_inicial, _ = Fase.objects.get_or_create(fase="Elaboração") # ou sua fase padrão
-                        status_inicial, _ = Status.objects.get_or_create(status="Pendente")
-                        
-                        ProcessoAndamento.objects.create(
-                            processo=processo,
-                            fase=fase_inicial,
-                            usuario=usuario,
-                            status=status_inicial,
-                            andamento="Início da Elaboração"
-                        )
+                    
 
                 except Exception as e:  # Linha 236 - Garantindo indentação correta
                     print(f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
