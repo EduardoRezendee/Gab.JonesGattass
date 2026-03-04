@@ -144,6 +144,7 @@ def home(request):
                     'status': ultimo_andamento.status.status,
                     'data_inicio': ultimo_andamento.dt_inicio,
                     'data_conclusao': ultimo_andamento.dt_conclusao,
+                    'tipo': processo.tipo.tipo if processo.tipo else "Sem tipo",
                     'link_doc': ultimo_andamento.link_doc,
                     'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                     'especie': especie_nome,
@@ -153,16 +154,16 @@ def home(request):
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios]
                 })
         andamento_metrics.sort(
-    key=lambda p: (
-        0 if p.get('especie') == "Voto Vista" else 1,
-        0 if p.get('especie') == "EDCIV" else 2,
-        0 if p.get('especie') == "Revisitado" else 3,
-        0 if p.get('especie') == "Voto de Divergência" else 3,
-        0 if p.get('tipo') == "Urgentíssimo" else 4,
-        0 if p.get('tipo') == "Prioridade" else 5,
-        0 if p.get('tipo') == "Monocrática" else 6,                      
-        -(p.get('dias_no_gabinete') or 0)
-    )
+                    key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,
+                        0 if p.get('tipo') == "Redistribuído" else 2,
+                        0 if p.get('especie') == "Voto Vista" else 3,
+                        0 if p.get('especie') == "EDCIV" else 4,
+                        0 if p.get('especie') == "Revisitado" else 5,
+                        0 if p.get('especie') == "Voto de Divergência" else 6,
+                        0 if p.get('tipo') == "Urgentíssimo" else 7,
+                        0 if p.get('tipo') == "Prioridade" else 8,
+                        0 if p.get('tipo') == "Monocrática" else 9,                      
+                        -(p.get('dias_no_gabinete') or 0))
 )
 
 
@@ -245,14 +246,16 @@ def home(request):
 
         # Ordenação: Plantão primeiro, depois Liminar, depois mais tempo no gabinete
         andamento_metrics.sort(
-            key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
-                        0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['especie'] == "Voto de Divergência" else 3,
-                        0 if p['tipo'] == "Urgentíssimo" else 4,
-                        0 if p['tipo'] == "Prioridade" else 5,
-                        0 if p['tipo'] == "Monocrática" else 6,                      
-                        -(p['dias_no_gabinete'] or 0))
+            key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,
+                        0 if p.get('tipo') == "Redistribuído" else 2,
+                        0 if p.get('especie') == "Voto Vista" else 3,
+                        0 if p.get('especie') == "EDCIV" else 4,
+                        0 if p.get('especie') == "Revisitado" else 5,
+                        0 if p.get('especie') == "Voto de Divergência" else 6,
+                        0 if p.get('tipo') == "Urgentíssimo" else 7,
+                        0 if p.get('tipo') == "Prioridade" else 8,
+                        0 if p.get('tipo') == "Monocrática" else 9,                      
+                        -(p.get('dias_no_gabinete') or 0))
         )
 
         # Lista de mais antigos
@@ -276,14 +279,16 @@ def home(request):
                 'tipo': tipo_nome,
             })
         processos_antigos_detalhados.sort(
-            key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
-                        0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['especie'] == "Voto de Divergência" else 3,
-                        0 if p['tipo'] == "Urgentíssimo" else 4,
-                        0 if p['tipo'] == "Prioridade" else 5,
-                        0 if p['tipo'] == "Monocrática" else 6,                      
-                        -(p['dias_no_gabinete'] or 0))
+            key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,
+                        0 if p.get('tipo') == "Redistribuído" else 2,
+                        0 if p.get('especie') == "Voto Vista" else 3,
+                        0 if p.get('especie') == "EDCIV" else 4,
+                        0 if p.get('especie') == "Revisitado" else 5,
+                        0 if p.get('especie') == "Voto de Divergência" else 6,
+                        0 if p.get('tipo') == "Urgentíssimo" else 7,
+                        0 if p.get('tipo') == "Prioridade" else 8,
+                        0 if p.get('tipo') == "Monocrática" else 9,                      
+                        -(p.get('dias_no_gabinete') or 0))
         )
 
         # Lista de liminares
@@ -455,14 +460,17 @@ def home(request):
                             for c in comentarios_dict.get(processo.pk, [])
                         ]
                     })
-            processos_detalhados.sort(key=lambda p: (0 if p['especie'] == "Voto Vista" else 1,
-                        0 if p['especie'] == "EDCIV" else 2,
-                        0 if p['especie'] == "Revisitado" else 3,
-                        0 if p['especie'] == "Voto de Divergência" else 3,
-                        0 if p['tipo'] == "Urgentíssimo" else 4,
-                        0 if p['tipo'] == "Prioridade" else 5,
-                        0 if p['tipo'] == "Monocrática" else 6,                      
-                        -(p['dias_no_gabinete'] or 0))
+            processos_detalhados.sort(
+                key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,
+                            0 if p.get('tipo') == "Redistribuído" else 2,
+                            0 if p.get('especie') == "Voto Vista" else 3,
+                            0 if p.get('especie') == "EDCIV" else 4,
+                            0 if p.get('especie') == "Revisitado" else 5,
+                            0 if p.get('especie') == "Voto de Divergência" else 6,
+                            0 if p.get('tipo') == "Urgentíssimo" else 7,
+                            0 if p.get('tipo') == "Prioridade" else 8,
+                            0 if p.get('tipo') == "Monocrática" else 9,                      
+                            -(p.get('dias_no_gabinete') or 0))
         )
 
             fixed_phase_order = ['Elaboração', 'Revisão', 'Correção', 'Revisão Des', 'Devolvido', 'L. PJE']

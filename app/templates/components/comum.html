@@ -226,19 +226,19 @@
                          class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative"
                          style="display: flex; flex-direction: column; gap: 10px; background-color: rgba(223, 222, 222, 0);">
                       <!-- Listras verticais para destaque -->
-                      <span style="
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        width: 5px;
-                        height: 100%;
-                         background-color: {% if processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Voto de Divergência' %}#EF4444
-                         {% elif processo.tipo == 'Prioridade' %}#FACC15
-                         {% elif processo.tipo == 'Monocrática' %}#0DCAF0
-                         {% elif processo.tipo == 'Urgentíssimo' %}#FF8C00
-                         {% else %}#083464{% endif %};
-                        border-radius: 2px;">
-                      </span>
+                        <span style="
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          width: 5px;
+                          height: 100%;
+                          background-color: {% if processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Revisitado' or processo.especie == 'Voto de Divergência' %}#EF4444
+                          {% elif processo.tipo == 'Prioridade' %}#FACC15
+                          {% elif processo.tipo == 'Urgentíssimo' %}#FF8C00
+                          {% elif processo.tipo == '2ª Correção' or processo.tipo == 'Redistribuído' %}#10B981
+                          {% else %}#083464{% endif %};
+                          border-radius: 2px;">
+                        </span>
 
                       <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                         <!-- Informações à esquerda -->
@@ -258,49 +258,36 @@
                             {% endif %}
                           </p>
                           <!-- Novos indicadores: despacho, prioridade e tipo -->
-                          {% if processo.despacho or processo.prioridade_urgente or processo.tipo %}
+                          {% if processo.despacho or processo.prioridade_urgente or processo.tipo or processo.especie %}
                             <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
                               {% if processo.despacho %}
-                                <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
-                                  <i class="bi bi-file-earmark-text"></i>
-                                </span>
+                                <span class="badge bg-info text-dark rounded-pill me-2">...</span>
                               {% endif %}
+
                               {% if processo.prioridade_urgente %}
-                                <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <!-- Sino -->
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                                    <!-- Ondas -->
-                                    <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
-                                  </svg>
-                                </span>
+                                <span class="badge bg-danger rounded-pill me-2">...</span>
                               {% endif %}
+
                               {% if processo.tipo %}
                                 <span class="badge 
-                                  {% if processo.tipo == 'Prioridade' %}
-                                    bg-warning-subtle text-warning
-                                  {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Revisitado' or processo.especie == 'Voto de Divergência' %}
-                                    bg-danger-subtle text-danger
-                                  {% elif processo.tipo == 'Monocrática' %}
-                                    bg-info-subtle text-info
-                                  {% elif processo.tipo == 'Urgentíssimo' %}  
-                                    bg-warning text-dark border border-warning
-                                  {% else %}
-                                    bg-secondary-subtle text-secondary
+                                  {% if processo.tipo == 'Prioridade' %} bg-warning-subtle text-warning
+                                  {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %} bg-danger-subtle text-danger
+                                  {% elif processo.tipo == 'Urgentíssimo' %} bg-warning text-dark border border-warning
+                                  {% elif processo.tipo == '2ª Correção' or processo.tipo == 'Redistribuído' %} bg-success-subtle text-success
+                                  {% else %} bg-secondary-subtle text-secondary
                                   {% endif %}
-                                  rounded-pill px-2 py-1 d-flex align-items-center" title="Tipo">
-                                  
+                                  rounded-pill px-3 py-2 d-flex align-items-center">
                                   <i class="bi bi-briefcase me-1"></i> {{ processo.tipo }}
 
-                                  {% if processo.tipo == "Prioridade"%}
+                                  {% if processo.tipo == "Prioridade" %}
                                     <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
-                                  {% elif processo.tipo == "Monocrática"%}
-                                    <i class="bi bi-exclamation-circle-fill text-info ms-1" title="Monocrática"></i>
-                                  {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" or processo.especie == 'Revisitado' or processo.especie == 'Voto de Divergência' %}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado/ Voto de Divergência"></i>
+                                  {% elif processo.especie == "Voto Vista" or processo.especie == "EDCIV" or processo.especie == 'Revisitado' or processo.especie == 'Voto de Divergência'%}
+                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
                                   {% elif processo.tipo == "Urgentíssimo" %}
                                     <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
+                                  {% elif processo.tipo == "2ª Correção" or processo.tipo == "Redistribuído" %}
+                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #10B981;" title="2ª Correção / Redistribuído"></i>
+                                
                                   {% endif %}
                                 </span>
                               {% endif %}
@@ -318,6 +305,8 @@
                                 text-warning fw-bold
                               {% elif processo.tipo == 'Urgentíssimo' %}
                                 text-laranja fw-bold
+                              {% elif processo.tipo == '2ª Correção' or processo.tipo == 'Redistribuído' %}
+                                text-success fw-bold
                               {% else %}
                                 text-black
                               {% endif %}">

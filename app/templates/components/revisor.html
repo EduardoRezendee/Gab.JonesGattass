@@ -29,8 +29,13 @@
             </div>
           </form>
         </div>
+        <!-- Total de processos em revisão -->
+        <p class="fw-bold text-dark" style="font-size: 1.5rem;">
+          Total de processos em Revisão:
+          <span class="badge bg-primary fs-4">{{ andamento_metrics|length }}</span>
+        </p>
 
-        <!-- Lista de Processos -->
+       <!-- Lista de Processos -->
         {% if andamento_metrics %}
           <div class="list-group">
             {% for andamento in andamento_metrics %}
@@ -42,6 +47,8 @@
                     border border-warning text-warning
                   {% elif andamento.tipo == 'Urgentíssimo' %}  
                     bg-warning text-dark border border-warning
+                  {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}
+                    border border-success text-success
                   {% endif %}"
                   style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Listras verticais para destaque -->
@@ -54,6 +61,7 @@
                   background-color: {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}#EF4444
                   {% elif andamento.tipo == 'Prioridade' %}#FACC15
                   {% elif andamento.tipo == 'Urgentíssimo' %}#FF8C00
+                  {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}#10B981
                   {% else %}#083464{% endif %};
                   border-radius: 2px;">
                 </span>
@@ -66,17 +74,17 @@
                                   <i class="bi bi-file-earmark-text"></i>
                                 </span>
                               {% endif %}
+
                               {% if andamento.prioridade_urgente %}
                                 <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <!-- Sino -->
                                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                                    <!-- Ondas -->
                                     <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
                                   </svg>
                                 </span>
                               {% endif %}
+
                               {% if andamento.tipo %}
                                 <span class="badge 
                                   {% if andamento.tipo == 'Prioridade' %}
@@ -85,6 +93,8 @@
                                     bg-danger-subtle text-danger
                                   {% elif andamento.tipo == 'Urgentíssimo' %}  
                                     bg-warning text-dark border border-warning
+                                  {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}
+                                    bg-success-subtle text-success
                                   {% else %}
                                     bg-secondary-subtle text-secondary
                                   {% endif %}
@@ -93,17 +103,16 @@
                                   <i class="bi bi-briefcase me-1"></i> {{ andamento.tipo }}
 
                                   {% if andamento.tipo == "Prioridade" %}
-                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
-                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência'%}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
+                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1"></i>
                                   {% elif andamento.tipo == "Urgentíssimo" %}
-                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
+                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;"></i>
+                                  {% elif andamento.tipo == "2ª Correção" or andamento.tipo == "Redistribuído" %}
+                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #10B981;"></i>
                                   {% endif %}
                                 </span>
                               {% endif %}
-                            </p>
+                            </p> 
                           {% endif %}
-
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <!-- Informações à esquerda -->
                   <div class="flex-grow-1">
@@ -126,6 +135,7 @@
                       <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger fw-bold
                       {% elif andamento.tipo == 'Prioridade' %}text-warning
                       {% elif andamento.tipo == 'Urgentíssimo' %}text-laranja fw-bold
+                      {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}text-success fw-bold
                       {% else %}text-black{% endif %}">
                         {{ andamento.especie }}
                       </span>
@@ -140,15 +150,7 @@
                       <strong>Dias no Gabinete:</strong>
                       <span class="ms-1">{{ andamento.dias_no_gabinete }}</span>
                     </p>
-                  <!-- Botões à direita -->
-                  <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
-                    <button type="button" class="btn btn-sm toggle-comments shadow-sm"
-                            data-processo-id="{{ andamento.pk|default_if_none:'' }}"
-                            style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                      <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
-                    </button>
                   </div>
-                </div>
                 <!-- Ações na base -->
                 <div class="d-flex justify-content-between align-items-center mt-auto">
                   <div class="d-flex gap-2">
