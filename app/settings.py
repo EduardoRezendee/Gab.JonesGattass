@@ -96,7 +96,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 DATABASES = {
 'default': {
-'ENGINE': 'django.db.backends.postgresql',
+ENGINE': 'django.db.backends.postgresql',
 'NAME': 'gabjonesgattass',
 'USER': 'postgres',
 'PASSWORD': 'G@b202025',

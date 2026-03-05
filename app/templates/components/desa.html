@@ -122,14 +122,25 @@
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <!-- Informações à esquerda -->
                   <div class="flex-grow-1">
-                    <p class="mb-1 d-flex align-items-center">
-                      <i class="bi bi-file-earmark-text me-2"></i>
-                      <strong>Processo:</strong>
-                      <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo }}</span>
-                      <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
-                         onclick="copiarNumero('{{ andamento.processo_pk }}')"
-                         title="Copiar Número" style="cursor: pointer;"></i>
-                    </p>
+                      <p class="mb-1 d-flex align-items-center">
+                          <i class="bi bi-file-earmark-text me-2"></i>
+                          <strong>Processo:</strong>
+                          <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo }}</span>
+                          
+                          {% if andamento.tem_comentario %}
+                              <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm" 
+                                    title="{{ andamento.total_comentarios }} lembretes registrados"
+                                    style="background-color: #0d6efd; color: white; min-width: 32px; height: 32px; border-radius: 8px; font-size: 0.9rem; font-weight: bold;">
+                                  <i class="bi bi-chat-dots-fill me-1" style="font-size: 0.8rem;"></i> 
+                                  {{ andamento.total_comentarios }}
+                              </span>
+                          {% endif %}
+
+                          <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
+                            onclick="copiarNumero('{{ andamento.processo_pk }}')"
+                            title="Copiar Número" style="cursor: pointer;"></i>
+                      </p>
+                      
                     <p class="mb-1">
                       <i class="bi bi-person-circle me-2"></i>
                       <strong>Responsável:</strong>

@@ -4,7 +4,7 @@ from .forms import ProcessoForm, AndamentoForm, ComentarioProcessoForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime, timedelta
 from calendar import month_name
-from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase, Resultado, Tema
+from .models import Processo, Fase, Status, Camara, Tipo, Especie, TarefaDoDia, ProcessoAndamento, Fase, Resultado, Tema, ComentarioProcesso
 import locale
 from calendar import month_name
 from django.contrib.auth.models import User
@@ -308,6 +308,7 @@ def configurar_meta_semanal(request):
                 'id': proc.id,
                 'numero_processo': proc.numero_processo,
                 'especie': proc.especie.especie if proc.especie else 'N/A',
+                'tipo': proc.tipo.tipo if proc.tipo else 'Não informado', # Adicionado aqui
                 'dias_no_gabinete': (timezone.now().date() - proc.antigo.date()).days if proc.antigo else 0,
                 'fase_atual': proc.fase_atual or '—'
             }
@@ -638,6 +639,10 @@ class ProcessoListView(LoginRequiredMixin, ListView):
     template_name = 'processo_list.html'
     context_object_name = 'processos'
     paginate_by = 20
+
+    def get_queryset(self):
+    # Adicionamos o prefetch_related('comentarios') para performance
+        queryset = Processo.objects.all().prefetch_related('comentarios')
 
     def get_queryset(self):
         """
@@ -1338,40 +1343,79 @@ def export_processos_xlsx(request):
 
     return response
 
-@login_required 
+@login_required
 def adicionar_comentario(request, processo_id):
-    """ Adiciona um comentário a um processo específico via AJAX """
-
-    if not processo_id:
-        return JsonResponse({"error": "ID do processo não fornecido."}, status=400)
-
     processo = get_object_or_404(Processo, id=processo_id)
+    
+    # ... (mantenha suas verificações de permissão aqui)
 
     if request.method == "POST":
-
-        form = ComentarioProcessoForm(request.POST)  # Atualizei para refletir o novo modelo
+        form = ComentarioProcessoForm(request.POST)
         if form.is_valid():
             comentario = form.save(commit=False)
-            comentario.usuario = request.user
             comentario.processo = processo
+            comentario.usuario = request.user
             comentario.save()
 
-            return JsonResponse({
-                "id": comentario.id,
-                "usuario": comentario.usuario.get_full_name(),
-                "texto": comentario.texto,
-                "data_criacao": comentario.data_criacao.strftime("%d/%m/%Y %H:%M")
-            })
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "status": "success",
+                    "texto": comentario.texto,
+                    "usuario": request.user.get_full_name() or request.user.username,
+                    "data_criacao": comentario.data_criacao.strftime('%d/%m/%Y %H:%M'),
+                    "photo_url": request.user.profile.photo.url if hasattr(request.user, 'profile') and request.user.profile.photo else None
+                })
+    
+    return redirect(f'/andamentos/?processo={processo_id}')
 
-        else:
-            return JsonResponse({"error": "Erro ao processar o formulário.", "erros": form.errors}, status=400)
+def preparar_processos_por_usuario(hoje):
+    usuarios = User.objects.all()
+    processos_abertos = Processo.objects.filter(concluido=False).select_related('especie', 'usuario', 'tipo')
 
-    return JsonResponse({"error": "Método não permitido."}, status=405)
+    ultima_fase_subquery = ProcessoAndamento.objects.filter(
+        processo=OuterRef('pk')
+    ).order_by('-dt_criacao').values('fase__fase')[:1]
+
+    processos_abertos = processos_abertos.annotate(fase_atual=Subquery(ultima_fase_subquery))
+
+    processos_por_usuario = {}
+    for usuario in usuarios:
+        processos_usuario = processos_abertos.filter(usuario=usuario)
+        processos_por_usuario[usuario.id] = [
+            {
+                'id': p.id, # Usando 'p' conforme o loop
+                'numero_processo': p.numero_processo,
+                'especie': p.especie.especie if p.especie else '—',
+                'tipo': p.tipo.tipo if p.tipo else 'Não informado',
+                'dias_no_gabinete': (hoje - p.antigo.date()).days if p.antigo else 0,
+                'fase_atual': p.fase_atual or '—'
+            }
+            for p in processos_usuario
+        ]
+    return processos_por_usuario
 
 
 class ProcessosCreateListAPIView(generics.ListCreateAPIView):
     queryset = models.Processo.objects.all()
     serializer_class = serializers.ProcessoSerializer
+
+@login_required
+def excluir_comentario(request, comentario_id):
+    comentario = get_object_or_404(ComentarioProcesso, id=comentario_id)
+    processo_id = comentario.processo.id
+    
+    # Validação de segurança: apenas o perfil com função "Desembargador" pode apagar
+    if hasattr(request.user, 'profile') and request.user.profile.funcao == "Desembargador":
+        comentario.delete()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Comentário removido.'})
+        messages.success(request, "Comentário removido com sucesso.")
+    else:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Acesso negado.'}, status=403)
+        messages.error(request, "Apenas o Desembargador pode excluir comentários.")
+    
+    return redirect(f'/andamentos/?processo={processo_id}')
 
 def get_queryset(self):
         queryset = models.Processo.objects.all()
@@ -1550,9 +1594,9 @@ def preparar_processos_por_usuario(hoje):
     Prepara dicionário de processos abertos por usuário
     """
     usuarios = User.objects.all()
-    processos_abertos = Processo.objects.filter(concluido=False).select_related('especie', 'usuario')
+    processos_abertos = Processo.objects.filter(concluido=False).select_related('especie', 'usuario', 'tipo')
 
-    # Subquery para fase atual (otimizada)
+    # Subquery para fase atual
     ultima_fase_subquery = ProcessoAndamento.objects.filter(
         processo=OuterRef('pk')
     ).order_by('-dt_criacao').values('fase__fase')[:1]
@@ -1567,6 +1611,7 @@ def preparar_processos_por_usuario(hoje):
                 'id': p.id,
                 'numero_processo': p.numero_processo,
                 'especie': p.especie.especie if p.especie else '—',
+                'tipo': p.tipo.tipo if p.tipo else 'Não informado', # Adicionado aqui
                 'dias_no_gabinete': (hoje - p.antigo.date()).days if p.antigo else 0,
                 'fase_atual': p.fase_atual or '—'
             }

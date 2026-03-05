@@ -154,18 +154,6 @@
                                                                     </button>
                                                                     <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
                                                                         {% if andamento.fase.fase == "Elaboração" %}
-                                                                            {% if processo.tipo and processo.tipo.tipo == "Monocrática" %}
-                                                                            <li>
-                                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button type="submit" class="dropdown-item text-success">
-                                                                                        <i class="bi bi-check-circle me-1"></i> Concluir Processo
-                                                                                    </button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% else %}
-                                                                            
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
@@ -175,10 +163,16 @@
                                                                                 </form>
                                                                             </li>
                                                                         {% endif %}
-                                                                        {% endif %}
-
 
                                                                         {% if andamento.fase.fase == "Revisão" %}
+                                                                            <!--<li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Correção">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Correção</button>
+                                                                                </form>
+                                                                            </li>-->
                                                                             <li>
                                                                                 <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                                     {% csrf_token %}
@@ -187,9 +181,26 @@
                                                                                     <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
                                                                                 </form>
                                                                             </li>
-                                                                            <li>
-                                                                                
                                                                         {% endif %}
+
+                                                                        <!--{% if andamento.fase.fase == "Correção" %}
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
+                                                                                </form>
+                                                                            </li>
+                                                                            <li>
+                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
+                                                                                    <input type="hidden" name="origem" value="andamento_list">
+                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
+                                                                                </form>
+                                                                            </li>
+                                                                        {% endif %}-->
 
                                                                         {% if andamento.fase.fase == "Revisão Des" %}
                                                                             <li>
@@ -236,7 +247,6 @@
                                                                 </div>
                                                                 {% endif %}
                                                             </div>
-                                                            
                                                         </div>
                                                     </div>
 
@@ -412,22 +422,31 @@
     </div>
 
     <!-- Histórico de Comentários -->
-    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3"
-         style="background-color: #f8f9fa;">
-        {% for comentario in processo.comentarios.all %}
-        <div class="d-flex align-items-start border-bottom pb-2 mb-2">
-            <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-                 alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-            <div class="w-100">
+    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+    {% for comentario in processo.comentarios.all %}
+    <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start border-bottom pb-2 mb-2 position-relative">
+        <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+             alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+        <div class="w-100">
+            <div class="d-flex justify-content-between align-items-center">
                 <strong>{{ comentario.usuario.get_full_name }}</strong>
-                <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
+                
+                {% if request.user.profile.funcao == "Desembargador" %}
+                    <button class="btn btn-danger btn-sm shadow-sm btn-excluir-comentario rounded-pill px-3" 
+                            data-id="{{ comentario.id }}"
+                            style="font-size: 0.7rem; background-color: #dc3545; border: none;">
+                        <i class="bi bi-trash-fill me-1"></i> Apagar
+                    </button>
+                {% endif %}
             </div>
+            <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+            <p class="mb-0 small bg-light p-2 rounded mt-1">{{ comentario.texto }}</p>
         </div>
-        {% empty %}
-        <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
-        {% endfor %}
     </div>
+    {% empty %}
+    <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+    {% endfor %}
+</div>
 
     <!-- Formulário de Novo Comentário -->
     <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
@@ -666,15 +685,12 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
 
             let processoId = form.getAttribute("data-processo-id");
-
-            if (!processoId || processoId.trim() === "") {
-                console.error("❌ Erro: processo_id não encontrado.");
-                alert("Erro: Não foi possível identificar o processo.");
-                return;
-            }
-
             let comentarioInput = form.querySelector("textarea");
             let comentariosDiv = document.getElementById("comentarios-" + processoId);
+            let btnEnviar = form.querySelector("button");
+
+            // Bloqueia o botão para evitar cliques duplos
+            btnEnviar.disabled = true;
 
             fetch(`/adicionar-comentario/${processoId}/`, {
                 method: "POST",
@@ -686,25 +702,37 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.texto) {
-                    let novoComentario = document.createElement("div");
-                    novoComentario.classList.add("chat-message");
-                    novoComentario.innerHTML = `
-                        <div class="chat-header">
-                            <strong>${data.usuario}</strong>
-                            <span class="text-muted">${data.data_criacao}</span>
-                        </div>
-                        <p class="chat-text">${data.texto}</p>
-                    `;
-                    comentariosDiv.appendChild(novoComentario);
+                if (data.status === "success") {
+                    // Remove a mensagem de "Nenhum comentário ainda" se ela existir
+                    const noCommentsMsg = comentariosDiv.querySelector(".text-center.py-2");
+                    if (noCommentsMsg) noCommentsMsg.remove();
 
+                    // Cria o novo comentário seguindo o layout exato do seu Django Template
+                    let fotoUrl = data.photo_url ? data.photo_url : "https://via.placeholder.com/40";
+                    
+                    let novoComentarioHTML = `
+                        <div class="d-flex align-items-start border-bottom pb-2 mb-2 animate__animated animate__fadeIn">
+                            <img src="${fotoUrl}" alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                            <div class="w-100">
+                                <strong>${data.usuario}</strong>
+                                <span class="text-muted small d-block">${data.data_criacao}</span>
+                                <p class="mb-0 small bg-light p-2 rounded">${data.texto}</p>
+                            </div>
+                        </div>
+                    `;
+
+                    // Insere o comentário no final da lista
+                    comentariosDiv.insertAdjacentHTML('beforeend', novoComentarioHTML);
+
+                    // Limpa o campo e rola para baixo
                     comentarioInput.value = "";
                     comentariosDiv.scrollTop = comentariosDiv.scrollHeight;
-                } else {
-                    console.error("❌ Erro no envio do comentário.");
                 }
             })
-            .catch(error => console.error("❌ Erro:", error));
+            .catch(error => console.error("❌ Erro:", error))
+            .finally(() => {
+                btnEnviar.disabled = false;
+            });
         });
     });
 });
@@ -726,5 +754,38 @@ deleteModal.addEventListener('show.bs.modal', function (event) {
     form.action = `/andamentos/${id}/deletar/`;
 });
 </script>
+
+<script>
+document.addEventListener("click", function (e) {
+    // Verifica se o elemento clicado é o botão de excluir
+    if (e.target.closest(".btn-excluir-comentario")) {
+        const btn = e.target.closest(".btn-excluir-comentario");
+        const comentarioId = btn.getAttribute("data-id");
+        const wrapper = document.getElementById(`comentario-wrapper-${comentarioId}`);
+
+        if (confirm("Deseja realmente apagar este comentário?")) {
+            fetch(`/excluir-comentario/${comentarioId}/`, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Adiciona uma animação de saída antes de remover do HTML
+                    wrapper.classList.add("animate__animated", "animate__fadeOutRight");
+                    setTimeout(() => wrapper.remove(), 500);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error("Erro ao excluir:", error));
+        }
+    }
+});
+</script>
+
 
 {% endblock %}

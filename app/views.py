@@ -19,6 +19,7 @@ from django.db.models.functions import Cast
 from collections import defaultdict
 from processos.models import ProcessoAndamento
 
+
 def home3(request):
     return render(request, 'home3.html')
 # MÉTRICAS E GAMIFICAÇÃO
@@ -125,6 +126,7 @@ def home(request):
             for p in processos_em_revisao
         }
         for processo in processos_em_revisao:
+            total_comentarios = processo.comentarios.count()
             ultimo_andamento = processo.andamentos.filter(
                 fase__fase="Revisão",
                 usuario=user,
@@ -151,7 +153,10 @@ def home(request):
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
                     'data_envio_revisao': ultimo_andamento.dt_criacao,
                     'tema': processo.tema.nome if processo.tema else None,
-                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios]
+                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios],
+                    'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
+                    'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
+
                 })
         andamento_metrics.sort(
                     key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,
@@ -206,6 +211,7 @@ def home(request):
         andamento_metrics = []
         for processo in processos_em_revisao_des:
             # Último andamento em Revisão Des desta desembargadora (em aberto)
+            total_comentarios = processo.comentarios.count()
             ultimo_andamento = processo.andamentos.filter(
                 fase__fase="Revisão Des",
                 usuario=user,
@@ -242,6 +248,8 @@ def home(request):
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
                     'tema': processo.tema.nome if processo.tema else None,
                     'camara': processo.camara.camara if getattr(processo, 'camara', None) else "Sem câmara",
+                    'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
+                    'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
                 })
 
         # Ordenação: Plantão primeiro, depois Liminar, depois mais tempo no gabinete
@@ -436,6 +444,7 @@ def home(request):
                 for p in processos_nao_concluidos
             }
             for processo in processos_nao_concluidos:
+                total_comentarios = processo.comentarios.count()
                 ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
                 if ultimo_andamento and processo.pk:
                     processos_detalhados.append({
@@ -457,8 +466,10 @@ def home(request):
                         'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                         'comentarios': [
                             {'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()}
-                            for c in comentarios_dict.get(processo.pk, [])
-                        ]
+                            for c in comentarios_dict.get(processo.pk, [])],
+                        'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
+                        'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
+                        
                     })
             processos_detalhados.sort(
                 key=lambda p: (0 if p.get('tipo') == "2ª Correção" else 1,

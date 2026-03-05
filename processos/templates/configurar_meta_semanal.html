@@ -286,7 +286,7 @@ function carregarProcessos() {
     
     const span = document.createElement('span');
     const faseTexto = proc.fase_atual ? ` - ${proc.fase_atual}` : '';
-    span.textContent = `${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)${faseTexto}`;
+    span.textContent = `${proc.numero_processo} - ${proc.especie} - (${proc.dias_no_gabinete} dias no gabinete)${faseTexto} - ${proc.tipo}`;
     
     label.append(input, span);
     container.appendChild(label);

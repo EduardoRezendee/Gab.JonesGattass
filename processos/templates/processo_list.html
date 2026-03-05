@@ -473,6 +473,19 @@ Distribuição de Processos
                                     <i class="bi bi-plus"></i>
                                   </div>
                                 {% endif %}
+
+                                <!-- Comentários no Processo-->
+                                    <div class="d-flex align-items-center">
+                                        <span class="fw-bold">{{ processo.numero_processo }}</span>
+
+                                        {% if processo.comentarios.exists %}
+                                            <span class="ms-2 badge rounded-pill bg-light text-primary border shadow-sm" 
+                                                title="{{ processo.comentarios.count }} comentários registrados"
+                                                style="font-size: 0.7rem;">
+                                                <i class="bi bi-chat-dots-fill"></i> {{ processo.comentarios.count }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
                               
                                 <!-- Número do processo -->
                                 {{ processo.numero_processo }}

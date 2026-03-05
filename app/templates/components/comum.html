@@ -247,6 +247,14 @@
                             <i class="bi bi-file-earmark-text me-2" style="color: #7e0d09;"></i>
                             <strong style="color: #1F2937;">Processo:</strong>
                             <span id="numeroProcesso-{{ processo.pk }}" class="ms-1" style="color: #1F2937;">{{ processo.numero_processo }}</span>
+                              {% if processo.tem_comentario %}
+                                <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm" 
+                                      title="{{ processo.total_comentarios }} lembretes registrados"
+                                      style="background-color: #0d6efd; color: white; min-width: 32px; height: 32px; border-radius: 8px; font-size: 0.9rem; font-weight: bold;">
+                                  <i class="bi bi-chat-dots-fill me-1" style="font-size: 0.8rem;"></i> 
+                                  {{ processo.total_comentarios }}
+                                </span>
+                              {% endif %}
                             <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
                                onclick="copiarNumero('{{ processo.pk }}')"
                                title="Copiar Número"
@@ -257,6 +265,8 @@
                                  style="font-size: 1.3rem; color: #F59E0B;"></i>
                             {% endif %}
                           </p>
+
+                          
                           <!-- Novos indicadores: despacho, prioridade e tipo -->
                           {% if processo.despacho or processo.prioridade_urgente or processo.tipo or processo.especie %}
                             <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
