@@ -1986,7 +1986,7 @@ def editar_meta_semanal(request):
 
         processos_com_fase = Processo.objects.filter(pk__in=[p.id for p in processos]).annotate(
             fase_atual=Subquery(ultima_fase_subquery)
-        ).select_related('especie')
+        ).select_related('especie', 'tipo')
 
         data_processos = []
         for p in processos_com_fase:
@@ -1994,6 +1994,7 @@ def editar_meta_semanal(request):
                 'id': p.id,
                 'numero_processo': p.numero_processo,
                 'especie': p.especie.especie if p.especie else '—',
+                'tipo': p.tipo.tipo if p.tipo else 'Não informado',
                 'fase_atual': p.fase_atual or 'Não especificado'
             })
 

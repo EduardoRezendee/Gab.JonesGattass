@@ -235,6 +235,7 @@
                           background-color: {% if processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' or processo.especie == 'Revisitado' or processo.especie == 'Voto de Divergência' %}#EF4444
                           {% elif processo.tipo == 'Prioridade' %}#FACC15
                           {% elif processo.tipo == 'Urgentíssimo' %}#FF8C00
+                          {% elif processo.tipo == 'Monocrática' %}#0dcaf0
                           {% elif processo.tipo == '2ª Correção' or processo.tipo == 'Redistribuído' %}#10B981
                           {% else %}#083464{% endif %};
                           border-radius: 2px;">

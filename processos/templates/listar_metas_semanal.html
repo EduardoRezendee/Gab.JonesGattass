@@ -1069,13 +1069,17 @@ async function editarMeta(metaId) {
     if (processosCarregados.length > 0) {
       processosHtml = processosCarregados.map((proc, index) => {
         const isChecked = data.processo_ids.includes(proc.id) ? 'checked' : '';
+        // Garantir que os campos existem ou mostrar vazio
+        const tipo = proc.tipo || ''; 
+        const especie = proc.especie || '';
+        const dias = proc.dias_no_gabinete || 0;
         return `
           <label class="d-flex align-items-center gap-2 processo-item mb-2" data-numero-processo="${proc.numero_processo.toLowerCase()}" data-ordem-original="${index}">
             <input class="form-check-input" type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()">
             <span>
-              <strong>${proc.numero_processo}</strong> - ${proc.especie} 
-              <span class="badge bg-secondary">${proc.dias_no_gabinete} dias</span>
-              ${proc.fase_atual !== 'Não especificado' ? `<br><small class="text-muted">Fase: ${proc.fase_atual}</small>` : ''}
+              <strong>${proc.numero_processo}</strong> - ${especie} - ${tipo}
+              <span class="badge bg-secondary">${dias} dias</span>
+              ${proc.fase_atual && proc.fase_atual !== 'Não especificado' ? `<br><small class="text-muted">Fase: ${proc.fase_atual}</small>` : ''}
             </span>
           </label>
         `;
