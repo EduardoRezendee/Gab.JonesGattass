@@ -440,7 +440,7 @@
                 {% endif %}
             </div>
             <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-            <p class="mb-0 small bg-light p-2 rounded mt-1">{{ comentario.texto }}</p>
+            <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap;">{{ comentario.texto }}</p>
         </div>
     </div>
     {% empty %}
@@ -716,7 +716,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="w-100">
                                 <strong>${data.usuario}</strong>
                                 <span class="text-muted small d-block">${data.data_criacao}</span>
-                                <p class="mb-0 small bg-light p-2 rounded">${data.texto}</p>
+                                <p class="mb-0 small bg-light p-2 rounded" style="white-space: pre-wrap;">${data.texto}</p>
                             </div>
                         </div>
                     `;
@@ -787,5 +787,28 @@ document.addEventListener("click", function (e) {
 });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Localiza o textarea dentro do formulário de comentário
+    const commentForm = document.querySelector(".comentario-form");
+    const textarea = commentForm.querySelector("textarea[name='texto']");
 
+    textarea.addEventListener("keydown", function (e) {
+        // Verifica se a tecla pressionada é Enter
+        if (e.key === "Enter") {
+            if (e.shiftKey) {
+                // Se Shift estiver pressionado, permite o comportamento padrão (quebra de linha)
+                return;
+            } else {
+                // Se apenas Enter for pressionado:
+                e.preventDefault(); // Evita a quebra de linha física no campo
+                
+                // Dispara o evento de submit do formulário
+                // Isso vai acionar o seu listener fetch() que já está configurado no template
+                commentForm.requestSubmit(); 
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
