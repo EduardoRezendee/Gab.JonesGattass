@@ -1358,12 +1358,14 @@ def adicionar_comentario(request, processo_id):
             comentario.save()
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                autor_e_revisor = hasattr(request.user, 'profile') and request.user.profile.funcao == "revisor(a)"
                 return JsonResponse({
                     "status": "success",
                     "texto": comentario.texto,
                     "usuario": request.user.get_full_name() or request.user.username,
                     "data_criacao": comentario.data_criacao.strftime('%d/%m/%Y %H:%M'),
-                    "photo_url": request.user.profile.photo.url if hasattr(request.user, 'profile') and request.user.profile.photo else None
+                    "photo_url": request.user.profile.photo.url if hasattr(request.user, 'profile') and request.user.profile.photo else None,
+                    "funcao": request.user.profile.funcao
                 })
     
     return redirect(f'/andamentos/?processo={processo_id}')

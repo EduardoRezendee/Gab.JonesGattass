@@ -424,27 +424,44 @@
     <!-- Histórico de Comentários -->
     <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3" style="background-color: #f8f9fa;">
     {% for comentario in processo.comentarios.all %}
-    <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start border-bottom pb-2 mb-2 position-relative">
-        <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-             alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-        <div class="w-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <strong>{{ comentario.usuario.get_full_name }}</strong>
-                
-                {% if request.user.profile.funcao == "Desembargador" %}
-                    <button class="btn btn-danger btn-sm shadow-sm btn-excluir-comentario rounded-pill px-3" 
-                            data-id="{{ comentario.id }}"
-                            style="font-size: 0.7rem; background-color: #dc3545; border: none;">
-                        <i class="bi bi-trash-fill me-1"></i> Apagar
-                    </button>
-                {% endif %}
+        
+        {# Lógica de Visibilidade: Todos veem tudo, EXCETO os de revisor(a), que são exclusivos para o Desembargador e o próprio autor #}
+        {% if comentario.usuario.profile.funcao != "revisor(a)" or request.user.profile.funcao == "Desembargador" or request.user == comentario.usuario %}
+            
+            <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start border-bottom pb-2 mb-2 position-relative">
+                <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
+                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                <div class="w-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <strong>{{ comentario.usuario.get_full_name }}</strong>
+                            
+                            {# Etiqueta Privada para comentários de revisor(a) #}
+                            {% if comentario.usuario.profile.funcao == "revisor(a)" %}
+                                <span class="badge d-flex align-items-center gap-1 shadow-sm" 
+                                      style="background-color: #000000; color: #ffffff; border-radius: 6px; padding: 4px 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <i class="bi bi-lock-fill" style="font-size: 0.75rem;"></i> PRIVADO
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if request.user.profile.funcao == "Desembargador" %}
+                            <button class="btn btn-danger btn-sm shadow-sm btn-excluir-comentario rounded-pill px-3" 
+                                    data-id="{{ comentario.id }}"
+                                    style="font-size: 0.7rem; background-color: #dc3545; border: none;">
+                                <i class="bi bi-trash-fill me-1"></i> Apagar
+                            </button>
+                        {% endif %}
+                    </div>
+                    <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                    <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ comentario.texto }}</p>
+                </div>
             </div>
-            <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-            <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap;">{{ comentario.texto }}</p>
-        </div>
-    </div>
+
+        {% endif %}
+
     {% empty %}
-    <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+        <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
     {% endfor %}
 </div>
 
@@ -710,18 +727,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Cria o novo comentário seguindo o layout exato do seu Django Template
                     let fotoUrl = data.photo_url ? data.photo_url : "https://via.placeholder.com/40";
                     
+                    let seloPrivado = '';
+
+// 2. Se a função retornada for revisor(a), preenchemos com o HTML da etiqueta preta
+                    if (data.funcao === "revisor(a)") {
+                        seloPrivado = `
+                            <span class="badge d-flex align-items-center gap-1 shadow-sm" 
+                                style="background-color: #000000; color: #ffffff; border-radius: 6px; padding: 4px 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                <i class="bi bi-lock-fill" style="font-size: 0.75rem;"></i> PRIVADO
+                            </span>`;
+                    }
+
+// 3. Agora insira a variável ${seloPrivado} ao lado do nome do usuário na sua string:
                     let novoComentarioHTML = `
                         <div class="d-flex align-items-start border-bottom pb-2 mb-2 animate__animated animate__fadeIn">
-                            <img src="${fotoUrl}" alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                            <img src="${fotoUrl}" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; flex-shrink: 0;">
                             <div class="w-100">
-                                <strong>${data.usuario}</strong>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <strong>${data.usuario}</strong>
+                                        ${seloPrivado}  </div>
+                                </div>
                                 <span class="text-muted small d-block">${data.data_criacao}</span>
-                                <p class="mb-0 small bg-light p-2 rounded" style="white-space: pre-wrap;">${data.texto}</p>
+                                <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap; overflow-wrap: anywhere;">${data.texto}</p>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
 
-                    // Insere o comentário no final da lista
                     comentariosDiv.insertAdjacentHTML('beforeend', novoComentarioHTML);
 
                     // Limpa o campo e rola para baixo
