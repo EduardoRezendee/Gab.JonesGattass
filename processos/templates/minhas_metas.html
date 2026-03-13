@@ -100,7 +100,7 @@
         <div class="progress" style="height: 24px; border-radius: 12px; background-color: #e9ecef;">
           <div class="progress-bar bg-success transition-width"
                role="progressbar"
-               style="width: {{ progresso|stringformat:"0.1f"|cut:"," }}%; min-width: 40px; transition: width 0.6s ease;"
+               style="width: {{ progresso|slugify }}%; min-width: 40px; transition: width 0.6s ease;"
                aria-valuenow="{{ progresso|stringformat:"0.1f"|cut:"," }}"
                aria-valuemin="0"
                aria-valuemax="100">
@@ -188,7 +188,7 @@
 </style>
 
 <script>
-const processosPorUsuario = {{ processos_por_usuario|safe }};
+const processosPorUsuario = {{ processos_por_usuario|default:"{}"|safe }};
 let currentMeta = null;
 
 async function carregarMeta(metaId) {

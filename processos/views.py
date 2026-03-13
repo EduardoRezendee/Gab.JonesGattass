@@ -1816,7 +1816,7 @@ def api_meta_detalhes(request):
         return JsonResponse(data)
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
 @login_required
@@ -2094,7 +2094,7 @@ def ver_todos_processos_meta(request):
         hoje = timezone.localdate()
         
         # Buscar processos da meta com informações detalhadas
-        processos = meta.processos.select_related('especie').annotate(
+        processos = meta.processos.select_related('especie', 'tipo').annotate(
             fase_atual=Subquery(
                 ProcessoAndamento.objects.filter(
                     processo=OuterRef('pk')
@@ -2333,21 +2333,20 @@ def api_detalhes_meta(request):
 @require_http_methods(["GET"])
 def minhas_metas(request):
     user = request.user
-    now = timezone.localtime()
-    # Calcula início e fim da semana (segunda a domingo)
-    inicio_semana = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-    fim_semana = (inicio_semana + timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+    agora_dt = timezone.localtime()
+    hoje = agora_dt.date()
+    
+    inicio_semana = hoje - timedelta(days=hoje.weekday())
+    fim_semana = inicio_semana + timedelta(days=6)
 
-    # Busca meta da semana atual com prefetch_related otimizado
     meta = MetaSemanal.objects.filter(
         usuario=user,
-        semana_inicio=inicio_semana.date(),
-        semana_fim=fim_semana.date()
+        semana_inicio=inicio_semana,
+        semana_fim=fim_semana
     ).prefetch_related(
         Prefetch('processos', Processo.objects.select_related('especie', 'tipo'))
     ).first()
 
-    # Valores padrão
     total_meta = pendentes = concluidas = progresso = 0
     processos_com_status = []
     processos_fora_meta = []
@@ -2356,83 +2355,91 @@ def minhas_metas(request):
         total_meta = meta.meta_qtd
         processos = list(meta.processos.all())
 
-        # Busca quais processos foram concluídos (enviados para Revisão Desa) nesta semana
         concluidos_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
                 fase__fase="Revisão Des",
-                dt_criacao__range=(inicio_semana, fim_semana)
+                dt_criacao__date__range=(inicio_semana, fim_semana)
             ).values_list('processo', flat=True).distinct()
         )
 
-        # Busca a fase atual de cada processo usando uma subconsulta
         ultima_fase_subquery = ProcessoAndamento.objects.filter(
             processo=OuterRef('pk')
         ).order_by('-dt_criacao').values('fase__fase')[:1]
+        
         processos_com_fase = Processo.objects.filter(pk__in=[p.id for p in processos]).annotate(
             fase_atual=Subquery(ultima_fase_subquery)
         )
-
-        # Mapeia as fases atuais pelos IDs dos processos
         fases_atuais = {p.id: p.fase_atual for p in processos_com_fase}
 
         concluidas = len(concluidos_ids)
-        pendentes = max(0, total_meta - concluidas)  # Evita valores negativos
+        pendentes = max(0, total_meta - concluidas)
         progresso = round((concluidas / total_meta * 100) if total_meta > 0 else 0, 1)
 
-        # Constrói lista para processos da meta
         for p in processos:
             data_entrada = p.antigo or p.dt_criacao
-            dias_no_gabinete = (now.date() - data_entrada.date()).days if data_entrada else None
-            status_concluido = (p.id in concluidos_ids) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido)
+            dias_calc = 0
+            if data_entrada:
+                dt_ref = data_entrada.date() if hasattr(data_entrada, 'date') else data_entrada
+                dias_calc = (hoje - dt_ref).days
+            
+            # Garante que dias_calc seja sempre inteiro
+            dias_calc = int(dias_calc) if dias_calc is not None else 0
+
+            # --- AQUI ESTAVA O ERRO: GARANTINDO QUE CONCLUIDO SEJA SEMPRE BOOL ---
+            status_concluido = False
+            if p.id in concluidos_ids:
+                status_concluido = True
+            elif p.tipo and p.tipo.tipo == "Monocrática" and p.concluido:
+                status_concluido = True
+            # -------------------------------------------------------------------
 
             processos_com_status.append({
                 'numero_processo': p.numero_processo,
                 'data_entrada': data_entrada,
-                'dias_no_gabinete': dias_no_gabinete,
+                'dias_no_gabinete': dias_calc,
                 'fase_atual': fases_atuais.get(p.id, 'Não especificado'),
                 'especie': p.especie.especie if p.especie else 'Não especificado',
                 'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
-                'concluido': status_concluido
+                'concluido': bool(status_concluido) # Força ser booleano
             })
 
-        # >>>>> AQUI O ORDENADOR <<<<<
+        # ORDENAÇÃO BLINDADA: Garante que os valores comparados nunca sejam None
         processos_com_status = sorted(
             processos_com_status,
-            key=lambda x: (x['concluido'], -(x['dias_no_gabinete'] or 0))
+            key=lambda x: (
+                bool(x.get('concluido', False)), 
+                -int(x.get('dias_no_gabinete', 0))
+            )
         )
-        
 
-        # Busca processos enviados para Revisão Desa fora da meta
-        processos_fora = ProcessoAndamento.objects.filter(
+        # Processos fora da meta
+        processos_fora_ids = list(ProcessoAndamento.objects.filter(
             processo__usuario=user,
             fase__fase="Revisão Des",
-            dt_criacao__range=(inicio_semana, fim_semana)
-        ).exclude(
-            processo__in=[p.id for p in processos]
-        ).values('processo').distinct()
+            dt_criacao__date__range=(inicio_semana, fim_semana)
+        ).exclude(processo__in=[p.id for p in processos]).values_list('processo', flat=True).distinct())
 
-        # Obtém detalhes dos processos fora da meta
-        processos_fora_ids = [item['processo'] for item in processos_fora]
-        processos_fora_detalhes = Processo.objects.filter(
-            id__in=processos_fora_ids
-        ).select_related('especie', 'tipo').annotate(
-            fase_atual=Subquery(ultima_fase_subquery)
-        )
+        if processos_fora_ids:
+            processos_fora_detalhes = Processo.objects.filter(
+                id__in=processos_fora_ids
+            ).select_related('especie', 'tipo').annotate(
+                fase_atual=Subquery(ultima_fase_subquery)
+            )
 
-        for p in processos_fora_detalhes:
-            data_entrada = p.antigo or p.dt_criacao
-            dias_no_gabinete = (now.date() - data_entrada.date()).days if data_entrada else None
-
-            processos_fora_meta.append({
-                'numero_processo': p.numero_processo,
-                'data_entrada': data_entrada,
-                'dias_no_gabinete': dias_no_gabinete,
-                'fase_atual': p.fase_atual or 'Não especificado',
-                'especie': p.especie.especie if p.especie else 'Não especificado',
-                'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
-                'concluido': True  # Todos são concluídos, pois foram enviados para Revisão Desa
-            })
+            for p in processos_fora_detalhes:
+                data_entrada_fora = p.antigo or p.dt_criacao
+                dias_fora = (hoje - data_entrada_fora.date()).days if data_entrada_fora else 0
+                
+                processos_fora_meta.append({
+                    'numero_processo': p.numero_processo,
+                    'data_entrada': data_entrada_fora,
+                    'dias_no_gabinete': int(dias_fora or 0),
+                    'fase_atual': p.fase_atual or 'Não especificado',
+                    'especie': p.especie.especie if p.especie else 'Não especificado',
+                    'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
+                    'concluido': True
+                })
 
     return render(request, 'minhas_metas.html', {
         'meta': meta,
