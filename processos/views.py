@@ -572,7 +572,11 @@ def importar_processos_view(request):
                             'tipo': tipo_processo,  # Marcar despacho como True se necessário
                         }
                     )
-                    processos_inseridos += 1
+                    
+                    if usuario:
+                        ProcessoAndamento.objects.filter(processo=processo).update(usuario=usuario)
+                    
+                        processos_inseridos += 1
                     
 
                 except Exception as e:  # Linha 236 - Garantindo indentação correta
@@ -1672,25 +1676,34 @@ def calcular_dados_metas(metas, hoje):
 
 
 def calcular_progresso_meta(meta, hoje):
-    """
-    Calcula o progresso de uma meta específica
-    """
-    processos_meta = list(meta.processos.all())
+    # Adicione .select_related('tipo') para performance
+    processos_meta = list(meta.processos.all().select_related('tipo'))
     if not processos_meta:
         return 0
 
-    # Consulta otimizada para processos revisados no intervalo da meta
-    revisados_por_meta = ( 
-        ProcessoAndamento.objects
-        .filter(
+    revisados_ids = set(
+        ProcessoAndamento.objects.filter(
             processo__in=processos_meta,
             fase__fase="Revisão Des",
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-        )
-        .values('processo')
-        .distinct()
+        ).values_list('processo', flat=True).distinct()
     )
-    revisados_ids = set(revisados_por_meta.values_list('processo', flat=True))
+
+    # CONTAGEM HÍBRIDA (Mínima alteração)
+    concluidas = 0
+    for p in processos_meta:
+        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+            concluidas += 1
+
+    progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
+    return progresso
+
+    # Contagem com a exceção para Monocráticas
+    concluidas = 0
+    for p in processos_meta:
+        # Se passou na revisão OU (se for Monocrática e estiver concluído no banco)
+        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+            concluidas += 1
 
     concluidas = sum(1 for p in processos_meta if p.id in revisados_ids)
     progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
@@ -1745,25 +1758,25 @@ def calcular_faixas_dias(meta, hoje):
 
 
 def calcular_processos_concluidos(meta, hoje):
-    """
-    Calcula número de processos concluídos na meta
-    """
     processos_meta = list(meta.processos.all())
     if not processos_meta:
         return 0
 
-    revisados_por_meta = (
-        ProcessoAndamento.objects
-        .filter(
+    revisados_ids = set(
+        ProcessoAndamento.objects.filter(
             processo__in=processos_meta,
             fase__fase="Revisão Des",
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-        )
-        .values('processo')
-        .distinct()
+        ).values_list('processo', flat=True).distinct()
     )
     
-    return revisados_por_meta.count()
+    # Nova contagem mínima
+    concluidos = 0
+    for p in processos_meta:
+        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+            concluidos += 1
+            
+    return concluidos
 
 @login_required
 @require_http_methods(["GET"])
@@ -2102,7 +2115,7 @@ def ver_todos_processos_meta(request):
         processos_data = []
         for processo in processos:
             dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
-            concluido = processo.id in revisados_ids
+            concluido = (processo.id in revisados_ids) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
             
             # Determinar cor do badge baseado nos dias
             if dias_gabinete <= 30:
@@ -2371,6 +2384,7 @@ def minhas_metas(request):
         for p in processos:
             data_entrada = p.antigo or p.dt_criacao
             dias_no_gabinete = (now.date() - data_entrada.date()).days if data_entrada else None
+            status_concluido = (p.id in concluidos_ids) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido)
 
             processos_com_status.append({
                 'numero_processo': p.numero_processo,
@@ -2379,7 +2393,7 @@ def minhas_metas(request):
                 'fase_atual': fases_atuais.get(p.id, 'Não especificado'),
                 'especie': p.especie.especie if p.especie else 'Não especificado',
                 'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
-                'concluido': (p.id in concluidos_ids)
+                'concluido': status_concluido
             })
 
         # >>>>> AQUI O ORDENADOR <<<<<
@@ -2387,8 +2401,7 @@ def minhas_metas(request):
             processos_com_status,
             key=lambda x: (x['concluido'], -(x['dias_no_gabinete'] or 0))
         )
-
-    
+        
 
         # Busca processos enviados para Revisão Desa fora da meta
         processos_fora = ProcessoAndamento.objects.filter(

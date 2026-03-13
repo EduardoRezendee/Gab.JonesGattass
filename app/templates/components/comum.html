@@ -285,6 +285,7 @@
                                   {% elif processo.especie == 'Voto Vista' or processo.especie == 'EDCIV' %} bg-danger-subtle text-danger
                                   {% elif processo.tipo == 'Urgentíssimo' %} bg-warning text-dark border border-warning
                                   {% elif processo.tipo == '2ª Correção' or processo.tipo == 'Redistribuído' %} bg-success-subtle text-success
+                                  {% elif processo.tipo == 'Monocrática' %} bg-info text-dark
                                   {% else %} bg-secondary-subtle text-secondary
                                   {% endif %}
                                   rounded-pill px-3 py-2 d-flex align-items-center">

@@ -1,12 +1,12 @@
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #6f745d; padding: 10px; border-bottom: 7px solid  #2f2f2f; border-radius: 0 0 40px 40px; position: relative; height: 70px;">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #6f745d; padding: 10px; border-bottom: 7px solid #2f2f2f; border-radius: 0 0 40px 40px; position: relative; height: 70px; z-index: 1000;">
     <div class="container-fluid">
-        <!-- Espaço vazio para estruturar a navbar -->
-    </div>
+        </div>
 </nav>
-<div class="logo-container text-center" style="position: absolute; top: 65px; left: 50%; transform: translate(-50%, -50%);">
-    <a href="{% url 'home' %}">
+
+<div class="logo-container text-center" style="position: absolute; top: 65px; left: 50%; transform: translate(-50%, -50%); z-index: 1001;">
+    <a href="{% url 'home' %}" style="text-decoration: none; display: inline-block;">
         <img src="/media/banners/logo2_vf6c4Qn.png" 
-         alt="Logo Sistema de Gestão" 
-         style="height: 120px; width: auto; background-color: white; padding: 5px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); border: 1px solid #ddd;">
+             alt="Logo Sistema de Gestão" 
+             style="height: 120px; width: auto; background-color: white; padding: 5px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); border: 1px solid #ddd; cursor: pointer;">
     </a>    
 </div>
