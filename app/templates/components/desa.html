@@ -233,7 +233,10 @@
                       </button>
                     </form>
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <i class="bi bi-arrow-right {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1.5rem;"></i>
+                      <button type="button" class="btn btn-sm shadow-sm"
+                      title="Abrir" style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                      <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
+                      </button>
                     </a>
                   </div>
                 </div>

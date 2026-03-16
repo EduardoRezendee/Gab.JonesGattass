@@ -5,7 +5,7 @@
   <button
     type="button"
     class="btn position-relative shadow-sm rounded-pill"
-    style="background: linear-gradient(90deg, #ed8d39, #f08307);
+    style="background: linear-gradient(90deg, #e5915d,#d84c4c,#8121d5);
           color: #ffffff;
           font-weight: 600;
           font-size: 1rem;
@@ -379,14 +379,14 @@
                           <!-- Link do Documento (se existir) -->
                           {% if processo.andamento_link_doc %}
                             <a href="{{ processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
-                               style="background-color: #065b14; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
+                               style="background-color: #690cb6; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
                               <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
                             </a>
                           {% endif %}
                           <button type="button" class="btn btn-sm shadow-sm"
                                   data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ processo.andamento_pk }}"
-                                  title="Editar" style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-pencil" style="color: white;"></i>
+                                  title="Editar" style="background-color: #f2ee18; color: rgb(0, 0, 0); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                            <i class="bi bi-pencil" style="color: rgb(0, 0, 0);"></i> Adicionar Documento
                           </button>
                         </div>
                         <div class="d-flex gap-2 align-items-center">
@@ -442,10 +442,13 @@
                           <a href="{% url 'andamento_list' %}?processo={{ processo.pk }}"
                              title="Ver detalhes"
                              class="text-decoration-none"
-                             style="color: #1F2937;">
-                            <i class="bi bi-arrow-right {% if processo.especie == 'Liminar' %}text-danger{% else %}text-primary{% endif %}"
-                               style="font-size: 1.5rem; color: #1F2937;"></i>
+                             style="color: #ffffff;">
+                            <button type="button" class="btn btn-sm shadow-sm"
+                            title="Abrir" style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                          <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
                           </a>
+                          
+                      </button>
                         </div>
                       </div>
                     </div>
