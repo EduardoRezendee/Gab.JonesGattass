@@ -465,9 +465,8 @@
 
     <!-- Histórico de Comentários -->
     <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3" style="background-color: #f8f9fa;">
-    {% for comentario in processo.comentarios.all %}
+    {% for comentario in processo.comentarios.all|dictsort:"data_criacao" %}
         
-        {# Lógica de Visibilidade: Todos veem tudo, EXCETO os de revisor(a), que são exclusivos para o Desembargador e o próprio autor #}
         {% if comentario.usuario.profile.funcao != "revisor(a)" or request.user.profile.funcao == "Desembargador" or request.user == comentario.usuario %}
             
             <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start border-bottom pb-2 mb-2 position-relative">
