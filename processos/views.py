@@ -574,9 +574,19 @@ def importar_processos_view(request):
                     )
                     
                     if usuario:
-                        ProcessoAndamento.objects.filter(processo=processo).update(usuario=usuario)
+                        # [CORREÇÃO]: Atualiza o responsável APENAS se o andamento 
+                        # estiver na fase de "Elaboração".
+                        # O termo fase__fase acessa o campo 'fase' do modelo Fase relacionado.
+                        ProcessoAndamento.objects.filter(
+                            processo=processo, 
+                            fase__fase="Elaboração" 
+                        ).update(usuario=usuario)
                     
                         processos_inseridos += 1
+                        
+                except Exception as e:
+                    print(f"Erro ao importar processo {row.get('numeroProcesso', 'Desconhecido')}: {str(e)}")
+                    # ... resto do código ...
                     
 
                 except Exception as e:  # Linha 236 - Garantindo indentação correta
