@@ -7,3 +7,5 @@ gunicorn.service
 uwsgi.ini
 nginx.conf
 gabjonesgattass_uwsgi.ini
+.env
+venv/
