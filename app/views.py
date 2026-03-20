@@ -958,3 +958,65 @@ def get_revisoes_semana_data(request):
         ]
     }
     return JsonResponse(response_data)
+
+import json
+import os
+from openai import OpenAI
+from django.conf import settings
+from decouple import config
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+def chat_ia_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            question = data.get('question', '')
+            
+            if not question:
+                return JsonResponse({'response': 'Por favor, faça uma pergunta válida.'})
+
+            # Conectar à API da OpenAI
+            api_key = config('OPENAI_API_KEY', default='')
+            if not api_key or 'sk-cole' in api_key:
+                return JsonResponse({'response': 'A chave OPENAI_API_KEY não foi configurada corretamente. Verifique o seu .env.'})
+                
+            assistant_id = config('OPENAI_ASSISTANT_ID', default='')
+            if not assistant_id:
+                return JsonResponse({'response': 'O código do Assistente (OPENAI_ASSISTANT_ID) não foi adicionado ao arquivo .env ainda.'})
+                
+            client = OpenAI(api_key=api_key)
+            
+            # 1. Cria uma "Sala de Conversa" no lado da OpenAI e manda a Pergunta do Assessor
+            thread = client.beta.threads.create()
+            client.beta.threads.messages.create(
+                thread_id=thread.id,
+                role="user",
+                content=question
+            )
+            
+            # 2. Acorda o "Assistente de Gabinete" e manda ele consultar os 5 mil PDFs e responder
+            run = client.beta.threads.runs.create_and_poll(
+                thread_id=thread.id,
+                assistant_id=assistant_id
+            )
+            
+            # 3. Pega a resposta final
+            if run.status == 'completed':
+                messages = client.beta.threads.messages.list(
+                    thread_id=thread.id
+                )
+                resposta_ia = messages.data[0].content[0].text.value
+                
+                # Opcional: A OpenAI costuma adicionar referências feias [^1^] ou 【4:0†source】. Limpa via Regex.
+                import re
+                resposta_limpa = re.sub(r'【.*?】|\[\^.*?\^\]', '', resposta_ia)
+                
+                return JsonResponse({'response': resposta_limpa})
+            else:
+                return JsonResponse({'response': f'O Assistente falhou. Status: {run.status}'})
+            
+        except Exception as e:
+            return JsonResponse({'response': f'Erro no processamento da IA: {str(e)}'})
+    
+    return JsonResponse({'error': 'Apenas requisições POST são permitidas'}, status=400)
