@@ -554,24 +554,33 @@ def importar_processos_view(request):
                     prioridade_str = str(row.get('prioridade', 'false')).strip().lower()
                     prioridade_urgente = prioridade_str == 'true'
 
-                    # Criar ou atualizar processo
-                    processo, created = Processo.objects.update_or_create(
+                      # Garantir que processos já existentes NÃO percam o "tipo" original
+                    campos_atualizaveis = {
+                        'tema': tema,
+                        'usuario': usuario,
+                        'antigo': antigo,
+                        'prioridade_urgente': prioridade_urgente,
+                        'dt_atualizacao': timezone.now(),
+                        'despacho': despacho,
+                    }
+
+                    processo, created = Processo.objects.get_or_create(
                         numero_processo=numero_processo,
                         especie=especie,
                         concluido=False,
                         defaults={
-                            'especie': especie,
-                            'tema': tema,
-                            'usuario': usuario,
-                            'antigo': antigo,
-                            'prioridade_urgente': prioridade_urgente,
+                            **campos_atualizaveis,
                             'dt_criacao': timezone.now(),
-                            'dt_atualizacao': timezone.now(),
                             'data_dist': timezone.now(),
-                            'despacho': despacho,
-                            'tipo': tipo_processo,  # Marcar despacho como True se necessário
+                            'tipo': tipo_processo, # O tipo só é definido na Criação!
                         }
                     )
+
+                    if not created:
+                        # Se já existe, atualizamos apenas os campos permitidos (sem mexer no tipo)
+                        for campo, valor in campos_atualizaveis.items():
+                            setattr(processo, campo, valor)
+                        processo.save()
                     
                     if usuario:
                         # [CORREÇÃO]: Atualiza o responsável APENAS se o andamento 
