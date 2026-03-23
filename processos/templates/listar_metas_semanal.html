@@ -1043,6 +1043,7 @@ async function editarMeta(metaId) {
         id: proc.id,
         numero_processo: proc.numero_processo,
         especie: proc.especie,
+        tipo: proc.tipo,
         fase_atual: proc.fase_atual || 'Não especificado',
         dias_no_gabinete: proc.dias_no_gabinete || '—'
       });
@@ -1055,6 +1056,7 @@ async function editarMeta(metaId) {
           id: proc.id,
           numero_processo: proc.numero_processo,
           especie: proc.especie,
+          tipo: proc.tipo,
           fase_atual: proc.fase_atual || 'Não especificado',
           dias_no_gabinete: proc.dias_no_gabinete || '—'
         });
@@ -1073,13 +1075,31 @@ async function editarMeta(metaId) {
         const tipo = proc.tipo || ''; 
         const especie = proc.especie || '';
         const dias = proc.dias_no_gabinete || 0;
+        let tipoBadge = '';
+        if (tipo && tipo !== 'Não informado') {
+          let badgeClass = 'bg-secondary';
+          const tipoLower = tipo.toLowerCase();
+          
+          if (tipoLower.includes('urgent')) {
+            badgeClass = 'bg-danger text-white';
+          } else if (tipoLower.includes('prioridade')) {
+            badgeClass = 'bg-warning text-dark';
+          } else if (tipoLower.includes('monocrática') || tipoLower.includes('monocratica')) {
+            badgeClass = 'bg-primary text-white';
+          } else {
+            badgeClass = 'bg-info text-white';
+          }
+          
+          tipoBadge = `<span class="badge rounded-pill ${badgeClass} ms-2" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;">${tipo}</span>`;
+        }
+        
         return `
           <label class="d-flex align-items-center gap-2 processo-item mb-2" data-numero-processo="${proc.numero_processo.toLowerCase()}" data-ordem-original="${index}">
             <input class="form-check-input" type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()">
             <span>
-              <strong>${proc.numero_processo}</strong> - ${especie} - ${tipo}
-              <span class="badge bg-secondary">${dias} dias</span>
-              ${proc.fase_atual && proc.fase_atual !== 'Não especificado' ? `<br><small class="text-muted">Fase: ${proc.fase_atual}</small>` : ''}
+              ${proc.numero_processo} - ${especie} - (${dias} dias no gabinete)
+              ${proc.fase_atual && proc.fase_atual !== 'Não especificado' ? ` - <strong>${proc.fase_atual}</strong>` : ''}
+              ${tipoBadge}
             </span>
           </label>
         `;

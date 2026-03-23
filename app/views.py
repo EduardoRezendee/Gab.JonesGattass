@@ -30,7 +30,8 @@ from .metrics import (
     get_pending_and_concluded_by_assessor,
     get_daily_entries_and_exits_by_assessor,
     get_user_daily_productivity,
-    get_user_weekly_productivity
+    get_user_weekly_productivity,
+    get_user_meta_semanal_metrics
 )
 
 @login_required(login_url='login')
@@ -607,6 +608,7 @@ def home(request):
     if not is_revisor and not is_desembargador and not is_chefe:
         process_metrics['detalhes_processos'] = processos_detalhados
     process_gamification = get_process_gamification_metrics(user)
+    meta_semanal_progresso = get_user_meta_semanal_metrics(user)
     top_users = get_top_users_by_xp()
     photo_url = user.profile.photo.url if hasattr(user, 'profile') and user.profile.photo else '/static/default-profile.png'
 
@@ -620,6 +622,7 @@ def home(request):
         'andamento_metrics': andamento_metrics,
         'process_metrics': process_metrics,
         'process_gamification': process_gamification,
+        'meta_semanal_progresso': meta_semanal_progresso,
         'top_users': top_users,
         'photo_url': photo_url,
         'tarefas_ids': tarefas_ids,
@@ -1014,7 +1017,8 @@ def chat_ia_view(request):
                 
                 return JsonResponse({'response': resposta_limpa})
             else:
-                return JsonResponse({'response': f'O Assistente falhou. Status: {run.status}'})
+                detalhe_erro = run.last_error.message if hasattr(run, 'last_error') and run.last_error else run.status
+                return JsonResponse({'response': f'A OpenAI bloqueou a resposta. Motivo: {detalhe_erro}'})
             
         except Exception as e:
             return JsonResponse({'response': f'Erro no processamento da IA: {str(e)}'})

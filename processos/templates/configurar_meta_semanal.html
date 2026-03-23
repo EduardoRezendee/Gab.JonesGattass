@@ -285,8 +285,40 @@ function carregarProcessos() {
     input.addEventListener('change', atualizarMetaQtd);
     
     const span = document.createElement('span');
-    const faseTexto = proc.fase_atual ? ` - ${proc.fase_atual}` : '';
-    span.textContent = `${proc.numero_processo} - ${proc.especie} - (${proc.dias_no_gabinete} dias no gabinete)${faseTexto} - ${proc.tipo}`;
+    // Cria o texto principal seguro
+    span.textContent = `${proc.numero_processo} - ${proc.especie} - (${proc.dias_no_gabinete} dias no gabinete)`;
+    
+    // Adiciona a fase_atual em negrito se ela existir
+    if (proc.fase_atual) {
+      span.appendChild(document.createTextNode(' - '));
+      const negrito = document.createElement('strong');
+      negrito.textContent = proc.fase_atual;
+      span.appendChild(negrito);
+    }
+    span.appendChild(document.createTextNode(' '));
+    
+    if (proc.tipo && proc.tipo !== 'Não informado') {
+      const badge = document.createElement('span');
+      let badgeClass = 'bg-secondary';
+      const tipoLower = proc.tipo.toLowerCase();
+      
+      if (tipoLower.includes('urgent')) {
+        badgeClass = 'bg-danger text-white';
+      } else if (tipoLower.includes('prioridade')) {
+        badgeClass = 'bg-warning text-dark';
+      } else if (tipoLower.includes('monocrática') || tipoLower.includes('monocratica')) {
+        badgeClass = 'bg-primary text-white';
+      } else {
+        badgeClass = 'bg-info text-white';
+      }
+      
+      badge.className = `badge rounded-pill ${badgeClass} ms-2`;
+      badge.style.fontSize = '0.75rem';
+      badge.style.fontWeight = '600';
+      badge.style.letterSpacing = '0.5px';
+      badge.textContent = proc.tipo;
+      span.appendChild(badge);
+    }
     
     label.append(input, span);
     container.appendChild(label);

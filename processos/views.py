@@ -2029,7 +2029,8 @@ def editar_meta_semanal(request):
                 'numero_processo': p.numero_processo,
                 'especie': p.especie.especie if p.especie else '—',
                 'tipo': p.tipo.tipo if p.tipo else 'Não informado',
-                'fase_atual': p.fase_atual or 'Não especificado'
+                'fase_atual': p.fase_atual or 'Não especificado',
+                'dias_no_gabinete': (timezone.now().date() - p.antigo.date()).days if p.antigo else 0
             })
 
         data = {

@@ -1,4 +1,5 @@
 <!-- Visão do Revisor(a) -->
+
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%;">
   <div class="accordion-item">
     <h2 class="accordion-header">
@@ -37,10 +38,14 @@
 
        <!-- Lista de Processos -->
         {% if andamento_metrics %}
+          <!-- Container dos Botões de Filtro -->
+          <div id="filtros-assessores-revisor" class="mb-3 mt-2 d-flex flex-wrap gap-2 align-items-center"></div>
+
           <div class="list-group">
             {% for andamento in andamento_metrics %}
               <div id="processo-{{ andamento.processo_pk }}"
-                  class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
+                  data-assessor="{{ andamento.usuario_processo|default:'Não atribuído' }}"
+                  class="processo-card list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
                   {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
                     border border-danger text-danger
                   {% elif andamento.tipo == 'Prioridade' %}
@@ -256,3 +261,120 @@
 
 <!-- Chatbot RAG -->
 {% include 'components/chat_widget.html' %}
+
+<!-- Script de Filtragem Dinâmica por Assessor -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const container = document.getElementById('filtros-assessores-revisor');
+  if (!container) return;
+  
+  const cards = document.querySelectorAll('#collapseAndamentos .processo-card');
+  if (cards.length === 0) return;
+  
+  const contagem = {};
+  let total = 0;
+  
+  cards.forEach(card => {
+    const assessor = card.getAttribute('data-assessor');
+    if (assessor) {
+      contagem[assessor] = (contagem[assessor] || 0) + 1;
+      total++;
+    }
+  });
+  
+  container.innerHTML = `<span class="fw-bold me-2 text-dark mb-2 d-flex align-items-center" style="font-size: 0.95rem;"><i class="bi bi-funnel me-2"></i></span>`;
+  
+  function criarBotao(nome, quantidade, isActive) {
+    const btn = document.createElement('button');
+    btn.setAttribute('data-target', nome.toLowerCase() === 'todos' ? 'todos' : nome);
+    btn.setAttribute('data-nome', nome);
+    btn.setAttribute('data-count', quantidade);
+    
+    if (isActive) {
+      btn.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
+      btn.style.backgroundColor = '#083464';
+      btn.style.borderColor = '#083464';
+      btn.style.color = 'white';
+      btn.style.fontSize = '0.9rem';
+      btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
+    } else {
+      btn.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
+      btn.style.backgroundColor = 'white';
+      btn.style.borderColor = '#083464';
+      btn.style.color = '#083464';
+      btn.style.fontSize = '0.9rem';
+      btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
+    }
+    
+    btn.style.transition = 'all 0.2s ease-in-out';
+    btn.style.borderWidth = '1.5px';
+    
+    // Efeito hover
+    btn.onmouseover = function() {
+        if (btn.style.backgroundColor === 'white') {
+            btn.style.backgroundColor = '#f8fafc';
+            btn.style.transform = 'translateY(-1px)';
+        }
+    };
+    btn.onmouseout = function() {
+        if (btn.style.backgroundColor === 'rgb(248, 250, 252)' || btn.style.backgroundColor === '#f8fafc') {
+            btn.style.backgroundColor = 'white';
+            btn.style.transform = 'translateY(0)';
+        }
+    };
+    
+    return btn;
+  }
+  
+  const arrayBotoes = [];
+  
+  // Botão "Todos"
+  const btnTodos = criarBotao('Todos', total, true);
+  container.appendChild(btnTodos);
+  arrayBotoes.push(btnTodos);
+  
+  // Cria botões por nome de assessor ordenados alfabeticamente
+  Object.keys(contagem).sort().forEach(assessor => {
+    const btn = criarBotao(assessor, contagem[assessor], false);
+    container.appendChild(btn);
+    arrayBotoes.push(btn);
+  });
+  
+  arrayBotoes.forEach(bClick => {
+    bClick.addEventListener('click', function() {
+      // Reset visual
+      arrayBotoes.forEach(b2 => {
+        const nome = b2.getAttribute('data-nome');
+        const count = b2.getAttribute('data-count');
+        
+        b2.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
+        b2.style.backgroundColor = 'white';
+        b2.style.color = '#083464';
+        b2.style.transform = 'translateY(0)';
+        b2.style.fontSize = '0.9rem';
+        b2.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${count}</span>`;
+      });
+      
+      // Set ativo
+      const nomeAtivo = this.getAttribute('data-nome');
+      const countAtivo = this.getAttribute('data-count');
+      this.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
+      this.style.backgroundColor = '#083464';
+      this.style.color = 'white';
+      this.style.fontSize = '0.9rem';
+      this.innerHTML = `${nomeAtivo} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${countAtivo}</span>`;
+      
+      const target = this.getAttribute('data-target');
+      
+      // Filtrar logic
+      cards.forEach(card => {
+        if (target === 'todos' || card.getAttribute('data-assessor') === target) {
+          card.style.setProperty('display', 'flex', 'important');
+        } else {
+          card.style.setProperty('display', 'none', 'important');
+        }
+      });
+    });
+  });
+});
+</script>

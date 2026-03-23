@@ -310,3 +310,53 @@ def get_user_daily_productivity(user):
             }
         ]
     }
+
+def get_user_meta_semanal_metrics(user):
+    from processos.models import MetaSemanal, ProcessoAndamento
+    from datetime import timedelta
+    from django.utils import timezone
+    
+    agora_dt = timezone.localtime()
+    hoje = agora_dt.date()
+    inicio_semana = hoje - timedelta(days=hoje.weekday())
+    fim_semana = inicio_semana + timedelta(days=6)
+    
+    meta = MetaSemanal.objects.filter(
+        usuario=user,
+        semana_inicio=inicio_semana,
+        semana_fim=fim_semana
+    ).first()
+    
+    if not meta:
+        return None
+        
+    total_meta = meta.meta_qtd
+    processos = meta.processos.all()
+    
+    # Processos that went to "Revisão Des"
+    concluidos_ids = set(
+        ProcessoAndamento.objects.filter(
+            processo__in=processos,
+            fase__fase="Revisão Des",
+            dt_criacao__date__range=(inicio_semana, fim_semana)
+        ).values_list('processo', flat=True).distinct()
+    )
+    
+    # Plus "Monocráticas" that were concluded
+    monocraticas_ids = set(
+        processos.filter(
+            tipo__tipo="Monocrática",
+            concluido=True
+        ).values_list('id', flat=True)
+    )
+    
+    total_concluidas = len(concluidos_ids.union(monocraticas_ids))
+    faltam = max(0, total_meta - total_concluidas)
+    progresso = int((total_concluidas / total_meta * 100)) if total_meta > 0 else 0
+    
+    return {
+        'total': total_meta,
+        'concluidas': total_concluidas,
+        'faltam': faltam,
+        'progresso': min(progresso, 100),
+    }
