@@ -52,4 +52,12 @@ urlpatterns = [
     path('configurar-meta-semanal/', configurar_meta_semanal, name='configurar_meta_semanal'),
     path('excluir-comentario/<int:comentario_id>/', views.excluir_comentario, name='excluir_comentario'),
 
+# ── Processos em Pauta ──────────────────────────────────────────
+    path('pauta/importar/', views.importar_pauta, name='importar_pauta'),
+    path('pauta/adicionar-manual/', views.adicionar_pauta_manual, name='adicionar_pauta_manual'),
+    path('pauta/json/', views.pauta_json, name='pauta_json'),
+    path('pauta/limpar/', views.limpar_pauta, name='limpar_pauta'),
+    path('pauta/remover/<int:item_id>/', views.remover_pauta_item, name='remover_pauta_item'),
+
+
 ]

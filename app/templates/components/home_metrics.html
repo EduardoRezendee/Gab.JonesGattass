@@ -245,6 +245,74 @@
 
 
 
+    <!-- ── Processos em Pauta (Chefe de Gabinete) ── -->
+    <div class="accordion shadow-sm mb-4" id="accordionPautaChefe">
+      <div class="accordion-item" style="border-radius:12px;overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed position-relative fw-bold" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#collapsePautaChefe" aria-expanded="false">
+            <span style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1d4ed8,#7c3aed);border-radius:2px 2px 0 0;"></span>
+            <i class="bi bi-calendar3-week me-2" style="color:#1d4ed8;"></i>
+            📋 Processos em Pauta
+            <span id="chefePautaHeaderDate" class="badge ms-2" style="background:#2563eb; color:#ffffff; font-size:.85rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);"><i class="bi bi-calendar-event me-1"></i> Carregando...</span>
+            <span class="badge ms-2" style="background:#dbeafe;color:#1d4ed8;font-size:.8rem;">
+              Presencial&nbsp;<span id="chefePautaBadgePres">—</span>
+              &nbsp;|&nbsp;Virtual&nbsp;<span id="chefePautaBadgeVirt">—</span>
+            </span>
+          </button>
+        </h2>
+        <div id="collapsePautaChefe" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            {% include 'components/pauta.html' %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch("{% url 'pauta_json' %}").then(r=>r.json()).then(d=>{
+        const ep = document.getElementById('chefePautaBadgePres');
+        const ev = document.getElementById('chefePautaBadgeVirt');
+        const eh = document.getElementById('chefePautaHeaderDate');
+
+        const all = [...d.presenciais, ...d.virtuais];
+        let nextDate = null;
+        
+        if (all.length > 0) {
+          const dates = [...new Set(all.map(i => i.data_sessao).filter(Boolean))];
+          dates.sort((a,b) => {
+            const [da,ma,ya] = a.split('/');
+            const [db,mb,yb] = b.split('/');
+            return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
+          });
+          
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          nextDate = dates.find(dtStr => {
+            const [da,ma,ya] = dtStr.split('/');
+            return new Date(ya,ma-1,da) >= today;
+          }) || dates[dates.length - 1];
+        }
+
+        if (nextDate) {
+          const pCount = d.presenciais.filter(i => i.data_sessao === nextDate).length;
+          const vCount = d.virtuais.filter(i => i.data_sessao === nextDate).length;
+          if(ep) ep.textContent = pCount;
+          if(ev) ev.textContent = vCount;
+          if(eh) {
+            eh.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${nextDate}`;
+            eh.style.display = 'inline-block';
+          }
+        } else {
+          if(ep) ep.textContent = 0;
+          if(ev) ev.textContent = 0;
+          if(eh) eh.style.display = 'none';
+        }
+      });
+    });
+    </script>
+
     <!-- Seção de Gráficos -->
     <div class="row g-4">
       <!-- Revisões Hoje (Barra simples) -->
@@ -526,7 +594,7 @@
           const comentarioInput = form.querySelector("textarea");
           const comentariosDiv = document.getElementById("comentarios-" + processoId);
 
-          fetch(/adicionar-comentario/${processoId}/, {
+          fetch(`/adicionar-comentario/${processoId}/`, {
             method: "POST",
             body: new FormData(form),
             headers: {
@@ -564,7 +632,7 @@
     function copiarNumero(processoId) {
       let texto = document.getElementById("numeroProcesso-" + processoId).innerText;
       navigator.clipboard.writeText(texto).then(() => {
-        let icone = document.querySelector(#numeroProcesso-${processoId} + .copiar-icon);
+        let icone = document.querySelector(`#numeroProcesso-${processoId} + .copiar-icon`);
         icone.classList.replace("bi-clipboard", "bi-clipboard-check");
         setTimeout(() => icone.classList.replace("bi-clipboard-check", "bi-clipboard"), 1500);
       }).catch(err => console.error("Erro ao copiar o texto:", err));

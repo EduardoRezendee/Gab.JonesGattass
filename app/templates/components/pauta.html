@@ -1,0 +1,681 @@
+{% load static %}
+{% load tz %}
+
+{# ─── PAUTA STYLES ────────────────────────────────────────────────── #}
+<style>
+/* ── Reset / base ─────────────────────────────────────────────── */
+.pauta-wrapper {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ── Import Zone ──────────────────────────────────────────────── */
+.pauta-upload-zone {
+  border: 2px dashed #c7d7f0;
+  border-radius: 14px;
+  padding: 22px 20px;
+  background: linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%);
+  transition: border-color .2s, background .2s;
+  cursor: pointer;
+  text-align: center;
+}
+.pauta-upload-zone:hover, .pauta-upload-zone.drag-over {
+  border-color: #083464; background: #e8effd;
+}
+.pauta-upload-zone input[type="file"] { display: none; }
+.pauta-upload-icon { font-size: 2rem; color: #083464; }
+.pauta-upload-label { font-weight: 600; color: #083464; font-size: .95rem; }
+.pauta-upload-hint  { font-size: 0.8rem;  color: #6b7280; }
+.pauta-filename     { font-size: 0.82rem; color: #10b981; font-weight: 600; margin-top: 4px; }
+
+/* ── Filter tabs ──────────────────────────────────────────────── */
+.pauta-filters {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.pauta-filter-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px; border-radius: 30px; border: 2px solid transparent;
+  font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  transition: all .18s ease; background: #f1f5f9; color: #64748b;
+}
+.pauta-filter-btn .cnt {
+  background: currentColor; color: #fff; border-radius: 20px;
+  padding: 1px 7px; font-size: .78rem; opacity: .9;
+  /* override */
+}
+.pauta-filter-btn.todos   { border-color: #cbd5e1; }
+.pauta-filter-btn.pres    { border-color: #bfdbfe; }
+.pauta-filter-btn.virt    { border-color: #ddd6fe; }
+
+.pauta-filter-btn.active.todos { background:#083464; color:#fff; border-color:#083464; }
+.pauta-filter-btn.active.pres  { background:#2563eb; color:#fff; border-color:#2563eb; }
+.pauta-filter-btn.active.virt  { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+
+.pauta-filter-btn:hover:not(.active) { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+/* ── Section headers ──────────────────────────────────────────── */
+.pauta-section {
+  margin-bottom: 28px;
+  transition: opacity .2s;
+}
+.pauta-section.hidden { display: none; }
+.pauta-section-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 12px; margin-bottom: 14px;
+  font-weight: 700; font-size: 1rem;
+}
+.pauta-section-header.pres {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1d4ed8; border-left: 4px solid #2563eb;
+}
+.pauta-section-header.virt {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  color: #5b21b6; border-left: 4px solid #7c3aed;
+}
+.pauta-section-header .badge-count {
+  margin-left: auto; padding: 3px 12px; border-radius: 20px;
+  font-size: .82rem; font-weight: 700;
+}
+.pauta-section-header.pres .badge-count { background:#2563eb; color:#fff; }
+.pauta-section-header.virt .badge-count { background:#7c3aed; color:#fff; }
+
+/* ── Card grid ────────────────────────────────────────────────── */
+.pauta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.pauta-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  border-top: 4px solid transparent;
+  transition: box-shadow .18s, transform .18s;
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pauta-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
+.pauta-card.pres  { border-top-color: #2563eb; }
+.pauta-card.virt  { border-top-color: #7c3aed; }
+
+.pauta-card .card-num {
+  font-size: .95rem; font-weight: 700; color: #083464;
+  display: flex; align-items: center; gap: 6px;
+}
+.pauta-card .card-num .copy-btn {
+  background: none; border: none; color: #94a3b8; font-size: .85rem;
+  cursor: pointer; padding: 0 2px; transition: color .15s;
+}
+.pauta-card .card-num .copy-btn:hover { color: #083464; }
+
+.pauta-card .card-meta {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  font-size: .82rem; color: #64748b;
+}
+.pauta-card .card-meta span { display: flex; align-items: center; gap: 4px; }
+
+.pauta-card .card-badges { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9;
+}
+.pauta-card .badges-left { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.badge-sessao {
+  font-size: .74rem; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+}
+.badge-pres { background: #dbeafe; color: #1e40af; }
+.badge-virt { background: #ede9fe; color: #5b21b6; }
+.badge-vinculado   { background: #10b981; color: #fff; font-size: .72rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+.badge-naolocalizado { background: #cbd5e1; color: #475569; font-size: .72rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+.btn-documento {
+  background: #2563eb; color: #ffffff; font-size: .78rem; font-weight: 600; padding: 5px 12px;
+  border-radius: 8px; border: none; display: inline-flex; align-items: center;
+  text-decoration: none; transition: all .2s; box-shadow: 0 2px 4px rgba(37,99,235,.2); gap: 4px;
+}
+.btn-documento:hover { background: #1d4ed8; color: #f8fafc; transform: translateY(-1px); }
+
+.pauta-card .btn-del {
+  position: absolute; top: 10px; right: 10px;
+  background: none; border: none; color: #cbd5e1;
+  cursor: pointer; font-size: .95rem; padding: 4px 6px; border-radius: 8px;
+  transition: color .15s, background .15s;
+}
+.pauta-card .btn-del:hover { color: #ef4444; background: #fee2e2; }
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.pauta-empty {
+  grid-column: 1 / -1;
+  text-align: center; color: #94a3b8; padding: 30px 0;
+  font-size: .9rem; font-style: italic;
+}
+
+/* ── Action buttons ───────────────────────────────────────────── */
+.btn-pauta-import {
+  background: linear-gradient(135deg, #083464, #1a56a4);
+  color: #fff; border: none; border-radius: 10px; padding: 9px 20px;
+  font-size: .9rem; font-weight: 600; cursor: pointer;
+  transition: opacity .15s, transform .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-pauta-import:hover { opacity: .9; transform: translateY(-1px); }
+.btn-pauta-import:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-pauta-clear {
+  background: #fee2e2; color: #dc2626; border: none; border-radius: 10px;
+  padding: 9px 16px; font-size: .86rem; font-weight: 600; cursor: pointer;
+  transition: background .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-pauta-clear:hover { background: #fecaca; }
+
+.btn-pauta-manual-add {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff; border: none; border-radius: 10px; padding: 9px 20px;
+  font-size: .88rem; font-weight: 600; cursor: pointer; transition: opacity .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-pauta-manual-add:hover { opacity: .88; }
+
+/* ── Manual form ──────────────────────────────────────────────── */
+.pauta-manual-form {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 14px; padding: 18px;
+}
+.pauta-manual-form label { font-size: .83rem; font-weight: 600; color: #374151; }
+.pauta-manual-form .form-control,
+.pauta-manual-form .form-select {
+  border-radius: 10px; border-color: #d1d5db; font-size: .88rem;
+}
+.pauta-manual-form .form-control:focus,
+.pauta-manual-form .form-select:focus {
+  border-color: #083464; box-shadow: 0 0 0 3px rgba(8,52,100,.1);
+}
+
+/* ── Divider ──────────────────────────────────────────────────── */
+.pauta-divider { height: 1px; background: #e5e7eb; margin: 18px 0; }
+
+/* ── Spinner ──────────────────────────────────────────────────── */
+.pauta-spinner {
+  display: none; width: 16px; height: 16px;
+  border: 3px solid rgba(255,255,255,.4); border-top-color: #fff;
+  border-radius: 50%; animation: pautaSpin .7s linear infinite;
+}
+@keyframes pautaSpin { to { transform: rotate(360deg); } }
+
+/* ── Toast ────────────────────────────────────────────────────── */
+#pauta-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  padding: 12px 20px; border-radius: 12px; font-size: .88rem; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15); display: none; max-width: 340px;
+  animation: slideInRight .3s ease;
+}
+#pauta-toast.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+#pauta-toast.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+@keyframes slideInRight { from { opacity:0; transform:translateX(30px);} to{opacity:1;transform:none;} }
+</style>
+
+{# ─── PAUTA HTML ─────────────────────────────────────────────────── #}
+<div class="pauta-wrapper">
+
+  {# ── Import zone (somente para quem tem permissão) ── #}
+  {% if show_import != False %}
+  <div class="d-flex flex-wrap gap-3 align-items-end mb-4">
+    <div class="flex-grow-1">
+      <div class="pauta-upload-zone" id="pauta-drop-zone" onclick="document.getElementById('pauta-file-input').click()">
+        <div class="pauta-upload-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+        <div class="pauta-upload-label mt-1">Importar planilha Excel</div>
+        <div class="pauta-upload-hint">Clique ou arraste o arquivo .xlsx — substituirá toda a pauta</div>
+        <div class="pauta-filename" id="pauta-file-name"></div>
+        <input type="file" id="pauta-file-input" accept=".xlsx,.xls">
+      </div>
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn-pauta-import" id="btn-import-excel" disabled>
+        <span id="import-btn-text"><i class="bi bi-upload"></i> Importar</span>
+        <div class="pauta-spinner" id="import-spinner"></div>
+      </button>
+      <button class="btn-pauta-clear" id="btn-limpar-pauta">
+        <i class="bi bi-trash"></i> Limpar
+      </button>
+    </div>
+  </div>
+
+  {# Manual addition #}
+  <details class="mb-3">
+    <summary style="cursor:pointer;font-weight:700;color:#083464;font-size:.92rem;list-style:none;display:flex;align-items:center;gap:8px;">
+      <i class="bi bi-plus-circle"></i> Adicionar manualmente
+    </summary>
+    <div class="pauta-manual-form mt-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label for="manual-numero">Número do Processo</label>
+          <input type="text" id="manual-numero" class="form-control" placeholder="0000000-00.0000.0.00.0000">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-data">Data da Sessão</label>
+          <input type="datetime-local" id="manual-data" class="form-control">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-tipo">Tipo</label>
+          <select id="manual-tipo" class="form-select">
+            <option value="presencial">🏛️ Presencial</option>
+            <option value="virtual">💻 Virtual</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2">
+          <button class="btn-pauta-manual-add w-100" id="btn-add-manual">
+            <i class="bi bi-check-lg"></i> Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="pauta-divider"></div>
+  {% endif %}
+
+  {# ── Filter tabs & Search ── #}
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+    {% if not only_presencial %}
+    <div class="pauta-filters m-0" id="pauta-filters">
+      <button class="pauta-filter-btn todos active" data-filter="todos">
+        <i class="bi bi-grid-3x3-gap-fill"></i> Todos
+        <span class="badge ms-1" style="background:#083464;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-todos">—</span>
+      </button>
+      <button class="pauta-filter-btn pres" data-filter="presencial">
+        <i class="bi bi-building-fill"></i> Presencial
+        <span class="badge ms-1" style="background:#2563eb;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-pres">—</span>
+      </button>
+      <button class="pauta-filter-btn virt" data-filter="virtual">
+        <i class="bi bi-camera-video-fill"></i> Virtual
+        <span class="badge ms-1" style="background:#7c3aed;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-virt">—</span>
+      </button>
+    </div>
+    {% else %}
+    <div class="fw-bold" style="color:#083464; font-size:1.05rem;">
+      <i class="bi bi-building-fill me-2 text-primary"></i>PROCESSOS DA SESSÃO PRESENCIAL
+    </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap align-items-center gap-2 ms-md-auto pauta-search-controls">
+      <div class="d-flex align-items-center" style="background:#fff; border:1px solid #e2e8f0; border-radius:30px; padding:2px 14px; box-shadow:0 1px 2px rgba(0,0,0,.03);">
+        <i class="bi bi-calendar-event text-primary me-2"></i>
+        <label for="pauta-date-filter" class="d-none">Data:</label>
+        <select id="pauta-date-filter" style="border:none; outline:none; background:transparent; font-size:.88rem; font-weight:600; color:#475569; padding:6px 0; cursor:pointer; min-width:130px;">
+          <option value="todas">Todas as datas</option>
+        </select>
+      </div>
+      
+      <div class="position-relative" style="width:260px;">
+        <i class="bi bi-search position-absolute" style="top:50%;left:12px;transform:translateY(-50%);color:#94a3b8;"></i>
+        <input type="text" id="pauta-search" class="form-control" placeholder="Buscar por número..." style="padding-left:36px; border-radius:30px;">
+      </div>
+    </div>
+  </div>
+
+  {# ── Sessão Presencial ── #}
+  <div class="pauta-section" id="section-presencial">
+    {% if not only_presencial %}
+    <div class="pauta-section-header pres">
+      <i class="bi bi-building-fill" style="font-size:1.1rem;"></i>
+      Sessão Presencial
+      <span class="badge-count" id="badge-pres-count">0</span>
+    </div>
+    {% endif %}
+    <div class="pauta-grid" id="lista-presencial">
+      <p class="pauta-empty">Carregando...</p>
+    </div>
+  </div>
+
+  {# ── Sessão Virtual ── #}
+  {% if not only_presencial %}
+  <div class="pauta-section" id="section-virtual">
+    <div class="pauta-section-header virt">
+      <i class="bi bi-camera-video-fill" style="font-size:1.1rem;"></i>
+      Sessão Virtual
+      <span class="badge-count" id="badge-virt-count">0</span>
+    </div>
+    <div class="pauta-grid" id="lista-virtual">
+      <p class="pauta-empty">Carregando...</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+{# ── Toast ── #}
+<div id="pauta-toast"></div>
+
+{# ─── PAUTA JS ─────────────────────────────────────────────────── #}
+<script>
+(function() {
+  'use strict';
+
+  const URLS = {
+    json     : "{% url 'pauta_json' %}",
+    importar : "{% url 'importar_pauta' %}",
+    manual   : "{% url 'adicionar_pauta_manual' %}",
+    limpar   : "{% url 'limpar_pauta' %}",
+    remover  : (id) => `/pauta/remover/${id}/`,
+  };
+
+  const isOnlyPresencial = {{ only_presencial|yesno:"true,false"|default:"false" }};
+  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+  let pautaData = { presenciais: [], virtuais: [] };
+  let searchTerm = '';
+
+  /* ── Toast ── */
+  function showToast(msg, type='success') {
+    const t = document.getElementById('pauta-toast');
+    t.textContent = msg;
+    t.className = type;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 4500);
+  }
+
+  /* ── Render card ── */
+  function renderCard(item) {
+    const badgeSessao = item.tipo_sessao === 'presencial'
+      ? `<span class="badge-sessao badge-pres">🏛️ Presencial</span>`
+      : `<span class="badge-sessao badge-virt">💻 Virtual</span>`;
+
+    const linkBadge = item.vinculado
+      ? `<span class="badge-vinculado"><i class="bi bi-check2 me-1"></i>no sistema</span>`
+      : `<span class="badge-naolocalizado"><i class="bi bi-exclamation-circle me-1"></i>não localizado</span>`;
+
+    const docBtn = item.link_documento
+      ? `<a href="${item.link_documento}" target="_blank" class="btn-documento" title="Abrir Documento Original">
+           <i class="bi bi-box-arrow-up-right"></i> Link doc
+         </a>`
+      : ``;
+
+    return `
+      <div class="pauta-card ${item.tipo_sessao}" id="pauta-item-${item.id}">
+        {% if show_import != False %}
+        <button class="btn-del" title="Remover" onclick="pautaRemover(${item.id})">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        {% endif %}
+        <div class="card-num d-flex align-items-center">
+          <i class="bi bi-file-text text-muted me-1" style="font-size:.9rem;"></i>
+          ${item.link_documento ? `<a href="${item.link_documento}" target="_blank" class="text-decoration-none text-dark" title="Abrir Documento">${item.numero_processo}</a>` : item.numero_processo}
+          <button class="copy-btn ms-1" title="Copiar" onclick="pautaCopiar('${item.numero_processo}', this)">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+        <div class="card-meta mt-2">
+          ${item.responsavel && item.responsavel !== 'Não atribuído' ? `<span><i class="bi bi-person text-muted"></i> <strong style="color:#0f172a;">${item.responsavel}</strong></span>` : `<span><i class="bi bi-person text-muted"></i> ${item.responsavel}</span>`}
+          ${item.especie && item.especie !== '—' ? `<span><i class="bi bi-tag text-muted"></i> ${item.especie}</span>` : ''}
+          ${item.tema && item.tema !== '—' ? `<span style="width:100%;"><i class="bi bi-bookmark text-muted"></i> ${item.tema}</span>` : ''}
+          <span style="width:100%;"><i class="bi bi-calendar3 text-muted"></i> <strong>${item.data_sessao}</strong></span>
+        </div>
+        <div class="card-badges">
+          <div class="badges-left">
+            ${isOnlyPresencial ? '' : badgeSessao}
+            ${linkBadge}
+          </div>
+          ${docBtn}
+        </div>
+      </div>`;
+  }
+
+  /* ── Copy number ── */
+  window.pautaCopiar = function(num, btn) {
+    navigator.clipboard.writeText(num).then(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+      btn.style.color = '#10b981';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; btn.style.color = ''; }, 1800);
+    });
+  };
+
+  /* ── Filter ── */
+  let searchDate = null; // Vamos inicializar de forma inteligente
+
+  function renderDateFilter() {
+    const allItems = [...pautaData.presenciais, ...pautaData.virtuais];
+    const dates = [...new Set(allItems.map(i => i.data_sessao).filter(Boolean))];
+    dates.sort((a,b) => {
+      const [ da, ma, ya ] = a.split('/');
+      const [ db, mb, yb ] = b.split('/');
+      return new Date(yb, mb-1, db) - new Date(ya, ma-1, da); 
+    });
+    
+    let nextDate = null;
+    if (dates.length > 0) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const ascDates = [...dates].reverse(); // Do mais antigo pro mais novo (futuro)
+      nextDate = ascDates.find(d => {
+        const [da,ma,ya] = d.split('/');
+        return new Date(ya,ma-1,da) >= today;
+      }) || dates[0]; // fallback para a mais recente se todas passadas
+    }
+    
+    const select = document.getElementById('pauta-date-filter');
+    if (!select) return;
+
+    if (searchDate === null && nextDate !== null) {
+      searchDate = nextDate;
+    }
+
+    const currentVal = select.value === 'todas' ? 'todas' : searchDate;
+    select.innerHTML = '<option value="todas">Todas as datas</option>' + 
+      dates.map(d => `<option value="${d}">${d}</option>`).join('');
+    
+    if (dates.includes(currentVal)) {
+      select.value = currentVal;
+    } else if (dates.length > 0) {
+      searchDate = nextDate;
+      select.value = nextDate;
+    } else {
+      searchDate = 'todas';
+      select.value = 'todas';
+    }
+  }
+
+  /* ── Render list with search filter ── */
+  function renderLists() {
+    // Remove tudo que não for número para comparar
+    const term = searchTerm.replace(/\D/g, '');
+    const filterFn = (item) => {
+      const numOnly = item.numero_processo.replace(/\D/g, '');
+      const matchSearch = numOnly.includes(term);
+      const matchDate = searchDate === 'todas' || item.data_sessao === searchDate;
+      return matchSearch && matchDate;
+    };
+
+    const fPres = pautaData.presenciais.filter(filterFn);
+    const presContainer = document.getElementById('lista-presencial');
+    if (presContainer) {
+      presContainer.innerHTML = fPres.length
+        ? fPres.map(renderCard).join('')
+        : '<p class="pauta-empty">Nenhum processo presencial encontrado.</p>';
+      
+      const elCntPres = document.getElementById('cnt-pres');
+      if (elCntPres) elCntPres.textContent = fPres.length;
+      const elBadgePres = document.getElementById('badge-pres-count');
+      if (elBadgePres) elBadgePres.textContent = fPres.length;
+    }
+
+    if (!isOnlyPresencial) {
+      const fVirt = pautaData.virtuais.filter(filterFn);
+      const virtContainer = document.getElementById('lista-virtual');
+      if (virtContainer) {
+        virtContainer.innerHTML = fVirt.length
+          ? fVirt.map(renderCard).join('')
+          : '<p class="pauta-empty">Nenhum processo virtual encontrado.</p>';
+        
+        const elCntVirt = document.getElementById('cnt-virt');
+        if (elCntVirt) elCntVirt.textContent = fVirt.length;
+        const elBadgeVirt = document.getElementById('badge-virt-count');
+        if (elBadgeVirt) elBadgeVirt.textContent = fVirt.length;
+      }
+      
+      const elCntTodos = document.getElementById('cnt-todos');
+      if (elCntTodos) elCntTodos.textContent = fPres.length + fVirt.length;
+    }
+  }
+
+  /* ── Search and Date Input ── */
+  document.getElementById('pauta-search')?.addEventListener('input', e => {
+    searchTerm = e.target.value;
+    renderLists();
+  });
+
+  document.getElementById('pauta-date-filter')?.addEventListener('change', e => {
+    searchDate = e.target.value;
+    renderLists();
+  });
+
+  /* ── Filter logic ── */
+  let currentFilter = 'todos';
+  function applyFilter(filter) {
+    currentFilter = filter;
+    const secPres = document.getElementById('section-presencial');
+    const secVirt = document.getElementById('section-virtual');
+    if (filter === 'todos') {
+      secPres.classList.remove('hidden');
+      secVirt.classList.remove('hidden');
+    } else if (filter === 'presencial') {
+      secPres.classList.remove('hidden');
+      secVirt.classList.add('hidden');
+    } else {
+      secPres.classList.add('hidden');
+      secVirt.classList.remove('hidden');
+    }
+    document.querySelectorAll('.pauta-filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === filter);
+    });
+  }
+
+  document.querySelectorAll('.pauta-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyFilter(btn.dataset.filter));
+  });
+
+  /* ── Load from server ── */
+  function loadPauta() {
+    fetch(URLS.json)
+      .then(r => r.json())
+      .then(data => {
+        // Salva os dados para a busca funcionar
+        pautaData.presenciais = data.presenciais || [];
+        pautaData.virtuais = data.virtuais || [];
+
+        const total = (data.total_presencial || 0) + (data.total_virtual || 0);
+        
+        const elTodos = document.getElementById('cnt-todos');
+        if (elTodos) elTodos.textContent = total;
+        
+        const elPres = document.getElementById('cnt-pres');
+        if (elPres) elPres.textContent = data.total_presencial;
+        
+        const elVirt = document.getElementById('cnt-virt');
+        if (elVirt) elVirt.textContent = data.total_virtual;
+
+        const elBadgePres = document.getElementById('badge-pres-count');
+        if (elBadgePres) elBadgePres.textContent = data.total_presencial;
+        
+        const elBadgeVirt = document.getElementById('badge-virt-count');
+        if (elBadgeVirt) elBadgeVirt.textContent = data.total_virtual;
+
+        renderDateFilter();
+        renderLists(); // Renderiza usando a busca atual (que começa vazia)
+        applyFilter(currentFilter);
+      })
+      .catch(() => showToast('Erro ao carregar a pauta.', 'error'));
+  }
+
+  /* ── Remove ── */
+  window.pautaRemover = function(id) {
+    if (!confirm('Remover este processo da pauta?')) return;
+    fetch(URLS.remover(id), {
+      method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        const el = document.getElementById(`pauta-item-${id}`);
+        if (el) { el.style.opacity='0'; el.style.transform='scale(.95)'; el.style.transition='.2s'; setTimeout(()=>{el.remove();loadPauta();},220); }
+        showToast('Processo removido da pauta.', 'success');
+      }
+    })
+    .catch(() => showToast('Erro ao remover.', 'error'));
+  };
+
+  {% if show_import != False %}
+  /* ── File input ── */
+  const fileInput = document.getElementById('pauta-file-input');
+  const dropZone  = document.getElementById('pauta-drop-zone');
+  const btnImport = document.getElementById('btn-import-excel');
+  const fileLabel = document.getElementById('pauta-file-name');
+
+  function setFile(file) {
+    fileInput._selectedFile = file;
+    fileLabel.textContent = file ? `📎 ${file.name}` : '';
+    btnImport.disabled = !file;
+  }
+
+  fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0]; if (f) setFile(f);
+  });
+
+  btnImport.addEventListener('click', () => {
+    const file = fileInput._selectedFile || fileInput.files[0];
+    if (!file) return;
+    const spinner = document.getElementById('import-spinner');
+    const btnText = document.getElementById('import-btn-text');
+    btnImport.disabled = true;
+    spinner.style.display = 'inline-block';
+    btnText.style.display = 'none';
+
+    const fd = new FormData();
+    fd.append('arquivo', file);
+    fetch(URLS.importar, { method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) { showToast(d.message,'success'); setFile(null); fileInput.value=''; loadPauta(); }
+        else           { showToast(d.message,'error'); }
+      })
+      .catch(() => showToast('Erro ao importar o arquivo.','error'))
+      .finally(() => { btnImport.disabled=false; spinner.style.display='none'; btnText.style.display='inline-flex'; });
+  });
+
+  document.getElementById('btn-limpar-pauta').addEventListener('click', () => {
+    if (!confirm('Tem certeza que deseja limpar toda a pauta?')) return;
+    fetch(URLS.limpar, { method:'POST', headers:{'X-CSRFToken':csrfToken} })
+      .then(r => r.json())
+      .then(d => { showToast(d.message,'success'); loadPauta(); })
+      .catch(() => showToast('Erro ao limpar.','error'));
+  });
+
+  document.getElementById('btn-add-manual').addEventListener('click', () => {
+    const numero = document.getElementById('manual-numero').value.trim();
+    const data   = document.getElementById('manual-data').value.trim();
+    const tipo   = document.getElementById('manual-tipo').value;
+    if (!numero || !data) { showToast('Preencha o número e a data.','error'); return; }
+    const fd = new FormData();
+    fd.append('numero_processo', numero);
+    fd.append('data_sessao', data);
+    fd.append('tipo_sessao', tipo);
+    fetch(URLS.manual, { method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) { showToast('Processo adicionado à pauta!','success'); document.getElementById('manual-numero').value=''; document.getElementById('manual-data').value=''; loadPauta(); }
+        else           { showToast(d.message,'error'); }
+      })
+      .catch(() => showToast('Erro ao adicionar.','error'));
+  });
+  {% endif %}
+
+  /* ── Initial load ── */
+  document.addEventListener('DOMContentLoaded', loadPauta);
+  if (document.readyState !== 'loading') loadPauta();
+
+})();
+</script>

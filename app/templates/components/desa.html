@@ -1,3 +1,73 @@
+<!-- Accordion Processos em Pauta -->
+<div class="accordion mx-auto mt-4 shadow-sm mb-3" id="accordionPauta" style="max-width:100%;">
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed position-relative" type="button"
+              data-bs-toggle="collapse" data-bs-target="#collapsePauta" aria-expanded="false">
+        <span style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1d4ed8,#7c3aed);border-radius:2px;"></span>
+        <i class="bi bi-calendar3-week me-2" style="color:#1d4ed8;"></i>
+        <strong>📋 Processos em Pauta</strong>
+        <span id="pautaHeaderDate" class="badge ms-2" style="background:#2563eb; color:#ffffff; font-size:.85rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);"><i class="bi bi-calendar-event me-1"></i> Carregando...</span>
+        <span class="badge ms-2" style="background:#dbeafe;color:#1d4ed8;font-size:.8rem;">
+          Presencial&nbsp;<span id="pautaBadgePres">—</span>
+          &nbsp;|&nbsp;Virtual&nbsp;<span id="pautaBadgeVirt">—</span>
+        </span>
+      </button>
+    </h2>
+    <div id="collapsePauta" class="accordion-collapse collapse">
+      <div class="accordion-body">
+        {% include 'components/pauta.html' with show_import=False %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Atualiza os badges do header do accordion com os totais da próxima pauta
+document.addEventListener('DOMContentLoaded', function() {
+  fetch("{% url 'pauta_json' %}").then(r=>r.json()).then(d=>{
+    const ep = document.getElementById('pautaBadgePres');
+    const ev = document.getElementById('pautaBadgeVirt');
+    const eh = document.getElementById('pautaHeaderDate');
+    
+    const all = [...d.presenciais, ...d.virtuais];
+    let nextDate = null;
+    
+    if (all.length > 0) {
+      const dates = [...new Set(all.map(i => i.data_sessao).filter(Boolean))];
+      dates.sort((a,b) => {
+        const [da,ma,ya] = a.split('/');
+        const [db,mb,yb] = b.split('/');
+        return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
+      });
+      
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      nextDate = dates.find(dtStr => {
+        const [da,ma,ya] = dtStr.split('/');
+        return new Date(ya,ma-1,da) >= today;
+      }) || dates[dates.length - 1]; // Fallback para a mais recente se não houver futuras
+    }
+
+    if (nextDate) {
+      const pCount = d.presenciais.filter(i => i.data_sessao === nextDate).length;
+      const vCount = d.virtuais.filter(i => i.data_sessao === nextDate).length;
+      if(ep) ep.textContent = pCount;
+      if(ev) ev.textContent = vCount;
+      if(eh) {
+        eh.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${nextDate}`;
+        eh.style.display = 'inline-block';
+      }
+    } else {
+      if(ep) ep.textContent = 0;
+      if(ev) ev.textContent = 0;
+      const eh = document.getElementById('pautaHeaderDate');
+      if(eh) eh.style.display = 'none';
+    }
+  });
+});
+</script>
+
 <!-- Accordion dos Processos em Revisão Desa -->
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDesembargador" style="max-width: 100%;">
   <div class="accordion-item">

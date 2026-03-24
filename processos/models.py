@@ -205,3 +205,36 @@ class ComentarioProcesso(models.Model):  # Renomeei para refletir melhor o prop�
 
     def __str__(self):
         return f"Comentário de {self.usuario} em {self.processo.numero_processo}"
+
+
+class ProcessoPauta(models.Model):
+    TIPO_SESSAO_CHOICES = [
+        ('presencial', 'Presencial'),
+        ('virtual', 'Virtual'),
+    ]
+    numero_processo = models.CharField(max_length=100, verbose_name='Número do Processo')
+    data_sessao = models.DateTimeField(verbose_name='Data da Sessão')
+    tipo_sessao = models.CharField(
+        max_length=20,
+        choices=TIPO_SESSAO_CHOICES,
+        default='presencial',
+        verbose_name='Tipo de Sessão'
+    )
+    # Vinculo opcional com processo existente no sistema
+    processo_vinculado = models.ForeignKey(
+        Processo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pautas',
+        verbose_name='Processo no Sistema'
+    )
+    importado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['data_sessao', 'numero_processo']
+        verbose_name = 'Processo em Pauta'
+        verbose_name_plural = 'Processos em Pauta'
+
+    def __str__(self):
+        return f"{self.numero_processo} — {self.data_sessao:%d/%m/%Y} ({self.get_tipo_sessao_display()})"

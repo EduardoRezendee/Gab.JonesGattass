@@ -554,7 +554,7 @@ def importar_processos_view(request):
                     prioridade_str = str(row.get('prioridade', 'false')).strip().lower()
                     prioridade_urgente = prioridade_str == 'true'
 
-                      # Garantir que processos já existentes NÃO percam o "tipo" original
+                    # Garantir que processos já existentes NÃO percam o "tipo" original
                     campos_atualizaveis = {
                         'tema': tema,
                         'usuario': usuario,
@@ -581,6 +581,7 @@ def importar_processos_view(request):
                         for campo, valor in campos_atualizaveis.items():
                             setattr(processo, campo, valor)
                         processo.save()
+
                     
                     if usuario:
                         # [CORREÇÃO]: Atualiza o responsável APENAS se o andamento 
@@ -2470,3 +2471,284 @@ def minhas_metas(request):
         'processos_com_status': processos_com_status,
         'processos_fora_meta': processos_fora_meta,
     })
+
+
+# ─────────────────────────────────────────────────────────────────
+#  PROCESSOS EM PAUTA
+# ─────────────────────────────────────────────────────────────────
+from .models import ProcessoPauta
+import pandas as pd
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+
+
+@login_required
+@require_POST
+def importar_pauta(request):
+    """
+    Recebe um arquivo Excel (.xlsx), apaga toda a pauta anterior
+    e importa os novos registros.
+    Colunas esperadas na planilha:
+      - 'Número do Processo'
+      - 'Data da sessão'
+      - 'Tarefa atual'  → 'Aguardando a sessão' = presencial
+                          'Aguardando sessão virtual' = virtual
+    """
+    arquivo = request.FILES.get('arquivo')
+    if not arquivo:
+        return JsonResponse({'success': False, 'message': 'Nenhum arquivo enviado.'}, status=400)
+    if not arquivo.name.lower().endswith(('.xlsx', '.xls')):
+        return JsonResponse({'success': False, 'message': 'Envie um arquivo .xlsx ou .xls.'}, status=400)
+
+    try:
+        df = pd.read_excel(arquivo, engine='openpyxl')
+
+        # Normalizar nomes das colunas (strip + title-case insensitive)
+        df.columns = [str(c).strip() for c in df.columns]
+
+        col_numero = None
+        for c in df.columns:
+            cl = c.lower().strip()
+            if 'número' in cl or 'numero' in cl or cl == 'processo':
+                col_numero = c
+                break
+
+        col_data = None
+        for c in df.columns:
+            cl = c.lower().strip()
+            if 'data' in cl and 'sess' in cl:
+                col_data = c
+                break
+        
+        if not col_data:
+            for c in df.columns:
+                cl = c.lower().strip()
+                if 'data' in cl and 'tarefa' not in cl and 'conclus' not in cl and 'cri' not in cl:
+                    col_data = c
+                    break
+        
+        # Aceita: "Tarefa atual", "Fase atual", "Situação", "Status", etc.
+        # Exclui colunas de data (ex: "Data tarefa atual") para não confundir com a coluna de status
+        col_tarefa = next((
+            c for c in df.columns
+            if any(kw in c.lower() for kw in ['tarefa', 'fase', 'situação', 'situacao', 'status', 'andamento'])
+            and not c.lower().strip().startswith('data')
+        ), None)
+
+        if not col_numero or not col_data:
+            missing = []
+            if not col_numero: missing.append('Número do Processo')
+            if not col_data:   missing.append('Data da sessão')
+            return JsonResponse({
+                'success': False,
+                'message': f"Falha na leitura. Colunas achadas: {', '.join(df.columns)}. Precisa de Número e Data."
+            }, status=400)
+
+        now = timezone.localtime()
+
+        # Apaga a pauta anterior ANTES de importar APENAS para as datas contidas na planilha.
+        # Isso significa que processos de outras datas que já estavam no banco não serão perdidos.
+        datas_na_planilha = set()
+        
+        for idx, row in df.iterrows():
+            data_raw = row[col_data]
+            if pd.isna(data_raw): continue
+            
+            if isinstance(data_raw, str):
+                try:
+                    d_obj = pd.to_datetime(data_raw, dayfirst=True)
+                except:
+                    continue
+            else:
+                d_obj = data_raw
+            
+            try:
+                # O formato salvo no banco de dados contém YYYY-MM-DD
+                datas_na_planilha.add(d_obj.strftime('%Y-%m-%d'))
+            except:
+                pass
+                
+        # Apaga TODOS os processos do banco cujas datas de sessão (só a parte data) estão nessas recuperadas.
+        for dt_str in datas_na_planilha:
+            ProcessoPauta.objects.filter(data_sessao__startswith=dt_str).delete()
+
+        inseridos = 0
+        erros = []
+        cnt_virtual = 0
+        cnt_presencial = 0
+
+        for idx, row in df.iterrows():
+            numero_raw = str(row[col_numero]).strip() if pd.notna(row[col_numero]) else ''
+            data_raw   = row[col_data]
+            tarefa_raw = str(row[col_tarefa]).strip().lower() if col_tarefa is not None and pd.notna(row[col_tarefa]) else ''
+
+            if not numero_raw or numero_raw == 'nan':
+                continue  # linha vazia
+
+            # Tipo de sessão: se o valor contiver "virtual" → virtual, senão → presencial
+            if 'virtual' in tarefa_raw:
+                tipo = 'virtual'
+                cnt_virtual += 1
+            else:
+                tipo = 'presencial'
+                cnt_presencial += 1
+
+            # Parse da data
+            data_sessao = None
+            if pd.notna(data_raw):
+                try:
+                    if isinstance(data_raw, str):
+                        for fmt in ('%d/%m/%Y %H:%M:%S', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d'):
+                            try:
+                                data_sessao = datetime.strptime(data_raw.strip(), fmt)
+                                break
+                            except ValueError:
+                                continue
+                    else:
+                        data_sessao = pd.Timestamp(data_raw).to_pydatetime()
+                    if data_sessao:
+                        data_sessao = timezone.make_aware(data_sessao) if timezone.is_naive(data_sessao) else data_sessao
+                except Exception:
+                    erros.append(f"Linha {idx+2}: data inválida ({data_raw})")
+                    continue
+
+            if not data_sessao:
+                erros.append(f"Linha {idx+2}: data da sessão não reconhecida.")
+                continue
+
+            # Tenta vincular ao processo no banco
+            processo_db = Processo.objects.filter(numero_processo__icontains=numero_raw).first()
+
+            ProcessoPauta.objects.create(
+                numero_processo=numero_raw,
+                data_sessao=data_sessao,
+                tipo_sessao=tipo,
+                processo_vinculado=processo_db,
+            )
+            inseridos += 1
+
+        # Valores únicos na coluna tarefa (para debug)
+        valores_tarefa = []
+        if col_tarefa:
+            valores_tarefa = list(df[col_tarefa].dropna().astype(str).str.strip().unique()[:10])
+
+        return JsonResponse({
+            'success': True,
+            'message': f'{inseridos} processo(s) importado(s): {cnt_presencial} presencial(is), {cnt_virtual} virtual(is).',
+            'erros': erros,
+            'total': inseridos,
+            'debug': {
+                'col_tarefa_detectada': col_tarefa,
+                'colunas_arquivo': list(df.columns),
+                'valores_tarefa_amostra': valores_tarefa,
+                'cnt_virtual': cnt_virtual,
+                'cnt_presencial': cnt_presencial,
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Erro ao processar arquivo: {str(e)}'}, status=500)
+
+
+@login_required
+@require_POST
+def adicionar_pauta_manual(request):
+    """Adiciona um único processo à pauta manualmente."""
+    numero  = request.POST.get('numero_processo', '').strip()
+    data_str = request.POST.get('data_sessao', '').strip()
+    tipo    = request.POST.get('tipo_sessao', 'presencial').strip()
+
+    if not numero or not data_str:
+        return JsonResponse({'success': False, 'message': 'Número do processo e data são obrigatórios.'}, status=400)
+
+    try:
+        data_sessao = datetime.strptime(data_str, '%Y-%m-%dT%H:%M')
+        data_sessao = timezone.make_aware(data_sessao)
+    except ValueError:
+        try:
+            data_sessao = datetime.strptime(data_str, '%Y-%m-%d')
+            data_sessao = timezone.make_aware(data_sessao)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Formato de data inválido.'}, status=400)
+
+    processo_db = Processo.objects.filter(numero_processo__icontains=numero).first()
+
+    item = ProcessoPauta.objects.create(
+        numero_processo=numero,
+        data_sessao=data_sessao,
+        tipo_sessao=tipo if tipo in ('presencial', 'virtual') else 'presencial',
+        processo_vinculado=processo_db,
+    )
+
+    responsavel = processo_db.usuario.get_full_name() if processo_db and processo_db.usuario else 'Não atribuído'
+    especie     = processo_db.especie.especie if processo_db and processo_db.especie else '—'
+
+    return JsonResponse({
+        'success': True,
+        'item': {
+            'id': item.id,
+            'numero_processo': item.numero_processo,
+            'data_sessao': item.data_sessao.strftime('%d/%m/%Y'),
+            'data_sessao_hora': item.data_sessao.strftime('%H:%M'),
+            'tipo_sessao': item.tipo_sessao,
+            'responsavel': responsavel,
+            'especie': especie,
+            'vinculado': processo_db is not None,
+        }
+    })
+
+
+@login_required
+def pauta_json(request):
+    """Retorna JSON com listas separadas de presenciais e virtuais."""
+    itens = ProcessoPauta.objects.select_related('processo_vinculado', 'processo_vinculado__usuario', 'processo_vinculado__especie').order_by('data_sessao')
+
+    def serializar(item):
+        p = item.processo_vinculado
+        link_doc = None
+        if p:
+            # Busca o andamento mais recente que contenha um link de documento
+            andamento_com_link = p.andamentos.exclude(link_doc__isnull=True).exclude(link_doc='').order_by('-dt_criacao').first()
+            if andamento_com_link:
+                link_doc = andamento_com_link.link_doc
+
+        return {
+            'id': item.id,
+            'numero_processo': item.numero_processo,
+            'data_sessao': item.data_sessao.strftime('%d/%m/%Y'),
+            'data_sessao_hora': item.data_sessao.strftime('%H:%M'),
+            'tipo_sessao': item.tipo_sessao,
+            'responsavel': p.usuario.get_full_name() if p and p.usuario else 'Não atribuído',
+            'especie': p.especie.especie if p and p.especie else '—',
+            'tema': p.tema.nome if p and p.tema else '—',
+            'vinculado': p is not None,
+            'link_documento': link_doc,
+        }
+
+    presenciais = [serializar(i) for i in itens if i.tipo_sessao == 'presencial']
+    virtuais    = [serializar(i) for i in itens if i.tipo_sessao == 'virtual']
+
+    return JsonResponse({
+        'presenciais': presenciais,
+        'virtuais': virtuais,
+        'total_presencial': len(presenciais),
+        'total_virtual': len(virtuais),
+    })
+
+
+@login_required
+@require_POST
+def remover_pauta_item(request, item_id):
+    """Remove um único item da pauta."""
+    item = get_object_or_404(ProcessoPauta, id=item_id)
+    item.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def limpar_pauta(request):
+    """Apaga todos os registros de ProcessoPauta."""
+    total = ProcessoPauta.objects.count()
+    ProcessoPauta.objects.all().delete()
+    return JsonResponse({'success': True, 'message': f'{total} processo(s) removidos da pauta.'})
