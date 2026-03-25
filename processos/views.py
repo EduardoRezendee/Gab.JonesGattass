@@ -35,7 +35,7 @@ from .models import Processo, Especie, Camara, Tema
 from django.db import DatabaseError
 
 from django.views.decorators.http import require_http_methods
-from .models import Processo, MetaSemanal
+from .models import Processo, MetaSemanal, Aviso
 
     
 from django.http import HttpResponseForbidden
@@ -2826,3 +2826,83 @@ def editar_pauta_item(request, item_id):
     item.save()
 
     return JsonResponse({'success': True})
+
+
+@login_required
+def avisos_lista(request):
+    """Retorna o template base do Quadro de Avisos ou a lista via AJAX"""
+    avisos = Aviso.objects.filter(ativo=True).order_by('-criado_em')
+    
+    # Contagem de não lidos para o badge (pode ser útil aqui também)
+    avisos_nao_lidos_count = Aviso.objects.filter(ativo=True).exclude(leitores=request.user).count()
+    
+    context = {
+        'avisos': avisos,
+        'avisos_nao_lidos_count': avisos_nao_lidos_count,
+        'is_chefe': request.user.profile.funcao == "Chefe de Gabinete" if hasattr(request.user, 'profile') else False
+    }
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'components/avisos_lista_ajax.html', context)
+        
+    return render(request, 'components/avisos.html', context)
+
+
+@login_required
+def aviso_detalhe(request, pk):
+    """Retorna o conteúdo de um aviso específico e marca como lido"""
+    aviso = get_object_or_404(Aviso, pk=pk, ativo=True)
+    
+    # Marcar como lido
+    if request.user not in aviso.leitores.all():
+        aviso.leitores.add(request.user)
+    
+    return JsonResponse({
+        'success': True,
+        'titulo': aviso.titulo,
+        'conteudo': aviso.conteudo,
+        'autor': aviso.autor.get_full_name(),
+        'data': aviso.criado_em.strftime('%d/%m/%Y %H:%M')
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def aviso_salvar(request):
+    """Cria ou edita um aviso (Apenas Chefe de Gabinete)"""
+    if not hasattr(request.user, 'profile') or request.user.profile.funcao != "Chefe de Gabinete":
+        return JsonResponse({'success': False, 'message': 'Acesso negado.'}, status=403)
+        
+    import json
+    data = json.loads(request.body)
+    pk = data.get('id')
+    titulo = data.get('titulo')
+    conteudo = data.get('conteudo')
+    
+    if pk:
+        aviso = get_object_or_404(Aviso, pk=pk)
+        aviso.titulo = titulo
+        aviso.conteudo = conteudo
+        aviso.save()
+    else:
+        aviso = Aviso.objects.create(
+            titulo=titulo,
+            conteudo=conteudo,
+            autor=request.user
+        )
+        
+    return JsonResponse({'success': True, 'id': aviso.id})
+
+
+@login_required
+@require_http_methods(["POST"])
+def aviso_deletar(request, pk):
+    """Desativa um aviso (Apenas Chefe de Gabinete)"""
+    if not hasattr(request.user, 'profile') or request.user.profile.funcao != "Chefe de Gabinete":
+        return JsonResponse({'success': False, 'message': 'Acesso negado.'}, status=403)
+        
+    aviso = get_object_or_404(Aviso, pk=pk)
+    aviso.ativo = False
+    aviso.save()
+    return JsonResponse({'success': True})
+

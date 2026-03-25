@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f8f9fa; min-height: 90vh;">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0" style="color: #083464;">
+                <i class="bi bi-megaphone-fill me-2"></i> Quadro de Avisos
+            </h2>
+            <p class="text-muted mb-0">Comunicações internas e atualizações importantes.</p>
+        </div>
+        {% if is_chefe %}
+        <button class="btn btn-primary rounded-pill shadow-sm px-4" onclick="abrirModalNovoAviso()">
+            <i class="bi bi-plus-lg me-1"></i> Novo Aviso
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Container Principal (Dual Pane) -->
+    <div class="row g-3">
+        <!-- Coluna Esquerda: Lista de Tópicos -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden; height: 78vh; display: flex; flex-direction: column;">
+
+
+
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0" placeholder="Buscar avisos..." id="searchAvisos">
+                    </div>
+                </div>
+                <div class="list-group list-group-flush overflow-auto h-100" id="listaAvisos">
+                    {% for aviso in avisos %}
+                    <button type="button" 
+                            class="list-group-item list-group-item-action border-0 py-3 px-4 aviso-item {% if forloop.first %}active{% endif %}" 
+                            onclick="carregarAviso({{ aviso.id }}, this)"
+                            style="transition: all 0.2s; border-left: 4px solid transparent !important;">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <h6 class="mb-1 fw-bold" style="line-height: 1.4;">{{ aviso.titulo }}</h6>
+                            {% if request.user not in aviso.leitores.all %}
+                                <span class="badge rounded-pill bg-danger ms-2" style="font-size: 0.6rem; flex-shrink: 0;">Novo</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted d-block mt-1">{{ aviso.criado_em|date:"d/m/Y" }}</small>
+                    </button>
+
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                        Nenhum aviso encontrado.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Conteúdo do Aviso -->
+        <div class="col-md-8 col-lg-9">
+            <div class="card border-0 shadow-sm" style="border-radius: 15px; height: 78vh !important; display: flex; flex-direction: column; overflow: hidden;">
+
+
+
+                <div class="card-body p-0 d-flex flex-column" id="conteudoAviso" style="height: 100%;">
+
+                    {% if avisos %}
+                        <!-- Inicialmente carrega o primeiro asincronamente ou via template -->
+                        <div class="p-5 text-center my-auto" id="placeholderAviso">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Carregando conteúdo...</p>
+                        </div>
+                    {% else %}
+                        <div class="my-auto text-center p-5">
+                            <i class="bi bi-journal-text fs-1 opacity-25" style="color: #083464;"></i>
+                            <h4 class="mt-3 text-muted">Selecione um aviso para ler</h4>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo/Editar Aviso -->
+{% if is_chefe %}
+<div class="modal fade" id="modalAviso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius: 15px;">
+            <div class="modal-header border-bottom-0 p-4">
+                <h5 class="modal-title fw-bold" id="modalAvisoLabel">Novo Aviso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <input type="hidden" id="avisoId">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Título</label>
+                    <input type="text" class="form-control rounded-pill px-3" id="avisoTitulo" placeholder="Título chamativo do aviso">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Conteúdo</label>
+                    <textarea class="form-control" id="avisoConteudo" rows="10" style="border-radius: 15px;" placeholder="Escreva o aviso aqui..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 p-4 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" onclick="salvarAviso()">
+                    <i class="bi bi-save me-1"></i> Salvar Aviso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .aviso-item.active {
+        background-color: rgba(8, 52, 100, 0.05) !important;
+        border-left: 4px solid #083464 !important;
+        color: #083464 !important;
+    }
+    .aviso-item:hover:not(.active) {
+        background-color: #fcfcfc;
+        border-left: 4px solid #dee2e6 !important;
+    }
+    .aviso-item h6 { transition: color 0.2s; }
+    .aviso-item.active h6 { color: #083464; }
+    
+    #listaAvisos::-webkit-scrollbar { width: 5px; }
+    #listaAvisos::-webkit-scrollbar-track { background: #f1f1f1; }
+    #listaAvisos::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    
+    .conteudo-markdown {
+        line-height: 1.6;
+        color: #2f2f2f;
+    }
+    .conteudo-markdown strong {
+        font-weight: 700;
+        color: #000;
+    }
+</style>
+
+
+<script>
+    function carregarAviso(id, el) {
+        // UI Feedback
+        if (el) {
+            document.querySelectorAll('.aviso-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            const badge = el.querySelector('.badge');
+            if (badge) badge.remove();
+        }
+
+        const container = document.getElementById('conteudoAviso');
+        container.innerHTML = `
+            <div class="p-5 text-center my-auto">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Carregando...</p>
+            </div>
+        `;
+
+        fetch(`/avisos/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Formatação tipo Whatsapp: *negrito* e **negrito**
+                    const conteudoFormatado = data.conteudo
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*([^\*]+?)\*/g, '<strong>$1</strong>');
+                    
+                    container.innerHTML = `
+                        <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="fw-bold mb-1" style="color: #083464;">${data.titulo}</h3>
+                                <div class="d-flex gap-3 text-muted small">
+                                    <span><i class="bi bi-person me-1"></i> ${data.autor}</span>
+                                    <span><i class="bi bi-calendar3 me-1"></i> ${data.data}</span>
+                                </div>
+                            </div>
+                            {% if is_chefe %}
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="editarAviso(${id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="deletarAviso(${id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-4 custom-scroll" style="overflow-y: auto; flex-grow: 1;">
+                            <div class="conteudo-markdown pre-wrap">${conteudoFormatado}</div>
+                        </div>
+
+                    `;
+                }
+            });
+    }
+
+
+    {% if is_chefe %}
+    function abrirModalNovoAviso() {
+        document.getElementById('avisoId').value = '';
+        document.getElementById('avisoTitulo').value = '';
+        document.getElementById('avisoConteudo').value = '';
+        document.getElementById('modalAvisoLabel').innerText = 'Novo Aviso';
+        new bootstrap.Modal(document.getElementById('modalAviso')).show();
+    }
+
+    function editarAviso(id) {
+        fetch(`/avisos/${id}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('avisoId').value = id;
+                    document.getElementById('avisoTitulo').value = data.titulo;
+                    document.getElementById('avisoConteudo').value = data.conteudo;
+                    document.getElementById('modalAvisoLabel').innerText = 'Editar Aviso';
+                    new bootstrap.Modal(document.getElementById('modalAviso')).show();
+                }
+            });
+    }
+
+
+    function salvarAviso() {
+        const id = document.getElementById('avisoId').value;
+        const titulo = document.getElementById('avisoTitulo').value;
+        const conteudo = document.getElementById('avisoConteudo').value;
+
+        if (!titulo || !conteudo) {
+            alert('Preencha título e conteúdo.');
+            return;
+        }
+
+        fetch('/avisos/salvar/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ id, titulo, conteudo })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+
+    function deletarAviso(id) {
+        if (!confirm('Deseja realmente remover este aviso?')) return;
+        
+        fetch(`/avisos/${id}/deletar/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+        });
+    }
+    {% endif %}
+
+    // Carregar o primeiro aviso ao abrir
+    document.addEventListener('DOMContentLoaded', () => {
+        const primeiroAviso = document.querySelector('.aviso-item');
+        if (primeiroAviso) {
+            primeiroAviso.click();
+        }
+    });
+
+    // Filtro de Busca
+    document.getElementById('searchAvisos').addEventListener('keyup', function() {
+        let value = this.value.toLowerCase();
+        document.querySelectorAll('#listaAvisos .aviso-item').forEach(item => {
+            let text = item.querySelector('h6').innerText.toLowerCase();
+            item.style.display = text.includes(value) ? '' : 'none';
+        });
+    });
+</script>
+
+<style>
+    .pre-wrap { white-space: pre-wrap; }
+    .custom-scroll::-webkit-scrollbar { width: 8px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+</style>
+
+{% endblock %}

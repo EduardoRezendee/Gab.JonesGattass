@@ -246,3 +246,19 @@ class ProcessoPauta(models.Model):
 
     def __str__(self):
         return f"{self.numero_processo} — {self.data_sessao:%d/%m/%Y} ({self.get_tipo_sessao_display()})"
+
+
+class Aviso(models.Model):
+    titulo = models.CharField(max_length=200)
+    conteudo = models.TextField()
+    autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='avisos_criados')
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    ativo = models.BooleanField(default=True)
+    leitores = models.ManyToManyField(User, related_name='avisos_lidos', blank=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return self.titulo

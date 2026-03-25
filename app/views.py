@@ -7,7 +7,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.db.models.functions import Left
 # MODELS
-from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo
+from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo, Aviso
 from accounts.models import UserProfile
 from django.utils import timezone
 from django.http import JsonResponse
@@ -645,6 +645,7 @@ def home(request):
         'atrasados_por_assessor': atrasados_por_assessor_detalhado,
         'total_atrasados': total_atrasados,
         'numero_de_processos_em_revisao_des': numero_de_processos_em_revisao_des,
+        'avisos_nao_lidos_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:

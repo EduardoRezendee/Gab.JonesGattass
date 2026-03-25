@@ -61,5 +61,9 @@ urlpatterns = [
     path('pauta/alterar-tipo/<int:item_id>/', views.alterar_tipo_sessao_pauta, name='alterar_tipo_sessao_pauta'),
     path('pauta/editar/<int:item_id>/', views.editar_pauta_item, name='editar_pauta_item'),
 
-
+    # ── Quadro de Avisos ──────────────────────────────────────────
+    path('avisos/', views.avisos_lista, name='avisos_lista'),
+    path('avisos/<int:pk>/', views.aviso_detalhe, name='aviso_detalhe'),
+    path('avisos/salvar/', views.aviso_salvar, name='aviso_salvar'),
+    path('avisos/<int:pk>/deletar/', views.aviso_deletar, name='aviso_deletar'),
 ]
