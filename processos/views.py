@@ -2654,9 +2654,27 @@ def importar_pauta(request):
 @require_POST
 def adicionar_pauta_manual(request):
     """Adiciona um único processo à pauta manualmente."""
-    numero  = request.POST.get('numero_processo', '').strip()
-    data_str = request.POST.get('data_sessao', '').strip()
-    tipo    = request.POST.get('tipo_sessao', 'presencial').strip()
+    import json
+    if request.content_type == 'application/json':
+        try:
+            body = json.loads(request.body)
+            numero = (body.get('numero') or body.get('numero_processo', '')).strip()
+            data_str = body.get('data_sessao', '').strip()
+            tipo = body.get('tipo_sessao', 'presencial').strip()
+            responsavel = body.get('responsavel', '').strip()
+            tema = body.get('tema', '').strip()
+            especie = body.get('especie', '').strip()
+            link_documento = body.get('link_documento', '').strip()
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
+    else:
+        numero = (request.POST.get('numero') or request.POST.get('numero_processo', '')).strip()
+        data_str = request.POST.get('data_sessao', '').strip()
+        tipo = request.POST.get('tipo_sessao', 'presencial').strip()
+        responsavel = request.POST.get('responsavel', '').strip()
+        tema = request.POST.get('tema', '').strip()
+        especie = request.POST.get('especie', '').strip()
+        link_documento = request.POST.get('link_documento', '').strip()
 
     if not numero or not data_str:
         return JsonResponse({'success': False, 'message': 'Número do processo e data são obrigatórios.'}, status=400)
@@ -2676,12 +2694,14 @@ def adicionar_pauta_manual(request):
     item = ProcessoPauta.objects.create(
         numero_processo=numero,
         data_sessao=data_sessao,
-        tipo_sessao=tipo if tipo in ('presencial', 'virtual') else 'presencial',
+        tipo_sessao=tipo if tipo in ('presencial', 'virtual', 'vandymara', 'marcio_vidal') else 'presencial',
         processo_vinculado=processo_db,
+        responsavel_manual=responsavel or None,
+        tema_manual=tema or None,
+        especie_manual=especie or None,
+        link_documento_manual=link_documento or None,
     )
-
-    responsavel = processo_db.usuario.get_full_name() if processo_db and processo_db.usuario else 'Não atribuído'
-    especie     = processo_db.especie.especie if processo_db and processo_db.especie else '—'
+    
 
     return JsonResponse({
         'success': True,
@@ -2691,8 +2711,10 @@ def adicionar_pauta_manual(request):
             'data_sessao': item.data_sessao.strftime('%d/%m/%Y'),
             'data_sessao_hora': item.data_sessao.strftime('%H:%M'),
             'tipo_sessao': item.tipo_sessao,
-            'responsavel': responsavel,
-            'especie': especie,
+            'responsavel': item.responsavel_manual or (processo_db.usuario.get_full_name() if processo_db and processo_db.usuario else 'Não atribuído'),
+            'especie': item.especie_manual or (processo_db.especie.especie if processo_db and processo_db.especie else '—'),
+            'tema': item.tema_manual or (processo_db.tema.nome if processo_db and processo_db.tema else '—'),
+            'link_documento': item.link_documento_manual,
             'vinculado': processo_db is not None,
         }
     })
@@ -2712,27 +2734,32 @@ def pauta_json(request):
             if andamento_com_link:
                 link_doc = andamento_com_link.link_doc
 
+        responsavel_final = item.responsavel_manual or (p.usuario.get_full_name() if p and p.usuario else 'Não atribuído')
+        especie_final     = item.especie_manual or (p.especie.especie if p and p.especie else '—')
+        tema_final        = item.tema_manual or (p.tema.nome if p and p.tema else '—')
+        link_doc_final    = item.link_documento_manual or link_doc
+
         return {
             'id': item.id,
             'numero_processo': item.numero_processo,
             'data_sessao': item.data_sessao.strftime('%d/%m/%Y'),
             'data_sessao_hora': item.data_sessao.strftime('%H:%M'),
             'tipo_sessao': item.tipo_sessao,
-            'responsavel': p.usuario.get_full_name() if p and p.usuario else 'Não atribuído',
-            'especie': p.especie.especie if p and p.especie else '—',
-            'tema': p.tema.nome if p and p.tema else '—',
+            'responsavel': responsavel_final,
+            'especie': especie_final,
+            'tema': tema_final,
             'vinculado': p is not None,
-            'link_documento': link_doc,
+            'link_documento': link_doc_final,
         }
 
-    presenciais = [serializar(i) for i in itens if i.tipo_sessao == 'presencial']
-    virtuais    = [serializar(i) for i in itens if i.tipo_sessao == 'virtual']
+    itens_serializados = [serializar(i) for i in itens]
 
     return JsonResponse({
-        'presenciais': presenciais,
-        'virtuais': virtuais,
-        'total_presencial': len(presenciais),
-        'total_virtual': len(virtuais),
+        'itens': itens_serializados,
+        'total': len(itens_serializados),
+        # backward-compat para o header badge (home_metrics / desa)
+        'presenciais': [x for x in itens_serializados if x['tipo_sessao'] == 'presencial'],
+        'virtuais':    [x for x in itens_serializados if x['tipo_sessao'] == 'virtual'],
     })
 
 
@@ -2752,3 +2779,50 @@ def limpar_pauta(request):
     total = ProcessoPauta.objects.count()
     ProcessoPauta.objects.all().delete()
     return JsonResponse({'success': True, 'message': f'{total} processo(s) removidos da pauta.'})
+
+
+@login_required
+@require_POST
+def alterar_tipo_sessao_pauta(request, item_id):
+    """Altera o tipo de sessão (presencial/virtual/vandymara/marcio_vidal) de um item da pauta."""
+    import json
+    item = get_object_or_404(ProcessoPauta, id=item_id)
+    try:
+        body = json.loads(request.body)
+        novo_tipo = body.get('tipo_sessao', '')
+    except Exception:
+        novo_tipo = request.POST.get('tipo_sessao', '')
+
+    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal')
+    if novo_tipo not in tipos_validos:
+        return JsonResponse({'success': False, 'message': 'Tipo inválido.'}, status=400)
+
+    item.tipo_sessao = novo_tipo
+    item.save()
+    return JsonResponse({'success': True, 'tipo_sessao': item.tipo_sessao})
+
+
+@login_required
+@require_POST
+def editar_pauta_item(request, item_id):
+    """Edita os campos manuais de um item da pauta via modal de edição."""
+    import json
+    item = get_object_or_404(ProcessoPauta, id=item_id)
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
+
+    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal')
+    novo_tipo = body.get('tipo_sessao', item.tipo_sessao)
+    if novo_tipo not in tipos_validos:
+        novo_tipo = item.tipo_sessao
+
+    item.tipo_sessao = novo_tipo
+    item.responsavel_manual = body.get('responsavel', '').strip() or None
+    item.especie_manual = body.get('especie', '').strip() or None
+    item.tema_manual = body.get('tema', '').strip() or None
+    item.link_documento_manual = body.get('link_documento', '').strip() or None
+    item.save()
+
+    return JsonResponse({'success': True})

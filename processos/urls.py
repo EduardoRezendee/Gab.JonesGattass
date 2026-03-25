@@ -58,6 +58,8 @@ urlpatterns = [
     path('pauta/json/', views.pauta_json, name='pauta_json'),
     path('pauta/limpar/', views.limpar_pauta, name='limpar_pauta'),
     path('pauta/remover/<int:item_id>/', views.remover_pauta_item, name='remover_pauta_item'),
+    path('pauta/alterar-tipo/<int:item_id>/', views.alterar_tipo_sessao_pauta, name='alterar_tipo_sessao_pauta'),
+    path('pauta/editar/<int:item_id>/', views.editar_pauta_item, name='editar_pauta_item'),
 
 
 ]

@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const ev = document.getElementById('pautaBadgeVirt');
     const eh = document.getElementById('pautaHeaderDate');
     
-    const all = [...d.presenciais, ...d.virtuais];
+    const all = d.itens || [];
     let nextDate = null;
     
     if (all.length > 0) {
@@ -50,8 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (nextDate) {
-      const pCount = d.presenciais.filter(i => i.data_sessao === nextDate).length;
-      const vCount = d.virtuais.filter(i => i.data_sessao === nextDate).length;
+      const pCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'presencial').length;
+      const vCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'virtual').length;
       if(ep) ep.textContent = pCount;
       if(ev) ev.textContent = vCount;
       if(eh) {

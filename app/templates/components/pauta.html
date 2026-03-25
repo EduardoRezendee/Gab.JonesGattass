@@ -138,7 +138,7 @@
 .btn-documento:hover { background: #1d4ed8; color: #f8fafc; transform: translateY(-1px); }
 
 .pauta-card .btn-del {
-  position: absolute; top: 10px; right: 10px;
+  /* position: absolute; removido para não conflitar com .card-actions */
   background: none; border: none; color: #cbd5e1;
   cursor: pointer; font-size: .95rem; padding: 4px 6px; border-radius: 8px;
   transition: color .15s, background .15s;
@@ -213,6 +213,22 @@
 #pauta-toast.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
 #pauta-toast.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
 @keyframes slideInRight { from { opacity:0; transform:translateX(30px);} to{opacity:1;transform:none;} }
+
+/* ── Card Actions (gear + del) ──────────────────────────────── */
+.card-actions {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; gap: 4px;
+}
+.btn-del, .btn-gear {
+  border: none; cursor: pointer;
+  border-radius: 50%; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; transition: all .2s;
+}
+.btn-del  { background: rgba(239,68,68,.12); color: #ef4444; }
+.btn-del:hover  { background: #ef4444; color: #fff; }
+.btn-gear { background: rgba(37,99,235,.12); color: #2563eb; }
+.btn-gear:hover { background: #2563eb; color: #fff; }
 </style>
 
 {# ─── PAUTA HTML ─────────────────────────────────────────────────── #}
@@ -247,7 +263,7 @@
       <i class="bi bi-plus-circle"></i> Adicionar manualmente
     </summary>
     <div class="pauta-manual-form mt-3">
-      <div class="row g-3 align-items-end">
+      <div class="row g-3">
         <div class="col-12 col-md-4">
           <label for="manual-numero">Número do Processo</label>
           <input type="text" id="manual-numero" class="form-control" placeholder="0000000-00.0000.0.00.0000">
@@ -261,12 +277,30 @@
           <select id="manual-tipo" class="form-select">
             <option value="presencial">🏛️ Presencial</option>
             <option value="virtual">💻 Virtual</option>
+            <option value="vandymara">🟣 Vandymara</option>
+            <option value="marcio_vidal">🟤 Márcio Vidal</option>
           </select>
         </div>
-        <div class="col-12 col-md-2">
+        <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn-pauta-manual-add w-100" id="btn-add-manual">
             <i class="bi bi-check-lg"></i> Adicionar
           </button>
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-responsavel">Responsável <small class="text-muted">(Opcional)</small></label>
+          <input type="text" id="manual-responsavel" class="form-control" placeholder="Assessor">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-especie">Espécie <small class="text-muted">(Opcional)</small></label>
+          <input type="text" id="manual-especie" class="form-control" placeholder="Ex: AI">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-tema">Tema <small class="text-muted">(Opcional)</small></label>
+          <input type="text" id="manual-tema" class="form-control" placeholder="Ex: Tributário">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-link-documento">Link Doc <small class="text-muted">(Opcional)</small></label>
+          <input type="url" id="manual-link-documento" class="form-control" placeholder="https://...">
         </div>
       </div>
     </div>
@@ -286,6 +320,14 @@
       <button class="pauta-filter-btn pres" data-filter="presencial">
         <i class="bi bi-building-fill"></i> Presencial
         <span class="badge ms-1" style="background:#2563eb;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-pres">—</span>
+      </button>
+      <button class="pauta-filter-btn" data-filter="vandymara" style="border: 1px solid #d8b4e2; background:#faf5ff; color:#9333ea;">
+        <i class="bi bi-person-fill"></i> Vandymara
+        <span class="badge ms-1" style="background:#9333ea;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-vandy">—</span>
+      </button>
+      <button class="pauta-filter-btn" data-filter="marcio_vidal" style="border: 1px solid #d4d4d8; background:#f8fafc; color:#52525b;">
+        <i class="bi bi-person-fill"></i> Márcio Vidal
+        <span class="badge ms-1" style="background:#52525b;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-marcio">—</span>
       </button>
       <button class="pauta-filter-btn virt" data-filter="virtual">
         <i class="bi bi-camera-video-fill"></i> Virtual
@@ -328,6 +370,34 @@
     </div>
   </div>
 
+  {# ── Sessão Vandymara ── #}
+  {% if not only_presencial %}
+  <div class="pauta-section" id="section-vandymara">
+    <div class="pauta-section-header vandy" style="background: rgba(147, 51, 234, 0.08); border-left: 4px solid #9333ea; color: #9333ea;">
+      <i class="bi bi-person-fill" style="font-size:1.1rem;"></i>
+      Sessão Vandymara
+      <span class="badge-count" id="badge-vandy-count" style="background:#9333ea;">0</span>
+    </div>
+    <div class="pauta-grid" id="lista-vandymara">
+      <p class="pauta-empty">Carregando...</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Sessão Márcio Vidal ── #}
+  {% if not only_presencial %}
+  <div class="pauta-section" id="section-marcio-vidal">
+    <div class="pauta-section-header marcio" style="background: rgba(82, 82, 91, 0.08); border-left: 4px solid #52525b; color: #52525b;">
+      <i class="bi bi-person-fill" style="font-size:1.1rem;"></i>
+      Sessão Márcio Vidal
+      <span class="badge-count" id="badge-marcio-count" style="background:#52525b;">0</span>
+    </div>
+    <div class="pauta-grid" id="lista-marcio">
+      <p class="pauta-empty">Carregando...</p>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── Sessão Virtual ── #}
   {% if not only_presencial %}
   <div class="pauta-section" id="section-virtual">
@@ -347,6 +417,58 @@
 {# ── Toast ── #}
 <div id="pauta-toast"></div>
 
+{# ── Edit Modal ── #}
+<div class="modal fade" id="pautaEditModal" tabindex="-1" aria-labelledby="pautaEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,.15);">
+      <div class="modal-header" style="border-bottom:none; padding: 20px 24px 8px;">
+        <h5 class="modal-title fw-bold" id="pautaEditModalLabel"><i class="bi bi-pencil-square me-2 text-primary"></i>Editar Processo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:16px 24px 24px;">
+        <input type="hidden" id="edit-item-id">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Número do Processo</label>
+            <input type="text" id="edit-numero" class="form-control" readonly style="background:#f8fafc;">
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label fw-semibold">Responsável</label>
+            <input type="text" id="edit-responsavel" class="form-control" placeholder="Assessor">
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label fw-semibold">Espécie</label>
+            <input type="text" id="edit-especie" class="form-control" placeholder="Ex: AI">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Tema</label>
+            <input type="text" id="edit-tema" class="form-control" placeholder="Ex: Tributário">
+          </div>
+          <div class="col-12 col-sm-8">
+            <label class="form-label fw-semibold">Link do Documento</label>
+            <input type="url" id="edit-link" class="form-control" placeholder="https://...">
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label fw-semibold">Tipo de Sessão</label>
+            <select id="edit-tipo" class="form-select">
+              <option value="presencial">🏛️ Presencial</option>
+              <option value="virtual">💻 Virtual</option>
+              <option value="vandymara">🟣 Vandymara</option>
+              <option value="marcio_vidal">🟤 Márcio Vidal</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:none; padding:0 24px 24px;">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary fw-semibold" id="btn-edit-save" style="background:#2563eb;border:none;border-radius:10px;">
+          <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# ─── PAUTA JS ─────────────────────────────────────────────────── #}
 <script>
 (function() {
@@ -363,7 +485,7 @@
   const isOnlyPresencial = {{ only_presencial|yesno:"true,false"|default:"false" }};
   const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
-  let pautaData = { presenciais: [], virtuais: [] };
+  let pautaData = [];
   let searchTerm = '';
 
   /* ── Toast ── */
@@ -377,9 +499,27 @@
 
   /* ── Render card ── */
   function renderCard(item) {
-    const badgeSessao = item.tipo_sessao === 'presencial'
-      ? `<span class="badge-sessao badge-pres">🏛️ Presencial</span>`
-      : `<span class="badge-sessao badge-virt">💻 Virtual</span>`;
+    let sessionBadge = `<span class="badge-sessao badge-pres" style="font-size:.7rem;padding:3px 8px;">🏛️ Presencial</span>`;
+    if(item.tipo_sessao === 'virtual') sessionBadge = `<span class="badge-sessao badge-virt" style="font-size:.7rem;padding:3px 8px;">💻 Virtual</span>`;
+    else if(item.tipo_sessao === 'vandymara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#9333ea;color:#fff;">🟣 Vandymara</span>`;
+    else if(item.tipo_sessao === 'marcio_vidal') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#52525b;color:#fff;">🟤 Márcio</span>`;
+
+    if (!isOnlyPresencial) {
+      sessionBadge = `
+        <select class="form-select form-select-sm d-inline-block w-auto py-0 text-white border-0 me-2" 
+                style="background-color: ${
+                  item.tipo_sessao==='presencial' ? '#2563eb' :
+                  item.tipo_sessao==='virtual' ? '#7c3aed' :
+                  item.tipo_sessao==='vandymara' ? '#9333ea' : '#52525b'
+                }; font-size:.75rem; border-radius: 20px; font-weight: 600;"
+                onchange="pautaAlterarTipo(${item.id}, this.value)">
+          <option value="presencial" ${item.tipo_sessao==='presencial'?'selected':''}>🏛️ Presencial</option>
+          <option value="virtual" ${item.tipo_sessao==='virtual'?'selected':''}>💻 Virtual</option>
+          <option value="vandymara" ${item.tipo_sessao==='vandymara'?'selected':''}>🟣 Vandymara</option>
+          <option value="marcio_vidal" ${item.tipo_sessao==='marcio_vidal'?'selected':''}>🟤 Márcio</option>
+        </select>
+      `;
+    }
 
     const linkBadge = item.vinculado
       ? `<span class="badge-vinculado"><i class="bi bi-check2 me-1"></i>no sistema</span>`
@@ -391,19 +531,21 @@
          </a>`
       : ``;
 
+    const editBtn = `<button class="btn-gear" title="Editar" onclick="pautaEditar(${item.id})"><i class="bi bi-gear-fill"></i></button>`;
+
     return `
       <div class="pauta-card ${item.tipo_sessao}" id="pauta-item-${item.id}">
-        {% if show_import != False %}
-        <button class="btn-del" title="Remover" onclick="pautaRemover(${item.id})">
-          <i class="bi bi-x-lg"></i>
-        </button>
-        {% endif %}
+        <div class="card-actions">
+          {% if show_import != False %}
+          <button class="btn-del" title="Remover" onclick="pautaRemover(${item.id})">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          {% endif %}
+          ${editBtn}
+        </div>
         <div class="card-num d-flex align-items-center">
           <i class="bi bi-file-text text-muted me-1" style="font-size:.9rem;"></i>
           ${item.link_documento ? `<a href="${item.link_documento}" target="_blank" class="text-decoration-none text-dark" title="Abrir Documento">${item.numero_processo}</a>` : item.numero_processo}
-          <button class="copy-btn ms-1" title="Copiar" onclick="pautaCopiar('${item.numero_processo}', this)">
-            <i class="bi bi-clipboard"></i>
-          </button>
         </div>
         <div class="card-meta mt-2">
           ${item.responsavel && item.responsavel !== 'Não atribuído' ? `<span><i class="bi bi-person text-muted"></i> <strong style="color:#0f172a;">${item.responsavel}</strong></span>` : `<span><i class="bi bi-person text-muted"></i> ${item.responsavel}</span>`}
@@ -412,8 +554,8 @@
           <span style="width:100%;"><i class="bi bi-calendar3 text-muted"></i> <strong>${item.data_sessao}</strong></span>
         </div>
         <div class="card-badges">
-          <div class="badges-left">
-            ${isOnlyPresencial ? '' : badgeSessao}
+          <div class="badges-left d-flex align-items-center">
+            ${sessionBadge}
             ${linkBadge}
           </div>
           ${docBtn}
@@ -434,8 +576,7 @@
   let searchDate = null; // Vamos inicializar de forma inteligente
 
   function renderDateFilter() {
-    const allItems = [...pautaData.presenciais, ...pautaData.virtuais];
-    const dates = [...new Set(allItems.map(i => i.data_sessao).filter(Boolean))];
+    const dates = [...new Set(pautaData.map(i => i.data_sessao).filter(Boolean))];
     dates.sort((a,b) => {
       const [ da, ma, ya ] = a.split('/');
       const [ db, mb, yb ] = b.split('/');
@@ -477,7 +618,6 @@
 
   /* ── Render list with search filter ── */
   function renderLists() {
-    // Remove tudo que não for número para comparar
     const term = searchTerm.replace(/\D/g, '');
     const filterFn = (item) => {
       const numOnly = item.numero_processo.replace(/\D/g, '');
@@ -486,35 +626,33 @@
       return matchSearch && matchDate;
     };
 
-    const fPres = pautaData.presenciais.filter(filterFn);
-    const presContainer = document.getElementById('lista-presencial');
-    if (presContainer) {
-      presContainer.innerHTML = fPres.length
-        ? fPres.map(renderCard).join('')
-        : '<p class="pauta-empty">Nenhum processo presencial encontrado.</p>';
-      
-      const elCntPres = document.getElementById('cnt-pres');
-      if (elCntPres) elCntPres.textContent = fPres.length;
-      const elBadgePres = document.getElementById('badge-pres-count');
-      if (elBadgePres) elBadgePres.textContent = fPres.length;
-    }
+    const filtered = pautaData.filter(filterFn);
+    
+    // Separação por tipo
+    const fPres = filtered.filter(i => i.tipo_sessao === 'presencial');
+    const fVirt = filtered.filter(i => i.tipo_sessao === 'virtual');
+    const fVandy = filtered.filter(i => i.tipo_sessao === 'vandymara');
+    const fMarcio = filtered.filter(i => i.tipo_sessao === 'marcio_vidal');
 
-    if (!isOnlyPresencial) {
-      const fVirt = pautaData.virtuais.filter(filterFn);
-      const virtContainer = document.getElementById('lista-virtual');
-      if (virtContainer) {
-        virtContainer.innerHTML = fVirt.length
-          ? fVirt.map(renderCard).join('')
-          : '<p class="pauta-empty">Nenhum processo virtual encontrado.</p>';
-        
-        const elCntVirt = document.getElementById('cnt-virt');
-        if (elCntVirt) elCntVirt.textContent = fVirt.length;
-        const elBadgeVirt = document.getElementById('badge-virt-count');
-        if (elBadgeVirt) elBadgeVirt.textContent = fVirt.length;
+    const renderSec = (idList, idBadge, idCnt, list, emptyMsg) => {
+      const container = document.getElementById(idList);
+      if (container) {
+        container.innerHTML = list.length ? list.map(renderCard).join('') : `<p class="pauta-empty">${emptyMsg}</p>`;
+        const elCnt = document.getElementById(idCnt);
+        if (elCnt) elCnt.textContent = list.length;
+        const elBadge = document.getElementById(idBadge);
+        if (elBadge) elBadge.textContent = list.length;
       }
+    };
+
+    renderSec('lista-presencial', 'badge-pres-count', 'cnt-pres', fPres, 'Nenhum processo presencial encontrado.');
+    if (!isOnlyPresencial) {
+      renderSec('lista-vandymara', 'badge-vandy-count', 'cnt-vandy', fVandy, 'Nenhum processo Vandymara encontrado.');
+      renderSec('lista-marcio', 'badge-marcio-count', 'cnt-marcio', fMarcio, 'Nenhum processo Márcio Vidal encontrado.');
+      renderSec('lista-virtual', 'badge-virt-count', 'cnt-virt', fVirt, 'Nenhum processo virtual encontrado.');
       
       const elCntTodos = document.getElementById('cnt-todos');
-      if (elCntTodos) elCntTodos.textContent = fPres.length + fVirt.length;
+      if (elCntTodos) elCntTodos.textContent = filtered.length;
     }
   }
 
@@ -533,18 +671,21 @@
   let currentFilter = 'todos';
   function applyFilter(filter) {
     currentFilter = filter;
-    const secPres = document.getElementById('section-presencial');
-    const secVirt = document.getElementById('section-virtual');
-    if (filter === 'todos') {
-      secPres.classList.remove('hidden');
-      secVirt.classList.remove('hidden');
-    } else if (filter === 'presencial') {
-      secPres.classList.remove('hidden');
-      secVirt.classList.add('hidden');
-    } else {
-      secPres.classList.add('hidden');
-      secVirt.classList.remove('hidden');
-    }
+    const sections = ['presencial', 'vandymara', 'marcio-vidal', 'virtual'];
+    
+    sections.forEach(sec => {
+      const el = document.getElementById(`section-${sec}`);
+      if (el) {
+        if (filter === 'todos') {
+          el.style.display = 'block';
+        } else {
+          // 'marcio_vidal' maps to 'marcio-vidal' section ID
+          const matchSec = filter.replace('_', '-');
+          el.style.display = sec === matchSec ? 'block' : 'none';
+        }
+      }
+    });
+
     document.querySelectorAll('.pauta-filter-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.filter === filter);
     });
@@ -559,33 +700,83 @@
     fetch(URLS.json)
       .then(r => r.json())
       .then(data => {
-        // Salva os dados para a busca funcionar
-        pautaData.presenciais = data.presenciais || [];
-        pautaData.virtuais = data.virtuais || [];
-
-        const total = (data.total_presencial || 0) + (data.total_virtual || 0);
-        
-        const elTodos = document.getElementById('cnt-todos');
-        if (elTodos) elTodos.textContent = total;
-        
-        const elPres = document.getElementById('cnt-pres');
-        if (elPres) elPres.textContent = data.total_presencial;
-        
-        const elVirt = document.getElementById('cnt-virt');
-        if (elVirt) elVirt.textContent = data.total_virtual;
-
-        const elBadgePres = document.getElementById('badge-pres-count');
-        if (elBadgePres) elBadgePres.textContent = data.total_presencial;
-        
-        const elBadgeVirt = document.getElementById('badge-virt-count');
-        if (elBadgeVirt) elBadgeVirt.textContent = data.total_virtual;
-
+        pautaData = data.itens || [];
         renderDateFilter();
-        renderLists(); // Renderiza usando a busca atual (que começa vazia)
+        renderLists(); 
         applyFilter(currentFilter);
       })
-      .catch(() => showToast('Erro ao carregar a pauta.', 'error'));
+      .catch((e) => {
+          console.error(e);
+          showToast('Erro ao carregar a pauta.', 'error');
+      });
   }
+
+  /* ── Gear Edit Modal ── */
+  window.pautaEditar = function(id) {
+    const item = pautaData.find(i => i.id === id);
+    if (!item) return;
+
+    document.getElementById('edit-item-id').value = id;
+    document.getElementById('edit-numero').value = item.numero_processo || '';
+    document.getElementById('edit-responsavel').value = item.responsavel !== 'Não atribuído' ? (item.responsavel || '') : '';
+    document.getElementById('edit-especie').value = item.especie !== '—' ? (item.especie || '') : '';
+    document.getElementById('edit-tema').value = item.tema !== '—' ? (item.tema || '') : '';
+    document.getElementById('edit-link').value = item.link_documento || '';
+    document.getElementById('edit-tipo').value = item.tipo_sessao || 'presencial';
+    
+    let modalEl = document.getElementById('pautaEditModal');
+    let modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  document.getElementById('btn-edit-save').addEventListener('click', () => {
+    const id = document.getElementById('edit-item-id').value;
+    const payload = {
+      responsavel: document.getElementById('edit-responsavel').value.trim(),
+      especie: document.getElementById('edit-especie').value.trim(),
+      tema: document.getElementById('edit-tema').value.trim(),
+      link_documento: document.getElementById('edit-link').value.trim(),
+      tipo_sessao: document.getElementById('edit-tipo').value,
+    };
+    fetch(`/pauta/editar/${id}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        let modalEl = document.getElementById('pautaEditModal');
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        showToast('Processo atualizado!', 'success');
+        loadPauta();
+      } else {
+        showToast(d.message || 'Erro ao salvar.', 'error');
+      }
+    }).catch(() => showToast('Erro ao salvar.', 'error'));
+  });
+
+  /* ── Alterar Tipo via AJAX ── */
+  window.pautaAlterarTipo = function(id, novoTipo) {
+    fetch(`/pauta/alterar-tipo/${id}/`, {
+      method: 'POST',
+      headers: {
+          'X-CSRFToken': csrfToken,
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ tipo_sessao: novoTipo })
+    }).then(r=>r.json()).then(d=>{
+      if(d.success) {
+        showToast('Tipo de sessão alterado!');
+        loadPauta(); // Recarrega os dados completos
+      } else {
+        showToast(d.message || 'Erro ao alterar.', 'error');
+        loadPauta(); // reverte visualmente
+      }
+    }).catch(e=>{
+      showToast('Erro de rede.', 'error');
+      loadPauta();
+    });
+  };
 
   /* ── Remove ── */
   window.pautaRemover = function(id) {
@@ -654,22 +845,59 @@
       .catch(() => showToast('Erro ao limpar.','error'));
   });
 
-  document.getElementById('btn-add-manual').addEventListener('click', () => {
+  document.getElementById('btn-add-manual').addEventListener('click', (e) => {
     const numero = document.getElementById('manual-numero').value.trim();
-    const data   = document.getElementById('manual-data').value.trim();
+    const dataSessao   = document.getElementById('manual-data').value.trim();
     const tipo   = document.getElementById('manual-tipo').value;
-    if (!numero || !data) { showToast('Preencha o número e a data.','error'); return; }
-    const fd = new FormData();
-    fd.append('numero_processo', numero);
-    fd.append('data_sessao', data);
-    fd.append('tipo_sessao', tipo);
-    fetch(URLS.manual, { method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd })
+    const responsavel = document.getElementById('manual-responsavel')?.value.trim() || '';
+    const especie = document.getElementById('manual-especie')?.value.trim() || '';
+    const tema = document.getElementById('manual-tema')?.value.trim() || '';
+    const linkDocumento = document.getElementById('manual-link-documento')?.value.trim() || '';
+
+    if (!numero || !dataSessao) { showToast('Preencha o número e a data.','error'); return; }
+    
+    const postData = {
+      numero_processo: numero,
+      data_sessao: dataSessao,
+      tipo_sessao: tipo,
+      responsavel: responsavel,
+      especie: especie,
+      tema: tema,
+      link_documento: linkDocumento
+    };
+
+    const btn = e.currentTarget;
+    const originalBtnContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(URLS.manual, { 
+        method: 'POST', 
+        body: JSON.stringify(postData), 
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        } 
+    })
       .then(r => r.json())
       .then(d => {
-        if (d.success) { showToast('Processo adicionado à pauta!','success'); document.getElementById('manual-numero').value=''; document.getElementById('manual-data').value=''; loadPauta(); }
+        if (d.success) { 
+          showToast('Processo adicionado à pauta!','success'); 
+          document.getElementById('manual-numero').value=''; 
+          document.getElementById('manual-data').value=''; 
+          if (document.getElementById('manual-responsavel')) document.getElementById('manual-responsavel').value = '';
+          if (document.getElementById('manual-especie')) document.getElementById('manual-especie').value = '';
+          if (document.getElementById('manual-tema')) document.getElementById('manual-tema').value = '';
+          if (document.getElementById('manual-link-documento')) document.getElementById('manual-link-documento').value = '';
+          loadPauta(); 
+        }
         else           { showToast(d.message,'error'); }
       })
-      .catch(() => showToast('Erro ao adicionar.','error'));
+      .catch(() => showToast('Erro ao adicionar.','error'))
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnContent;
+      });
   });
   {% endif %}
 

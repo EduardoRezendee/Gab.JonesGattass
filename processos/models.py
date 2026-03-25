@@ -211,6 +211,8 @@ class ProcessoPauta(models.Model):
     TIPO_SESSAO_CHOICES = [
         ('presencial', 'Presencial'),
         ('virtual', 'Virtual'),
+        ('vandymara', 'Vandymara'),
+        ('marcio_vidal', 'Márcio Vidal'),
     ]
     numero_processo = models.CharField(max_length=100, verbose_name='Número do Processo')
     data_sessao = models.DateTimeField(verbose_name='Data da Sessão')
@@ -229,6 +231,12 @@ class ProcessoPauta(models.Model):
         related_name='pautas',
         verbose_name='Processo no Sistema'
     )
+    # Campos manuais (prioridade na exibição)
+    responsavel_manual = models.CharField(max_length=200, blank=True, null=True, verbose_name='Responsável (Manual)')
+    tema_manual = models.CharField(max_length=200, blank=True, null=True, verbose_name='Tema (Manual)')
+    especie_manual = models.CharField(max_length=200, blank=True, null=True, verbose_name='Espécie (Manual)')
+    link_documento_manual = models.URLField(blank=True, null=True, verbose_name='Link do Documento (Manual)')
+    
     importado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
