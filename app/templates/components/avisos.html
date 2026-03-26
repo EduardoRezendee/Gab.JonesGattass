@@ -212,8 +212,8 @@
                         </div>
                         <div class="card-body p-0 custom-scroll" style="overflow-y: auto; flex-grow: 1;">
                             ${data.imagem_url ? `
-                                <div class="text-center bg-light border-bottom">
-                                    <img src="${data.imagem_url}" class="img-fluid" style="max-height: 400px; width: 100%; object-fit: contain;" alt="Imagem do aviso">
+                                <div class="text-center bg-black">
+                                    <img src="${data.imagem_url}" class="img-fluid w-100" style="max-height: 800px; object-fit: contain; cursor: pointer;" onclick="window.open(this.src, '_blank')" alt="Imagem do aviso">
                                 </div>
                             ` : ''}
                             
