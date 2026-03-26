@@ -93,6 +93,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# Banco Servidor Local
 '''DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.sqlite3',
@@ -100,6 +101,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 }
 }'''
 
+# Banco Servidor Produção
 DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.postgresql',

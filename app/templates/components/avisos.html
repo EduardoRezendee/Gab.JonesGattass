@@ -39,7 +39,10 @@
                             onclick="carregarAviso({{ aviso.id }}, this)"
                             style="transition: all 0.2s; border-left: 4px solid transparent !important;">
                         <div class="d-flex w-100 justify-content-between align-items-start">
-                            <h6 class="mb-1 fw-bold" style="line-height: 1.4;">{{ aviso.titulo }}</h6>
+                            <h6 class="mb-1 fw-bold" style="line-height: 1.4;">
+                                {% if aviso.fixado %}<i class="bi bi-pin-angle-fill me-1 text-primary"></i>{% endif %}
+                                {{ aviso.titulo }}
+                            </h6>
                             {% if request.user not in aviso.leitores.all %}
                                 <span class="badge rounded-pill bg-danger ms-2" style="font-size: 0.6rem; flex-shrink: 0;">Novo</span>
                             {% endif %}
@@ -100,7 +103,25 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Conteúdo</label>
-                    <textarea class="form-control" id="avisoConteudo" rows="10" style="border-radius: 15px;" placeholder="Escreva o aviso aqui..."></textarea>
+                    <textarea class="form-control" id="avisoConteudo" rows="8" style="border-radius: 15px;" placeholder="Escreva o aviso aqui..."></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-7">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Imagem (Opcional)</label>
+                            <input type="file" class="form-control rounded-pill" id="avisoImagem" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Anexo PDF (Opcional)</label>
+                            <input type="file" class="form-control rounded-pill" id="avisoPdf" accept="application/pdf">
+                        </div>
+                    </div>
+                    <div class="col-md-5 d-flex align-items-center">
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="avisoFixado">
+                            <label class="form-check-label fw-semibold" for="avisoFixado">Fixar no topo</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-top-0 p-4 pt-0">
@@ -189,8 +210,36 @@
                             </div>
                             {% endif %}
                         </div>
-                        <div class="card-body p-4 custom-scroll" style="overflow-y: auto; flex-grow: 1;">
-                            <div class="conteudo-markdown pre-wrap">${conteudoFormatado}</div>
+                        <div class="card-body p-0 custom-scroll" style="overflow-y: auto; flex-grow: 1;">
+                            ${data.imagem_url ? `
+                                <div class="text-center bg-light border-bottom">
+                                    <img src="${data.imagem_url}" class="img-fluid" style="max-height: 400px; width: 100%; object-fit: contain;" alt="Imagem do aviso">
+                                </div>
+                            ` : ''}
+                            
+                            ${data.pdf_url ? `
+                                <div class="px-4 py-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-file-earmark-pdf-fill fs-3 text-danger me-2"></i>
+                                        <div>
+                                            <span class="fw-bold d-block">Arquivo Anexo</span>
+                                            <small class="text-muted">Documento PDF disponível</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="${data.pdf_url}" target="_blank" class="btn btn-primary btn-sm rounded-pill px-3">
+                                            <i class="bi bi-eye me-1"></i> Visualizar
+                                        </a>
+                                        <a href="${data.pdf_url}" download class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                            <i class="bi bi-download me-1"></i> Baixar
+                                        </a>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="p-4">
+                                <div class="conteudo-markdown pre-wrap">${conteudoFormatado}</div>
+                            </div>
                         </div>
 
                     `;
@@ -204,6 +253,9 @@
         document.getElementById('avisoId').value = '';
         document.getElementById('avisoTitulo').value = '';
         document.getElementById('avisoConteudo').value = '';
+        document.getElementById('avisoFixado').checked = false;
+        document.getElementById('avisoImagem').value = '';
+        document.getElementById('avisoPdf').value = '';
         document.getElementById('modalAvisoLabel').innerText = 'Novo Aviso';
         new bootstrap.Modal(document.getElementById('modalAviso')).show();
     }
@@ -216,6 +268,9 @@
                     document.getElementById('avisoId').value = id;
                     document.getElementById('avisoTitulo').value = data.titulo;
                     document.getElementById('avisoConteudo').value = data.conteudo;
+                    document.getElementById('avisoFixado').checked = data.fixado;
+                    document.getElementById('avisoImagem').value = ''; // Reset file input
+                    document.getElementById('avisoPdf').value = ''; // Reset file input
                     document.getElementById('modalAvisoLabel').innerText = 'Editar Aviso';
                     new bootstrap.Modal(document.getElementById('modalAviso')).show();
                 }
@@ -227,25 +282,43 @@
         const id = document.getElementById('avisoId').value;
         const titulo = document.getElementById('avisoTitulo').value;
         const conteudo = document.getElementById('avisoConteudo').value;
+        const fixado = document.getElementById('avisoFixado').checked;
+        const imagemInput = document.getElementById('avisoImagem');
+        const pdfInput = document.getElementById('avisoPdf');
 
         if (!titulo || !conteudo) {
             alert('Preencha título e conteúdo.');
             return;
         }
 
+        const formData = new FormData();
+        if (id) formData.append('id', id);
+        formData.append('titulo', titulo);
+        formData.append('conteudo', conteudo);
+        formData.append('fixado', fixado);
+        if (imagemInput.files[0]) {
+            formData.append('imagem', imagemInput.files[0]);
+        }
+        if (pdfInput.files[0]) {
+            formData.append('pdf', pdfInput.files[0]);
+        }
+
         fetch('/avisos/salvar/', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify({ id, titulo, conteudo })
+            body: formData
         })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
                 location.reload();
             }
+        })
+        .catch(err => {
+            console.error('Erro ao salvar:', err);
+            alert('Erro ao salvar o aviso.');
         });
     }
 

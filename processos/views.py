@@ -2831,7 +2831,7 @@ def editar_pauta_item(request, item_id):
 @login_required
 def avisos_lista(request):
     """Retorna o template base do Quadro de Avisos ou a lista via AJAX"""
-    avisos = Aviso.objects.filter(ativo=True).order_by('-criado_em')
+    avisos = Aviso.objects.filter(ativo=True)
     
     # Contagem de não lidos para o badge (pode ser útil aqui também)
     avisos_nao_lidos_count = Aviso.objects.filter(ativo=True).exclude(leitores=request.user).count()
@@ -2862,7 +2862,10 @@ def aviso_detalhe(request, pk):
         'titulo': aviso.titulo,
         'conteudo': aviso.conteudo,
         'autor': aviso.autor.get_full_name(),
-        'data': aviso.criado_em.strftime('%d/%m/%Y %H:%M')
+        'data': aviso.criado_em.strftime('%d/%m/%Y %H:%M'),
+        'imagem_url': aviso.imagem.url if aviso.imagem else None,
+        'pdf_url': aviso.pdf.url if aviso.pdf else None,
+        'fixado': aviso.fixado
     })
 
 
@@ -2873,22 +2876,32 @@ def aviso_salvar(request):
     if not hasattr(request.user, 'profile') or request.user.profile.funcao != "Chefe de Gabinete":
         return JsonResponse({'success': False, 'message': 'Acesso negado.'}, status=403)
         
-    import json
-    data = json.loads(request.body)
-    pk = data.get('id')
-    titulo = data.get('titulo')
-    conteudo = data.get('conteudo')
+    # Suporte a multipart/form-data (POST + FILES)
+    pk = request.POST.get('id')
+    titulo = request.POST.get('titulo')
+    conteudo = request.POST.get('conteudo')
+    fixado = request.POST.get('fixado') == 'true'
+    imagem = request.FILES.get('imagem')
+    pdf = request.FILES.get('pdf')
     
     if pk:
         aviso = get_object_or_404(Aviso, pk=pk)
         aviso.titulo = titulo
         aviso.conteudo = conteudo
+        aviso.fixado = fixado
+        if imagem:
+            aviso.imagem = imagem
+        if pdf:
+            aviso.pdf = pdf
         aviso.save()
     else:
         aviso = Aviso.objects.create(
             titulo=titulo,
             conteudo=conteudo,
-            autor=request.user
+            autor=request.user,
+            fixado=fixado,
+            imagem=imagem,
+            pdf=pdf
         )
         
     return JsonResponse({'success': True, 'id': aviso.id})

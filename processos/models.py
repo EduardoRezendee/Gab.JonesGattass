@@ -256,9 +256,12 @@ class Aviso(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
     ativo = models.BooleanField(default=True)
     leitores = models.ManyToManyField(User, related_name='avisos_lidos', blank=True)
+    imagem = models.ImageField(upload_to='avisos/', null=True, blank=True)
+    pdf = models.FileField(upload_to='avisos/pdfs/', null=True, blank=True)
+    fixado = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-criado_em']
+        ordering = ['-fixado', '-criado_em']
 
     def __str__(self):
         return self.titulo
