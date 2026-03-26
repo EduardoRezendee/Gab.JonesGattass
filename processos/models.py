@@ -210,6 +210,7 @@ class ComentarioProcesso(models.Model):  # Renomeei para refletir melhor o prop�
 class ProcessoPauta(models.Model):
     TIPO_SESSAO_CHOICES = [
         ('presencial', 'Presencial'),
+        ('terceira_camara', 'Terceira Câmara'),
         ('virtual', 'Virtual'),
         ('vandymara', 'Vandymara'),
         ('marcio_vidal', 'Márcio Vidal'),

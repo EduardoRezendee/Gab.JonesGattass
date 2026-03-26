@@ -2694,7 +2694,7 @@ def adicionar_pauta_manual(request):
     item = ProcessoPauta.objects.create(
         numero_processo=numero,
         data_sessao=data_sessao,
-        tipo_sessao=tipo if tipo in ('presencial', 'virtual', 'vandymara', 'marcio_vidal') else 'presencial',
+        tipo_sessao=tipo if tipo in ('presencial', 'virtual', 'vandymara', 'marcio_vidal', 'terceira_camara') else 'presencial',
         processo_vinculado=processo_db,
         responsavel_manual=responsavel or None,
         tema_manual=tema or None,
@@ -2793,7 +2793,7 @@ def alterar_tipo_sessao_pauta(request, item_id):
     except Exception:
         novo_tipo = request.POST.get('tipo_sessao', '')
 
-    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal')
+    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal', 'terceira_camara')
     if novo_tipo not in tipos_validos:
         return JsonResponse({'success': False, 'message': 'Tipo inválido.'}, status=400)
 
@@ -2813,7 +2813,7 @@ def editar_pauta_item(request, item_id):
     except Exception:
         return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
 
-    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal')
+    tipos_validos = ('presencial', 'virtual', 'vandymara', 'marcio_vidal', 'terceira_camara')
     novo_tipo = body.get('tipo_sessao', item.tipo_sessao)
     if novo_tipo not in tipos_validos:
         novo_tipo = item.tipo_sessao

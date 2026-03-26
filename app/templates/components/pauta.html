@@ -49,6 +49,7 @@
 
 .pauta-filter-btn.active.todos { background:#083464; color:#fff; border-color:#083464; }
 .pauta-filter-btn.active.pres  { background:#2563eb; color:#fff; border-color:#2563eb; }
+.pauta-filter-btn.active.cam3  { background:#059669; color:#fff; border-color:#059669; }
 .pauta-filter-btn.active.virt  { background:#7c3aed; color:#fff; border-color:#7c3aed; }
 
 .pauta-filter-btn:hover:not(.active) { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
@@ -68,6 +69,10 @@
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
   color: #1d4ed8; border-left: 4px solid #2563eb;
 }
+.pauta-section-header.cam3 {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #047857; border-left: 4px solid #059669;
+}
 .pauta-section-header.virt {
   background: linear-gradient(135deg, #f5f3ff, #ede9fe);
   color: #5b21b6; border-left: 4px solid #7c3aed;
@@ -77,6 +82,7 @@
   font-size: .82rem; font-weight: 700;
 }
 .pauta-section-header.pres .badge-count { background:#2563eb; color:#fff; }
+.pauta-section-header.cam3 .badge-count { background:#059669; color:#fff; }
 .pauta-section-header.virt .badge-count { background:#7c3aed; color:#fff; }
 
 /* ── Card grid ────────────────────────────────────────────────── */
@@ -98,6 +104,7 @@
 }
 .pauta-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
 .pauta-card.pres  { border-top-color: #2563eb; }
+.pauta-card.terceira_camara { border-top-color: #10b981; }
 .pauta-card.virt  { border-top-color: #7c3aed; }
 
 .pauta-card .card-num {
@@ -276,6 +283,7 @@
           <label for="manual-tipo">Tipo</label>
           <select id="manual-tipo" class="form-select">
             <option value="presencial">🏛️ Presencial</option>
+            <option value="terceira_camara">📂 Terceira Câmara</option>
             <option value="virtual">💻 Virtual</option>
             <option value="vandymara">🟣 Vandymara</option>
             <option value="marcio_vidal">🟤 Márcio Vidal</option>
@@ -320,6 +328,10 @@
       <button class="pauta-filter-btn pres" data-filter="presencial">
         <i class="bi bi-building-fill"></i> Presencial
         <span class="badge ms-1" style="background:#2563eb;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-pres">—</span>
+      </button>
+      <button class="pauta-filter-btn cam3" data-filter="terceira_camara" style="border-color: #a7f3d0;">
+        <i class="bi bi-collection-fill"></i> 3ª Câmara
+        <span class="badge ms-1" style="background:#059669;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-cam3">—</span>
       </button>
       <button class="pauta-filter-btn" data-filter="vandymara" style="border: 1px solid #d8b4e2; background:#faf5ff; color:#9333ea;">
         <i class="bi bi-person-fill"></i> Vandymara
@@ -366,6 +378,20 @@
     </div>
     {% endif %}
     <div class="pauta-grid" id="lista-presencial">
+      <p class="pauta-empty">Carregando...</p>
+    </div>
+  </div>
+
+  {# ── Terceira Câmara ── #}
+  <div class="pauta-section" id="section-terceira-camara">
+    {% if not only_presencial %}
+    <div class="pauta-section-header cam3">
+      <i class="bi bi-collection-fill" style="font-size:1.1rem;"></i>
+      Terceira Câmara
+      <span class="badge-count" id="badge-cam3-count">0</span>
+    </div>
+    {% endif %}
+    <div class="pauta-grid" id="lista-terceira">
       <p class="pauta-empty">Carregando...</p>
     </div>
   </div>
@@ -452,6 +478,7 @@
             <label class="form-label fw-semibold">Tipo de Sessão</label>
             <select id="edit-tipo" class="form-select">
               <option value="presencial">🏛️ Presencial</option>
+              <option value="terceira_camara">📂 Terceira Câmara</option>
               <option value="virtual">💻 Virtual</option>
               <option value="vandymara">🟣 Vandymara</option>
               <option value="marcio_vidal">🟤 Márcio Vidal</option>
@@ -501,6 +528,7 @@
   function renderCard(item) {
     let sessionBadge = `<span class="badge-sessao badge-pres" style="font-size:.7rem;padding:3px 8px;">🏛️ Presencial</span>`;
     if(item.tipo_sessao === 'virtual') sessionBadge = `<span class="badge-sessao badge-virt" style="font-size:.7rem;padding:3px 8px;">💻 Virtual</span>`;
+    else if(item.tipo_sessao === 'terceira_camara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#10b981;color:#fff;">📂 3ª Câmara</span>`;
     else if(item.tipo_sessao === 'vandymara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#9333ea;color:#fff;">🟣 Vandymara</span>`;
     else if(item.tipo_sessao === 'marcio_vidal') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#52525b;color:#fff;">🟤 Márcio</span>`;
 
@@ -509,11 +537,13 @@
         <select class="form-select form-select-sm d-inline-block w-auto py-0 text-white border-0 me-2" 
                 style="background-color: ${
                   item.tipo_sessao==='presencial' ? '#2563eb' :
+                  item.tipo_sessao==='terceira_camara' ? '#10b981' :
                   item.tipo_sessao==='virtual' ? '#7c3aed' :
                   item.tipo_sessao==='vandymara' ? '#9333ea' : '#52525b'
                 }; font-size:.75rem; border-radius: 20px; font-weight: 600;"
                 onchange="pautaAlterarTipo(${item.id}, this.value)">
           <option value="presencial" ${item.tipo_sessao==='presencial'?'selected':''}>🏛️ Presencial</option>
+          <option value="terceira_camara" ${item.tipo_sessao==='terceira_camara'?'selected':''}>📂 3ª Câmara</option>
           <option value="virtual" ${item.tipo_sessao==='virtual'?'selected':''}>💻 Virtual</option>
           <option value="vandymara" ${item.tipo_sessao==='vandymara'?'selected':''}>🟣 Vandymara</option>
           <option value="marcio_vidal" ${item.tipo_sessao==='marcio_vidal'?'selected':''}>🟤 Márcio</option>
@@ -630,6 +660,7 @@
     
     // Separação por tipo
     const fPres = filtered.filter(i => i.tipo_sessao === 'presencial');
+    const fTerceira = filtered.filter(i => i.tipo_sessao === 'terceira_camara');
     const fVirt = filtered.filter(i => i.tipo_sessao === 'virtual');
     const fVandy = filtered.filter(i => i.tipo_sessao === 'vandymara');
     const fMarcio = filtered.filter(i => i.tipo_sessao === 'marcio_vidal');
@@ -646,6 +677,7 @@
     };
 
     renderSec('lista-presencial', 'badge-pres-count', 'cnt-pres', fPres, 'Nenhum processo presencial encontrado.');
+    renderSec('lista-terceira', 'badge-cam3-count', 'cnt-cam3', fTerceira, 'Nenhum processo da Terceira Câmara encontrado.');
     if (!isOnlyPresencial) {
       renderSec('lista-vandymara', 'badge-vandy-count', 'cnt-vandy', fVandy, 'Nenhum processo Vandymara encontrado.');
       renderSec('lista-marcio', 'badge-marcio-count', 'cnt-marcio', fMarcio, 'Nenhum processo Márcio Vidal encontrado.');
@@ -671,7 +703,7 @@
   let currentFilter = 'todos';
   function applyFilter(filter) {
     currentFilter = filter;
-    const sections = ['presencial', 'vandymara', 'marcio-vidal', 'virtual'];
+    const sections = ['presencial', 'terceira-camara', 'vandymara', 'marcio-vidal', 'virtual'];
     
     sections.forEach(sec => {
       const el = document.getElementById(`section-${sec}`);
