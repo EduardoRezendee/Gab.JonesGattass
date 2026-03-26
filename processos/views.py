@@ -2568,9 +2568,13 @@ def importar_pauta(request):
             except:
                 pass
                 
-        # Apaga TODOS os processos do banco cujas datas de sessão (só a parte data) estão nessas recuperadas.
+        # Apaga APENAS os processos 'presencial' e 'virtual' do banco cujas datas estão na planilha.
+        # Isso garante que 'terceira_camara', 'vandymara' e 'marcio_vidal' (lançados manualmente) sejam preservados.
         for dt_str in datas_na_planilha:
-            ProcessoPauta.objects.filter(data_sessao__startswith=dt_str).delete()
+            ProcessoPauta.objects.filter(
+                data_sessao__startswith=dt_str, 
+                tipo_sessao__in=['presencial', 'virtual']
+            ).delete()
 
         inseridos = 0
         erros = []
