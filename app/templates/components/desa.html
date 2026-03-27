@@ -81,18 +81,73 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="accordion-body">
 
         
-        <!-- Filtro por número de processo -->
-        <div class="mb-4">
-          <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center">
-            <div class="input-group" style="max-width: 500px;">
+        <!-- CSS Customizado para os Novos Filtros -->
+        <style>
+          .btn-fase-desa {
+            border-radius: 20px !important;
+            padding: 8px 20px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none !important;
+            color: white !important;
+            border: 2px solid transparent !important;
+          }
+          .btn-fase-revisao {
+            background-color: #083464 !important;
+            border-color: #083464 !important;
+          }
+          .btn-fase-revisao:hover {
+            background-color: #06284d !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+            color: white !important;
+          }
+          .btn-fase-devolvido {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+          }
+          .btn-fase-devolvido:hover {
+            background-color: #a71d2a !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
+            color: white !important;
+          }
+        </style>
+
+        <!-- Área de Filtros e Busca -->
+        <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-3">
+          
+          <!-- Seletor de Fase (Lado Esquerdo) -->
+          <div>
+            {% if fase_ativa_desa == 'Devolvido' %}
+              <a href="{% url 'home' %}?fase=Revisão Des" class="btn btn-fase-desa btn-fase-revisao shadow-sm">
+                <i class="bi bi-list-task me-2"></i> Ver Revisão Des
+              </a>
+            {% else %}
+              <a href="{% url 'home' %}?fase=Devolvido" class="btn btn-fase-desa btn-fase-devolvido shadow-sm">
+                <i class="bi bi-arrow-left-circle me-2"></i> Ver Devolvidos
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- Filtro por número de processo (Lado Direito) -->
+          <form method="GET" action="{% url 'home' %}" class="m-0">
+            <div class="input-group" style="max-width: 450px;">
               <input type="text" name="numero_processo" class="form-control shadow-sm" 
-                     placeholder="Digite o número do processo..." 
+                     placeholder="Buscar processo..." 
                      value="{{ request.GET.numero_processo|default:'' }}"
-                     style="border-radius: 20px 0 0 20px; border-color: #083464; color: #1F2937;">
+                     style="border-radius: 20px 0 0 20px; border-color: #1a4a7c; color: #1F2937;">
+              
+              <input type="hidden" name="fase" value="{{ fase_ativa_desa|default:'Revisão Des' }}">
+
               <button type="submit" class="btn shadow-sm" 
                       style="background-color: #083464; color: white; border: none; border-radius: 0;">
                 <i class="bi bi-search" style="color: white;"></i>
               </button>
+
               <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm" 
                  style="border-radius: 0 20px 20px 0; margin-left: -1px; border-left: none;">
                 Limpar
@@ -103,9 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <!-- Total de processos em revisão -->
         <p class="fw-bold text-dark" style="font-size: 1.5rem;">
-          Total de processos em Revisão Des:
+          Total de processos em {{ fase_ativa_desa|default:"Revisão Des" }}:
           <span class="badge bg-primary fs-4">{{ numero_de_processos_em_revisao_des|default:0 }}</span>
-        </p>
+        </p>
 
         <!-- Lista de Processos -->
         {% if andamento_metrics %}

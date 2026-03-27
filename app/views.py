@@ -74,6 +74,8 @@ def home(request):
     tarefas_detalhadas = []
     tarefas_ids = []
     numero_de_processos_em_revisao_des = 0
+    fase_filtro = None
+    numero_processo = request.GET.get('numero_processo', '').strip()
 
 
     # Métricas diárias
@@ -113,7 +115,6 @@ def home(request):
 
     # VISÃO DO REVISOR(A)
     if is_revisor:
-        numero_processo = request.GET.get('numero_processo', '').strip()
         processos_em_revisao = Processo.objects.filter(
             andamentos__fase__fase="Revisão",
             andamentos__usuario=user,
@@ -176,17 +177,20 @@ def home(request):
  # --- VISÃO DA DESEMBARGADORA ---
 
     elif is_desembargador:
-        numero_processo = request.GET.get('numero_processo', '').strip()
+        fase_filtro = request.GET.get('fase', 'Revisão Des')
+        if fase_filtro not in ['Revisão Des', 'Devolvido']:
+            fase_filtro = 'Revisão Des'
 
-        # Pegamos somente processos com último andamento em "Revisão Des",
-        # do próprio usuário (desembargadora), e com status "Não iniciado" ou "Em andamento".
+        # Pegamos somente processos com último andamento na fase selecionada.
+        # Se for 'Devolvido', mostramos visão GERAL (de todos os assessores).
+        # Se for 'Revisão Des', mostramos apenas o que está com o Desembargador logado.
+        query_revisao = Q(concluido=False, andamentos__fase__fase=fase_filtro)
+        if fase_filtro != 'Devolvido':
+            query_revisao &= Q(andamentos__usuario=user)
+
         processos_em_revisao_des = (
             Processo.objects
-            .filter(
-                concluido=False,
-                andamentos__fase__fase="Revisão Des",
-                andamentos__usuario=user,
-            )
+            .filter(query_revisao)
             .annotate(
                 max_dt_criacao=Max('andamentos__dt_criacao')
             )
@@ -213,11 +217,12 @@ def home(request):
         for processo in processos_em_revisao_des:
             # Último andamento em Revisão Des desta desembargadora (em aberto)
             total_comentarios = processo.comentarios.count()
-            ultimo_andamento = processo.andamentos.filter(
-                fase__fase="Revisão Des",
-                usuario=user,
-                status__status__in=["Não iniciado", "Em andamento"]
-            ).order_by('-dt_criacao').first()
+            # último andamento na fase filtrada (em aberto)
+            filt_andamento = Q(fase__fase=fase_filtro, status__status__in=["Não iniciado", "Em andamento"])
+            if fase_filtro != 'Devolvido':
+                filt_andamento &= Q(usuario=user)
+
+            ultimo_andamento = processo.andamentos.filter(filt_andamento).order_by('-dt_criacao').first()
 
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
@@ -411,7 +416,6 @@ def home(request):
 
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
-        numero_processo = request.GET.get('numero_processo', '').strip()
         despacho = request.GET.get('despacho', '').strip()
         tipo = request.GET.get('tipo', '').strip()
         especie = request.GET.get('especie', '').strip()  # Novo parâmetro para espécie
@@ -645,7 +649,8 @@ def home(request):
         'atrasados_por_assessor': atrasados_por_assessor_detalhado,
         'total_atrasados': total_atrasados,
         'numero_de_processos_em_revisao_des': numero_de_processos_em_revisao_des,
-        'avisos_nao_lidos_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
+        'fase_ativa_desa': fase_filtro,
+        'avisos_na_pauta_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:
