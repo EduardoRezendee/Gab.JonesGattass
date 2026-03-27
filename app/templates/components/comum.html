@@ -127,7 +127,7 @@
 <!-- ===================================== -->
 <!-- GAMIFICAÇÃO: PROGRESSO DA META SEMANA -->
 <!-- ===================================== -->
-{% if meta_semanal_progresso %}
+{% if meta_semanal_progresso and not is_assessor %}
 <div class="card mb-4 shadow-sm" style="border-radius: 12px; background: #ffffff; position: relative; border: 1px solid #e5e7eb;">
   
   <div class="card-body p-4 pt-4">

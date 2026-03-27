@@ -649,11 +649,11 @@ def home(request):
         'atrasados_por_assessor': atrasados_por_assessor_detalhado,
         'total_atrasados': total_atrasados,
         'fase_ativa_desa': fase_filtro,
-        'avisos_na_pauta_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
+        'avisos_nao_lidos_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:
-        context['show_productivity_charts'] = True
+        context['show_productivity_charts'] = False
 
     return render(request, 'home.html', context)
 

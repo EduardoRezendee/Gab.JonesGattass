@@ -2,12 +2,15 @@
 <div class="accordion mx-auto mt-4 shadow-sm mb-3" id="accordionPauta" style="max-width:100%;">
   <div class="accordion-item">
     <h2 class="accordion-header">
-      <button class="accordion-button collapsed position-relative" type="button"
-              data-bs-toggle="collapse" data-bs-target="#collapsePauta" aria-expanded="false">
-        <span style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1d4ed8,#7c3aed);border-radius:2px;"></span>
+      <button class="accordion-button collapsed position-relative" type="button" data-bs-toggle="collapse"
+        data-bs-target="#collapsePauta" aria-expanded="false">
+        <span
+          style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1d4ed8,#7c3aed);border-radius:2px;"></span>
         <i class="bi bi-calendar3-week me-2" style="color:#1d4ed8;"></i>
         <strong>📋 Processos em Pauta</strong>
-        <span id="pautaHeaderDate" class="badge ms-2" style="background:#2563eb; color:#ffffff; font-size:.85rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);"><i class="bi bi-calendar-event me-1"></i> Carregando...</span>
+        <span id="pautaHeaderDate" class="badge ms-2"
+          style="background:#2563eb; color:#ffffff; font-size:.85rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);"><i
+            class="bi bi-calendar-event me-1"></i> Carregando...</span>
         <span class="badge ms-2" style="background:#dbeafe;color:#1d4ed8;font-size:.8rem;">
           Presencial&nbsp;<span id="pautaBadgePres">—</span>
           &nbsp;|&nbsp;Virtual&nbsp;<span id="pautaBadgeVirt">—</span>
@@ -23,64 +26,66 @@
 </div>
 
 <script>
-// Atualiza os badges do header do accordion com os totais da próxima pauta
-document.addEventListener('DOMContentLoaded', function() {
-  fetch("{% url 'pauta_json' %}").then(r=>r.json()).then(d=>{
-    const ep = document.getElementById('pautaBadgePres');
-    const ev = document.getElementById('pautaBadgeVirt');
-    const eh = document.getElementById('pautaHeaderDate');
-    
-    const all = d.itens || [];
-    let nextDate = null;
-    
-    if (all.length > 0) {
-      const dates = [...new Set(all.map(i => i.data_sessao).filter(Boolean))];
-      dates.sort((a,b) => {
-        const [da,ma,ya] = a.split('/');
-        const [db,mb,yb] = b.split('/');
-        return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
-      });
-      
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      nextDate = dates.find(dtStr => {
-        const [da,ma,ya] = dtStr.split('/');
-        return new Date(ya,ma-1,da) >= today;
-      }) || dates[dates.length - 1]; // Fallback para a mais recente se não houver futuras
-    }
-
-    if (nextDate) {
-      const pCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'presencial').length;
-      const vCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'virtual').length;
-      if(ep) ep.textContent = pCount;
-      if(ev) ev.textContent = vCount;
-      if(eh) {
-        eh.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${nextDate}`;
-        eh.style.display = 'inline-block';
-      }
-    } else {
-      if(ep) ep.textContent = 0;
-      if(ev) ev.textContent = 0;
+  // Atualiza os badges do header do accordion com os totais da próxima pauta
+  document.addEventListener('DOMContentLoaded', function () {
+    fetch("{% url 'pauta_json' %}").then(r => r.json()).then(d => {
+      const ep = document.getElementById('pautaBadgePres');
+      const ev = document.getElementById('pautaBadgeVirt');
       const eh = document.getElementById('pautaHeaderDate');
-      if(eh) eh.style.display = 'none';
-    }
+
+      const all = d.itens || [];
+      let nextDate = null;
+
+      if (all.length > 0) {
+        const dates = [...new Set(all.map(i => i.data_sessao).filter(Boolean))];
+        dates.sort((a, b) => {
+          const [da, ma, ya] = a.split('/');
+          const [db, mb, yb] = b.split('/');
+          return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        nextDate = dates.find(dtStr => {
+          const [da, ma, ya] = dtStr.split('/');
+          return new Date(ya, ma - 1, da) >= today;
+        }) || dates[dates.length - 1]; // Fallback para a mais recente se não houver futuras
+      }
+
+      if (nextDate) {
+        const pCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'presencial').length;
+        const vCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'virtual').length;
+        if (ep) ep.textContent = pCount;
+        if (ev) ev.textContent = vCount;
+        if (eh) {
+          eh.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${nextDate}`;
+          eh.style.display = 'inline-block';
+        }
+      } else {
+        if (ep) ep.textContent = 0;
+        if (ev) ev.textContent = 0;
+        const eh = document.getElementById('pautaHeaderDate');
+        if (eh) eh.style.display = 'none';
+      }
+    });
   });
-});
 </script>
 
 <!-- Accordion dos Processos em Revisão Desa -->
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDesembargador" style="max-width: 100%;">
   <div class="accordion-item">
     <h2 class="accordion-header">
-      <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRevisaoDes" aria-expanded="true">
-        <span style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #083464; border-radius: 2px;"></span>
+      <button class="accordion-button position-relative" type="button" data-bs-toggle="collapse"
+        data-bs-target="#collapseRevisaoDes" aria-expanded="true">
+        <span
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #083464; border-radius: 2px;"></span>
         <i class="bi bi-list-task me-2"></i> Processos em Revisão Des
       </button>
     </h2>
     <div id="collapseRevisaoDes" class="accordion-collapse collapse show">
       <div class="accordion-body">
 
-        
+
         <!-- CSS Customizado para os Novos Filtros -->
         <style>
           .btn-fase-desa {
@@ -95,30 +100,36 @@ document.addEventListener('DOMContentLoaded', function() {
             color: white !important;
             border: 2px solid transparent !important;
           }
+
           .btn-fase-revisao {
             background-color: #083464 !important;
             border-color: #083464 !important;
           }
+
           .btn-fase-revisao:hover {
             background-color: #06284d !important;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
             color: white !important;
           }
+
           .btn-fase-devolvido {
             background-color: #dc3545 !important;
             border-color: #dc3545 !important;
           }
+
           .btn-fase-devolvido:hover {
             background-color: #a71d2a !important;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
             color: white !important;
           }
+
           .btn-fase-revisao-geral {
             background-color: #fd7e14 !important;
             border-color: #fd7e14 !important;
           }
+
           .btn-fase-revisao-geral:hover {
             background-color: #e36a14 !important;
             transform: translateY(-2px);
@@ -129,20 +140,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <!-- Área de Filtros e Busca -->
         <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-3">
-          
+
           <!-- Seletores de Fase Iniciais -->
           <div class="d-flex gap-2">
             <!-- Botão Devolvidos -->
-            <a href="{% url 'home' %}?fase=Devolvido" 
-               class="btn btn-fase-desa btn-fase-devolvido shadow-sm {% if fase_ativa_desa != 'Devolvido' %}opacity-50{% endif %}"
-               title="Ver processos devolvidos">
+            <a href="{% url 'home' %}?fase=Devolvido"
+              class="btn btn-fase-desa btn-fase-devolvido shadow-sm {% if fase_ativa_desa != 'Devolvido' %}opacity-50{% endif %}"
+              title="Ver processos devolvidos">
               <i class="bi bi-arrow-left-circle me-2"></i> Devolvidos
             </a>
 
             <!-- Botão Revisão Des -->
-            <a href="{% url 'home' %}?fase=Revisão Des" 
-               class="btn btn-fase-desa btn-fase-revisao shadow-sm {% if fase_ativa_desa != 'Revisão Des' %}opacity-50{% endif %}"
-               title="Ver meus processos">
+            <a href="{% url 'home' %}?fase=Revisão Des"
+              class="btn btn-fase-desa btn-fase-revisao shadow-sm {% if fase_ativa_desa != 'Revisão Des' %}opacity-50{% endif %}"
+              title="Ver meus processos">
               <i class="bi bi-list-task me-2"></i> Revisão Des
             </a>
           </div>
@@ -150,29 +161,28 @@ document.addEventListener('DOMContentLoaded', function() {
           <!-- Filtro por número de processo -->
           <form method="GET" action="{% url 'home' %}" class="m-0">
             <div class="input-group" style="max-width: 450px;">
-              <input type="text" name="numero_processo" class="form-control shadow-sm" 
-                     placeholder="Buscar processo..." 
-                     value="{{ request.GET.numero_processo|default:'' }}"
-                     style="border-radius: 20px 0 0 20px; border-color: #1a4a7c; color: #1F2937;">
-              
+              <input type="text" name="numero_processo" class="form-control shadow-sm" placeholder="Buscar processo..."
+                value="{{ request.GET.numero_processo|default:'' }}"
+                style="border-radius: 20px 0 0 20px; border-color: #1a4a7c; color: #1F2937;">
+
               <input type="hidden" name="fase" value="{{ fase_ativa_desa|default:'Revisão Des' }}">
 
-              <button type="submit" class="btn shadow-sm" 
-                      style="background-color: #083464; color: white; border: none; border-radius: 0;">
+              <button type="submit" class="btn shadow-sm"
+                style="background-color: #083464; color: white; border: none; border-radius: 0;">
                 <i class="bi bi-search" style="color: white;"></i>
               </button>
 
-              <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm" 
-                 style="border-radius: 0 20px 20px 0; margin-left: -1px; border-left: none;">
+              <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm"
+                style="border-radius: 0 20px 20px 0; margin-left: -1px; border-left: none;">
                 Limpar
               </a>
             </div>
           </form>
 
           <!-- Botão Revisão (Geral) -->
-          <a href="{% url 'home' %}?fase=Revisão" 
-             class="btn btn-fase-desa btn-fase-revisao-geral shadow-sm {% if fase_ativa_desa != 'Revisão' %}opacity-50{% endif %}"
-             title="Ver processos com o Revisor">
+          <a href="{% url 'home' %}?fase=Revisão"
+            class="btn btn-fase-desa btn-fase-revisao-geral shadow-sm {% if fase_ativa_desa != 'Revisão' %}opacity-50{% endif %}"
+            title="Ver processos com o Revisor">
             <i class="bi bi-person-check me-2"></i> Revisão
           </a>
         </div>
@@ -185,14 +195,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <!-- Lista de Processos -->
         {% if andamento_metrics %}
-          <!-- Container dos Botões de Filtro -->
-          <div id="filtros-assessores-desa" class="mb-3 mt-2 d-flex flex-wrap gap-2 align-items-center"></div>
+        <!-- Container dos Botões de Filtro -->
+        <div id="filtros-assessores-desa" class="mb-3 mt-2 d-flex flex-wrap gap-2 align-items-center"></div>
 
-          <div class="list-group">
-            {% for andamento in andamento_metrics %}
-              <div id="processo-{{ andamento.processo_pk }}"
-                  data-assessor="{{ andamento.usuario_processo|default:'Não atribuído' }}"
-                  class="processo-card list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
+        <div class="list-group">
+          {% for andamento in andamento_metrics %}
+          <div id="processo-{{ andamento.processo_pk }}"
+            data-assessor="{{ andamento.usuario_processo|default:'Não atribuído' }}" class="processo-card list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative bg-light
                   {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
                     border border-danger text-danger
                   {% elif andamento.tipo == 'Prioridade' %}
@@ -201,10 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     bg-warning text-dark border border-warning
                   {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}
                     border border-success text-success
-                  {% endif %}"
-                  style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Listras verticais para destaque -->
-                <span style="
+                  {% endif %}" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Listras verticais para destaque -->
+            <span style="
                   position: absolute;
                   top: 0;
                   left: 0;
@@ -216,29 +224,31 @@ document.addEventListener('DOMContentLoaded', function() {
                   {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}#10B981
                   {% else %}#083464{% endif %};
                   border-radius: 2px;">
-                </span>
+            </span>
 
-                <!-- Novos indicadores: despacho, prioridade e tipo -->
-                          {% if andamento.despacho or andamento.prioridade_urgente or andamento.tipo or andamento.especie %}
-                            <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
-                              {% if andamento.despacho %}
-                                <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
-                                  <i class="bi bi-file-earmark-text"></i>
-                                </span>
-                              {% endif %}
-                              {% if andamento.prioridade_urgente %}
-                                <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <!-- Sino -->
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                                    <!-- Ondas -->
-                                    <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14"/>
-                                  </svg>
-                                </span>
-                              {% endif %}
-                              {% if andamento.tipo %}
-                                <span class="badge 
+            <!-- Novos indicadores: despacho, prioridade e tipo -->
+            {% if andamento.despacho or andamento.prioridade_urgente or andamento.tipo or andamento.especie %}
+            <p class="mb-1 d-flex align-items-center" style="font-size: 0.9rem;">
+              {% if andamento.despacho %}
+              <span class="badge bg-info text-dark rounded-pill me-2" style="font-size: 0.9rem;" title="Despacho">
+                <i class="bi bi-file-earmark-text"></i>
+              </span>
+              {% endif %}
+              {% if andamento.prioridade_urgente %}
+              <span class="badge bg-danger rounded-pill me-2 d-flex align-items-center"
+                style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Prioridade Urgente">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <!-- Sino -->
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  <!-- Ondas -->
+                  <path d="M20 4a8 8 0 0 0-8 8M20 4a11 11 0 0 0-11 11M20 4a14 14 0 0 0-14 14" />
+                </svg>
+              </span>
+              {% endif %}
+              {% if andamento.tipo %}
+              <span class="badge 
                                   {% if andamento.tipo == 'Prioridade' %}
                                     bg-warning-subtle text-warning
                                   {% elif andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}
@@ -251,194 +261,202 @@ document.addEventListener('DOMContentLoaded', function() {
                                     bg-secondary-subtle text-secondary
                                   {% endif %}
                                   rounded-pill px-3 py-2 d-flex align-items-center" title="Tipo">
-                                  
-                                  <i class="bi bi-briefcase me-1"></i> {{ andamento.tipo }}
 
-                                  {% if andamento.tipo == "Prioridade" %}
-                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
-                                  {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência'%}
-                                    <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
-                                  {% elif andamento.tipo == "Urgentíssimo" %}
-                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
-                                  {% elif andamento.tipo == "2ª Correção" or andamento.tipo == "Redistribuído" %}
-                                    <i class="bi bi-exclamation-circle-fill ms-1" style="color: #10B981;" title="2ª Correção / Redistribuído"></i>
-                                
-                                  {% endif %}
-                                </span>
-                              {% endif %}
-                            </p>
-                          {% endif %}
+                <i class="bi bi-briefcase me-1"></i> {{ andamento.tipo }}
 
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                  <!-- Informações à esquerda -->
-                  <div class="flex-grow-1">
-                      <p class="mb-1 d-flex align-items-center">
-                          <i class="bi bi-file-earmark-text me-2"></i>
-                          <strong>Processo:</strong>
-                          <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo }}</span>
-                          
-                          {% if andamento.tem_comentario %}
-                              <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm" 
-                                    title="{{ andamento.total_comentarios }} lembretes registrados"
-                                    style="background-color: #0d6efd; color: white; min-width: 32px; height: 32px; border-radius: 8px; font-size: 0.9rem; font-weight: bold;">
-                                  <i class="bi bi-chat-dots-fill me-1" style="font-size: 0.8rem;"></i> 
-                                  {{ andamento.total_comentarios }}
-                              </span>
-                          {% endif %}
+                {% if andamento.tipo == "Prioridade" %}
+                <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Prioridade"></i>
+                {% elif andamento.especie == "Voto Vista" or andamento.especie == "EDCIV" or andamento.especie ==
+                'Revisitado' or andamento.especie == 'Voto de Divergência'%}
+                <i class="bi bi-exclamation-circle-fill text-danger ms-1"
+                  title="Voto Vista / EDCIV / Revisitado / Voto de Divergência "></i>
+                {% elif andamento.tipo == "Urgentíssimo" %}
+                <i class="bi bi-exclamation-circle-fill ms-1" style="color: #fd7e14;" title="Urgentíssimo"></i>
+                {% elif andamento.tipo == "2ª Correção" or andamento.tipo == "Redistribuído" %}
+                <i class="bi bi-exclamation-circle-fill ms-1" style="color: #10B981;"
+                  title="2ª Correção / Redistribuído"></i>
 
-                          <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
-                            onclick="copiarNumero('{{ andamento.processo_pk }}')"
-                            title="Copiar Número" style="cursor: pointer;"></i>
-                      </p>
-                      
-                    <p class="mb-1">
-                      <i class="bi bi-person-circle me-2"></i>
-                      <strong>Responsável:</strong>
-                      <span class="ms-1">{{ andamento.usuario_processo }}</span>
-                    </p>
-                    <p class="mb-1">
-                      <i class="bi bi-box-seam me-2"></i>
-                      <strong>Espécie:</strong>
-                      <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger fw-bold
+                {% endif %}
+              </span>
+              {% endif %}
+            </p>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <!-- Informações à esquerda -->
+              <div class="flex-grow-1">
+                <p class="mb-1 d-flex align-items-center">
+                  <i class="bi bi-file-earmark-text me-2"></i>
+                  <strong>Processo:</strong>
+                  <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo
+                    }}</span>
+
+                  {% if andamento.tem_comentario %}
+                  <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm"
+                    title="{{ andamento.total_comentarios }} lembretes registrados"
+                    style="background-color: #0d6efd; color: white; min-width: 32px; height: 32px; border-radius: 8px; font-size: 0.9rem; font-weight: bold;">
+                    <i class="bi bi-chat-dots-fill me-1" style="font-size: 0.8rem;"></i>
+                    {{ andamento.total_comentarios }}
+                  </span>
+                  {% endif %}
+
+                  <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
+                    onclick="copiarNumero('{{ andamento.processo_pk }}')" title="Copiar Número"
+                    style="cursor: pointer;"></i>
+                </p>
+
+                <p class="mb-1">
+                  <i class="bi bi-person-circle me-2"></i>
+                  <strong>Responsável:</strong>
+                  <span class="ms-1">{{ andamento.usuario_processo }}</span>
+                </p>
+                <p class="mb-1">
+                  <i class="bi bi-box-seam me-2"></i>
+                  <strong>Espécie:</strong>
+                  <span class="ms-1 {% if andamento.especie == 'Voto Vista' or andamento.especie == 'EDCIV' or andamento.especie == 'Revisitado' or andamento.especie == 'Voto de Divergência' %}text-danger fw-bold
                       {% elif andamento.tipo == 'Prioridade' %}text-warning
                       {% elif andamento.tipo == 'Urgentíssimo' %}text-laranja fw-bold
                       {% elif andamento.tipo == '2ª Correção' or andamento.tipo == 'Redistribuído' %}text-success fw-bold
                       {% else %}text-black{% endif %}">
-                        {{ andamento.especie }}
-                      </span>
-                    </p>
-                    <p class="mb-1">
-                      <i class="bi bi-tag me-2"></i>
-                      <strong>Tema:</strong>
-                      <span class="ms-1 text-black">{{ andamento.tema|default:"Sem tema" }}</span>
-                    </p>
-                    <p class="mb-1">
-                      <i class="bi bi-clock me-2"></i>
-                      <strong>Dias no Gabinete:</strong>
-                      <span class="ms-1">{{ andamento.dias_no_gabinete }}</span>
-                    </p>
-                    <!-- Data Envio p/ Revisão Desa -->
-                    <p class="mb-1">
-                      <i class="bi bi-calendar2-plus me-2"></i>
-                      <strong>Data Envio p/ Revisão Des:</strong>
-                      <span class="ms-1">
-                        {{ andamento.data_envio_revisao_des|date:"d/m/Y H:i" }}
-                      </span>
-                    </p>
-                  </div>
-
-                  <!-- Revisão e Lembrete no topo direito -->
-                  <div class="d-flex align-items-center gap-2">
-
-  {% if andamento.revisoes_des >= 2 %}
-    
-    <span class="bg-secondary text-warning rounded px-2" style="font-size: 1.2rem;">
-      {{ andamento.revisoes_des }}ª Revisão
-    </span>
-
-  {% else %}
-
-    <span class="text-muted" style="font-size: 1rem;">
-      {{ andamento.revisoes_des }}ª Revisão
-    </span>
-    
-  {% endif %}
-
-</div>
-</div>    
-
-                <!-- Ações na base -->
-                <div class="d-flex justify-content-between align-items-center mt-0">
-                  <div class="d-flex gap-1">
-                    <!-- Botão Abrir Documento -->
-                    {% if andamento.link_doc %}
-                      <a href="{{ andamento.link_doc }}" target="_blank"
-                         class="btn btn-sm d-flex align-items-center gap-1 shadow-sm"
-                         style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                        <i class="bi bi-link-45deg me-1"></i> Abrir Documento
-                      </a>
-                    {% endif %}
-                  </div>
-                  <div class="d-flex gap-2 align-items-center">
-                    {% if fase_ativa_desa == 'Revisão Des' %}
-                      <!-- Botão Devolvido -->
-                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="nova_fase" value="Devolvido">
-                        <input type="hidden" name="origem" value="home">
-                        <button type="submit" class="btn btn-sm btn-danger shadow-sm"
-                                onclick="return confirm('Tem certeza que deseja enviar para Devolvido?');"
-                                style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                          <i class="bi bi-arrow-left me-1"></i> Devolvido
-                        </button>
-                      </form>
-                      <!-- Botão L. PJE -->
-                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="nova_fase" value="L. PJE">
-                        <input type="hidden" name="origem" value="home">
-                        <button type="submit" class="btn btn-sm btn-success shadow-sm"
-                                onclick="return confirm('Tem certeza que deseja enviar para L. PJE?');"
-                                style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                          <i class="bi bi-arrow-right me-1"></i> L. PJE
-                        </button>
-                      </form>
-                    {% endif %}
-                    <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
-                      <button type="button" class="btn btn-sm shadow-sm"
-                      title="Abrir" style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                      <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
-                      </button>
-                    </a>
-                  </div>
-                </div>
+                    {{ andamento.especie }}
+                  </span>
+                </p>
+                <p class="mb-1">
+                  <i class="bi bi-tag me-2"></i>
+                  <strong>Tema:</strong>
+                  <span class="ms-1 text-black">{{ andamento.tema|default:"Sem tema" }}</span>
+                </p>
+                <p class="mb-1">
+                  <i class="bi bi-clock me-2"></i>
+                  <strong>Dias no Gabinete:</strong>
+                  <span class="ms-1">{{ andamento.dias_no_gabinete }}</span>
+                </p>
+                <!-- Data Envio p/ Revisão Desa -->
+                <p class="mb-1">
+                  <i class="bi bi-calendar2-plus me-2"></i>
+                  <strong>Data Envio p/ Revisão Des:</strong>
+                  <span class="ms-1">
+                    {{ andamento.data_envio_revisao_des|date:"d/m/Y H:i" }}
+                  </span>
+                </p>
               </div>
 
-              <!-- Caixa de Comentários Flutuante -->
-              <div id="comment-box-{{ andamento.processo_pk }}"
-                   class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-                   style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280;">
-                <!-- Cabeçalho -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h6 class="fw-bold m-0" style="color: #1F2937;">
-                    <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ andamento.numero_processo }}
-                  </h6>
-                  <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
-                          data-processo-id="{{ andamento.processo_pk }}"
-                          style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
-                </div>
+              <!-- Revisão e Lembrete no topo direito -->
+              <div class="d-flex align-items-center gap-2">
 
-                <!-- Histórico de Comentários -->
-                <div id="comentarios-{{ andamento.processo_pk }}"
-                     class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
-                     style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
-                  {% for comentario in andamento.comentarios %}
-                    <div class="d-flex align-items-start border-bottom pb-2 mb-2">
-                      <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                           alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-                      <div class="w-100">
-                        <strong>{{ comentario.usuario }}</strong>
-                        <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                        <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
-                      </div>
-                    </div>
-                  {% empty %}
-                    <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
-                  {% endfor %}
-                </div>
+                {% if andamento.revisoes_des >= 2 %}
 
-                <!-- Formulário de Novo Comentário -->
-                <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ andamento.processo_pk }}" style="border-color: #6B7280;">
+                <span class="bg-secondary text-warning rounded px-2" style="font-size: 1.2rem;">
+                  {{ andamento.revisoes_des }}ª Revisão
+                </span>
+
+                {% else %}
+
+                <span class="text-muted" style="font-size: 1rem;">
+                  {{ andamento.revisoes_des }}ª Revisão
+                </span>
+
+                {% endif %}
+
+              </div>
+            </div>
+
+            <!-- Ações na base -->
+            <div class="d-flex justify-content-between align-items-center mt-0">
+              <div class="d-flex gap-1">
+                <!-- Botão Abrir Documento -->
+                {% if andamento.link_doc %}
+                <a href="{{ andamento.link_doc }}" target="_blank"
+                  class="btn btn-sm d-flex align-items-center gap-1 shadow-sm"
+                  style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                  <i class="bi bi-link-45deg me-1"></i> Abrir Documento
+                </a>
+                {% endif %}
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                {% if fase_ativa_desa == 'Revisão Des' %}
+                <!-- Botão Devolvido -->
+                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
                   {% csrf_token %}
-                  <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                            placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB;"></textarea>
-                  <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
+                  <input type="hidden" name="nova_fase" value="Devolvido">
+                  <input type="hidden" name="origem" value="home">
+                  <button type="submit" class="btn btn-sm btn-danger shadow-sm"
+                    onclick="return confirm('Tem certeza que deseja enviar para Devolvido?');"
+                    style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-arrow-left me-1"></i> Devolvido
+                  </button>
                 </form>
+                <!-- Botão L. PJE -->
+                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="nova_fase" value="L. PJE">
+                  <input type="hidden" name="origem" value="home">
+                  <button type="submit" class="btn btn-sm btn-success shadow-sm"
+                    onclick="return confirm('Tem certeza que deseja enviar para L. PJE?');"
+                    style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-arrow-right me-1"></i> L. PJE
+                  </button>
+                </form>
+                {% endif %}
+                <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
+                  <button type="button" class="btn btn-sm shadow-sm" title="Abrir"
+                    style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
+                  </button>
+                </a>
               </div>
-            {% endfor %}
+            </div>
           </div>
+
+          <!-- Caixa de Comentários Flutuante -->
+          <div id="comment-box-{{ andamento.processo_pk }}"
+            class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+            style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280;">
+            <!-- Cabeçalho -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold m-0" style="color: #1F2937;">
+                <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ andamento.numero_processo }}
+              </h6>
+              <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
+                data-processo-id="{{ andamento.processo_pk }}"
+                style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
+            </div>
+
+            <!-- Histórico de Comentários -->
+            <div id="comentarios-{{ andamento.processo_pk }}"
+              class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
+              style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
+              {% for comentario in andamento.comentarios %}
+              <div class="d-flex align-items-start border-bottom pb-2 mb-2">
+                <img
+                  src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
+                  alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                <div class="w-100">
+                  <strong>{{ comentario.usuario }}</strong>
+                  <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                  <p class="mb-0 small bg-light p-2 rounded">{{ comentario.texto }}</p>
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
+              {% endfor %}
+            </div>
+
+            <!-- Formulário de Novo Comentário -->
+            <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ andamento.processo_pk }}"
+              style="border-color: #6B7280;">
+              {% csrf_token %}
+              <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+                placeholder="Escreva seu comentário..."
+                style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB;"></textarea>
+              <button type="submit" class="btn btn-sm shadow-sm"
+                style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
         {% else %}
-          <p class="text-muted text-center" style="font-style: italic;">Nenhum processo em Revisão Des no momento.</p>
+        <p class="text-muted text-center" style="font-style: italic;">Nenhum processo em Revisão Des no momento.</p>
         {% endif %}
       </div>
     </div>
@@ -447,121 +465,121 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Script de Filtragem Dinâmica por Assessor -->
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const container = document.getElementById('filtros-assessores-desa');
-  if (!container) return;
-  
-  const cards = document.querySelectorAll('#collapseRevisaoDes .processo-card');
-  if (cards.length === 0) return;
-  
-  const contagem = {};
-  let total = 0;
-  
-  cards.forEach(card => {
-    const assessor = card.getAttribute('data-assessor');
-    if (assessor) {
-      contagem[assessor] = (contagem[assessor] || 0) + 1;
-      total++;
-    }
-  });
-  
-  // Retirado o return para forçar a exibição mesmo com apenas 1 assessor
-  
-  container.innerHTML = `<span class="fw-bold me-2 text-dark mb-2 d-flex align-items-center" style="font-size: 0.95rem;"><i class="bi bi-funnel me-2"></i></span>`;
-  
-  function criarBotao(nome, quantidade, isActive) {
-    const btn = document.createElement('button');
-    btn.setAttribute('data-target', nome.toLowerCase() === 'todos' ? 'todos' : nome);
-    btn.setAttribute('data-nome', nome);
-    btn.setAttribute('data-count', quantidade);
-    
-    if (isActive) {
-      btn.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
-      btn.style.backgroundColor = '#083464';
-      btn.style.borderColor = '#083464';
-      btn.style.color = 'white';
-      btn.style.fontSize = '0.9rem';
-      btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
-    } else {
-      btn.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
-      btn.style.backgroundColor = 'white';
-      btn.style.borderColor = '#083464';
-      btn.style.color = '#083464';
-      btn.style.fontSize = '0.9rem';
-      btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
-    }
-    
-    btn.style.transition = 'all 0.2s ease-in-out';
-    btn.style.borderWidth = '1.5px';
-    
-    // Efeito hover
-    btn.onmouseover = function() {
+  document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById('filtros-assessores-desa');
+    if (!container) return;
+
+    const cards = document.querySelectorAll('#collapseRevisaoDes .processo-card');
+    if (cards.length === 0) return;
+
+    const contagem = {};
+    let total = 0;
+
+    cards.forEach(card => {
+      const assessor = card.getAttribute('data-assessor');
+      if (assessor) {
+        contagem[assessor] = (contagem[assessor] || 0) + 1;
+        total++;
+      }
+    });
+
+    // Retirado o return para forçar a exibição mesmo com apenas 1 assessor
+
+    container.innerHTML = `<span class="fw-bold me-2 text-dark mb-2 d-flex align-items-center" style="font-size: 0.95rem;"><i class="bi bi-funnel me-2"></i></span>`;
+
+    function criarBotao(nome, quantidade, isActive) {
+      const btn = document.createElement('button');
+      btn.setAttribute('data-target', nome.toLowerCase() === 'todos' ? 'todos' : nome);
+      btn.setAttribute('data-nome', nome);
+      btn.setAttribute('data-count', quantidade);
+
+      if (isActive) {
+        btn.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
+        btn.style.backgroundColor = '#083464';
+        btn.style.borderColor = '#083464';
+        btn.style.color = 'white';
+        btn.style.fontSize = '0.9rem';
+        btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
+      } else {
+        btn.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
+        btn.style.backgroundColor = 'white';
+        btn.style.borderColor = '#083464';
+        btn.style.color = '#083464';
+        btn.style.fontSize = '0.9rem';
+        btn.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${quantidade}</span>`;
+      }
+
+      btn.style.transition = 'all 0.2s ease-in-out';
+      btn.style.borderWidth = '1.5px';
+
+      // Efeito hover
+      btn.onmouseover = function () {
         if (btn.style.backgroundColor === 'white') {
-            btn.style.backgroundColor = '#f8fafc';
-            btn.style.transform = 'translateY(-1px)';
+          btn.style.backgroundColor = '#f8fafc';
+          btn.style.transform = 'translateY(-1px)';
         }
-    };
-    btn.onmouseout = function() {
+      };
+      btn.onmouseout = function () {
         if (btn.style.backgroundColor === 'rgb(248, 250, 252)' || btn.style.backgroundColor === '#f8fafc') {
-            btn.style.backgroundColor = 'white';
-            btn.style.transform = 'translateY(0)';
+          btn.style.backgroundColor = 'white';
+          btn.style.transform = 'translateY(0)';
         }
-    };
-    
-    return btn;
-  }
-  
-  const arrayBotoes = [];
-  
-  // Botão "Todos"
-  const btnTodos = criarBotao('Todos', total, true);
-  container.appendChild(btnTodos);
-  arrayBotoes.push(btnTodos);
-  
-  // Cria botões por nome de assessor ordenados alfabeticamente
-  Object.keys(contagem).sort().forEach(assessor => {
-    const btn = criarBotao(assessor, contagem[assessor], false);
-    container.appendChild(btn);
-    arrayBotoes.push(btn);
-  });
-  
-  arrayBotoes.forEach(bClick => {
-    bClick.addEventListener('click', function() {
-      // Reset visual
-      arrayBotoes.forEach(b2 => {
-        const nome = b2.getAttribute('data-nome');
-        const count = b2.getAttribute('data-count');
-        
-        b2.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
-        b2.style.backgroundColor = 'white';
-        b2.style.color = '#083464';
-        b2.style.transform = 'translateY(0)';
-        b2.style.fontSize = '0.9rem';
-        b2.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${count}</span>`;
-      });
-      
-      // Set ativo
-      const nomeAtivo = this.getAttribute('data-nome');
-      const countAtivo = this.getAttribute('data-count');
-      this.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
-      this.style.backgroundColor = '#083464';
-      this.style.color = 'white';
-      this.style.fontSize = '0.9rem';
-      this.innerHTML = `${nomeAtivo} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${countAtivo}</span>`;
-      
-      const target = this.getAttribute('data-target');
-      
-      // Filtrar logic
-      cards.forEach(card => {
-        if (target === 'todos' || card.getAttribute('data-assessor') === target) {
-          card.style.setProperty('display', 'flex', 'important');
-        } else {
-          card.style.setProperty('display', 'none', 'important');
-        }
+      };
+
+      return btn;
+    }
+
+    const arrayBotoes = [];
+
+    // Botão "Todos"
+    const btnTodos = criarBotao('Todos', total, true);
+    container.appendChild(btnTodos);
+    arrayBotoes.push(btnTodos);
+
+    // Cria botões por nome de assessor ordenados alfabeticamente
+    Object.keys(contagem).sort().forEach(assessor => {
+      const btn = criarBotao(assessor, contagem[assessor], false);
+      container.appendChild(btn);
+      arrayBotoes.push(btn);
+    });
+
+    arrayBotoes.forEach(bClick => {
+      bClick.addEventListener('click', function () {
+        // Reset visual
+        arrayBotoes.forEach(b2 => {
+          const nome = b2.getAttribute('data-nome');
+          const count = b2.getAttribute('data-count');
+
+          b2.className = 'btn rounded-pill px-3 py-1 fw-semibold shadow-sm assessor-filter-btn d-flex align-items-center mb-2';
+          b2.style.backgroundColor = 'white';
+          b2.style.color = '#083464';
+          b2.style.transform = 'translateY(0)';
+          b2.style.fontSize = '0.9rem';
+          b2.innerHTML = `${nome} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: #083464; color: white; font-size: 0.8rem; border-radius: 12px;">${count}</span>`;
+        });
+
+        // Set ativo
+        const nomeAtivo = this.getAttribute('data-nome');
+        const countAtivo = this.getAttribute('data-count');
+        this.className = 'btn rounded-pill px-3 py-1 fw-bold shadow assessor-filter-btn d-flex align-items-center mb-2';
+        this.style.backgroundColor = '#083464';
+        this.style.color = 'white';
+        this.style.fontSize = '0.9rem';
+        this.innerHTML = `${nomeAtivo} <span class="badge ms-2 px-2 py-1 shadow-sm" style="background-color: white; color: #083464; font-size: 0.8rem; border-radius: 12px;">${countAtivo}</span>`;
+
+        const target = this.getAttribute('data-target');
+
+        // Filtrar logic
+        cards.forEach(card => {
+          if (target === 'todos' || card.getAttribute('data-assessor') === target) {
+            card.style.setProperty('display', 'flex', 'important');
+          } else {
+            card.style.setProperty('display', 'none', 'important');
+          }
+        });
       });
     });
   });
-});
 </script>
 
 <!-- Seção de Gráficos -->
@@ -596,118 +614,118 @@ document.addEventListener("DOMContentLoaded", function() {
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <script>
-Chart.register(ChartDataLabels);
+  Chart.register(ChartDataLabels);
 
-// Gráfico Revisões Hoje (Colunas)
-fetch("{% url 'get_revisoes_hoje_data' %}")
+  // Gráfico Revisões Hoje (Colunas)
+  fetch("{% url 'get_revisoes_hoje_data' %}")
     .then(response => response.json())
     .then(data => {
-        const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar', // gráfico de colunas
-            data: {
-                labels: data.labels,
-                datasets: data.datasets
-            },
-            options: {
-                plugins: {
-                    title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'top',
-                        color: '#000',
-                        font: { weight: 'bold' },
-                        formatter: (value) => value || ''
-                    }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        // Removido o título do eixo y
-                        grid: { display: false }
-                    }
-                }
+      const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar', // gráfico de colunas
+        data: {
+          labels: data.labels,
+          datasets: data.datasets
+        },
+        options: {
+          plugins: {
+            title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
+            legend: { display: false },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              color: '#000',
+              font: { weight: 'bold' },
+              formatter: (value) => value || ''
             }
-        });
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              // Removido o título do eixo y
+              grid: { display: false }
+            }
+          }
+        }
+      });
     });
 
-// Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
-fetch("{% url 'get_entries_exits_data' %}")
+  // Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
+  fetch("{% url 'get_entries_exits_data' %}")
     .then(response => response.json())
     .then(data => {
-        const ctx = document.getElementById('entriesExitsChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar', // alterado de 'line' para 'bar'
-            data: {
-                labels: data.labels,
-                datasets: data.datasets
-            },
-            options: {
-                plugins: {
-                    title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
-                    legend: { display: true },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'top',
-                        color: '#000',
-                        font: { weight: 'bold' },
-                        formatter: (value) => value || ''
-                    }
-                },
-                scales: {
-                    x: { 
-                        title: { display: true, text: 'Data' },
-                        ticks: { maxRotation: 45, minRotation: 45 },
-                        grid: { display: false }
-                    },
-                    y: { 
-                        beginAtZero: true,
-                        // Removido o título do eixo y
-                        grid: { display: false }
-                    }
-                }
+      const ctx = document.getElementById('entriesExitsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar', // alterado de 'line' para 'bar'
+        data: {
+          labels: data.labels,
+          datasets: data.datasets
+        },
+        options: {
+          plugins: {
+            title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
+            legend: { display: true },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              color: '#000',
+              font: { weight: 'bold' },
+              formatter: (value) => value || ''
             }
-        });
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Data' },
+              ticks: { maxRotation: 45, minRotation: 45 },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              // Removido o título do eixo y
+              grid: { display: false }
+            }
+          }
+        }
+      });
     });
 
-// Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
-fetch("{% url 'get_es_assessor_hoje_data' %}")
+  // Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
+  fetch("{% url 'get_es_assessor_hoje_data' %}")
     .then(response => response.json())
     .then(data => {
-        const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar', // gráfico de colunas
-            data: {
-                labels: data.labels,
-                datasets: data.datasets
-            },
-            options: {
-                plugins: {
-                    title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
-                    legend: { display: true },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'top',
-                        color: '#000',
-                        font: { weight: 'bold' },
-                        formatter: (value) => value || ''
-                    }
-                },
-                scales: {
-                    x: { 
-                        title: { display: true, text: 'Assessor' },
-                        ticks: { maxRotation: 45, minRotation: 45 },
-                        grid: { display: false }
-                    },
-                    y: { 
-                        beginAtZero: true,
-                        // Removido o título do eixo y
-                        grid: { display: false }
-                    }
-                }
+      const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar', // gráfico de colunas
+        data: {
+          labels: data.labels,
+          datasets: data.datasets
+        },
+        options: {
+          plugins: {
+            title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
+            legend: { display: true },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              color: '#000',
+              font: { weight: 'bold' },
+              formatter: (value) => value || ''
             }
-        });
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Assessor' },
+              ticks: { maxRotation: 45, minRotation: 45 },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              // Removido o título do eixo y
+              grid: { display: false }
+            }
+          }
+        }
+      });
     });
 
   // Seção de Cartões Visuais com Título -->
@@ -836,7 +854,7 @@ fetch("{% url 'get_es_assessor_hoje_data' %}")
 </script>
 
 
-//Seção de Cartões Visuais com Ranking e Meta 
+//Seção de Cartões Visuais com Ranking e Meta
 
 <div class="container mt-5">
   <h3 class="text-center mb-4" style="color: #083464; font-weight: bold;">
@@ -846,43 +864,43 @@ fetch("{% url 'get_es_assessor_hoje_data' %}")
 </div>
 
 <style>
-.revisoes-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  margin-top: 30px;
-}
+  .revisoes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 30px;
+  }
 
-.assessor-card {
-  width: 160px;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  text-align: center;
-  padding: 10px;
-  background-color: #f9fafb;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+  .assessor-card {
+    width: 160px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    text-align: center;
+    padding: 10px;
+    background-color: #f9fafb;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
 
-.assessor-card img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border: 3px solid #808000;
-}
+  .assessor-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border: 3px solid #808000;
+  }
 
-.assessor-card h4 {
-  margin: 0;
-  font-size: 16px;
-  color: #083464;
-}
+  .assessor-card h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #083464;
+  }
 
-.assessor-card p {
-  margin: 5px 0;
-  font-size: 14px;
-}
+  .assessor-card p {
+    margin: 5px 0;
+    font-size: 14px;
+  }
 </style>
 
 <script>

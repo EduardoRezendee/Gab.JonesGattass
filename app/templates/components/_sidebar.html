@@ -26,10 +26,17 @@
             </a>
           </li>
   {% endif %}
-      {% if user.profile.funcao == "Chefe de Gabinete" %}
+      {% if user.profile.funcao == "Chefe de Gabinete" or user.profile.funcao == "Desembargador" %}
       <li class="nav-item">
-          <a href="{% url 'avisos_lista' %}" class="nav-link {% if '/avisos/' in request.path %}active{% endif %}">
-              <i class="bi bi-megaphone fs-4"></i> <span class="nav-text">Quadro de Avisos</span>
+          <a href="{% url 'avisos_lista' %}" class="nav-link {% if '/avisos/' in request.path %}active{% endif %} position-relative">
+              <i class="bi bi-megaphone fs-4"></i> 
+              <span class="nav-text">Quadro de Avisos</span>
+              {% if avisos_nao_lidos_count > 0 %}
+                <span class="position-absolute badge rounded-pill bg-danger" 
+                      style="top: 10px; right: 10px; font-size: 0.65rem;">
+                  {{ avisos_nao_lidos_count }}
+                </span>
+              {% endif %}
           </a>
       </li>
       {% endif %}
