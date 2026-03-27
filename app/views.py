@@ -178,14 +178,14 @@ def home(request):
 
     elif is_desembargador:
         fase_filtro = request.GET.get('fase', 'Revisão Des')
-        if fase_filtro not in ['Revisão Des', 'Devolvido']:
+        if fase_filtro not in ['Revisão Des', 'Devolvido', 'Revisão']:
             fase_filtro = 'Revisão Des'
 
         # Pegamos somente processos com último andamento na fase selecionada.
-        # Se for 'Devolvido', mostramos visão GERAL (de todos os assessores).
+        # Se for 'Devolvido' ou 'Revisão', mostramos visão GERAL (de todos os assessores).
         # Se for 'Revisão Des', mostramos apenas o que está com o Desembargador logado.
         query_revisao = Q(concluido=False, andamentos__fase__fase=fase_filtro)
-        if fase_filtro != 'Devolvido':
+        if fase_filtro not in ['Devolvido', 'Revisão']:
             query_revisao &= Q(andamentos__usuario=user)
 
         processos_em_revisao_des = (
@@ -219,7 +219,7 @@ def home(request):
             total_comentarios = processo.comentarios.count()
             # último andamento na fase filtrada (em aberto)
             filt_andamento = Q(fase__fase=fase_filtro, status__status__in=["Não iniciado", "Em andamento"])
-            if fase_filtro != 'Devolvido':
+            if fase_filtro not in ['Devolvido', 'Revisão']:
                 filt_andamento &= Q(usuario=user)
 
             ultimo_andamento = processo.andamentos.filter(filt_andamento).order_by('-dt_criacao').first()
@@ -648,7 +648,6 @@ def home(request):
         "processos_atrasados": processos_atrasados,
         'atrasados_por_assessor': atrasados_por_assessor_detalhado,
         'total_atrasados': total_atrasados,
-        'numero_de_processos_em_revisao_des': numero_de_processos_em_revisao_des,
         'fase_ativa_desa': fase_filtro,
         'avisos_na_pauta_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
     }

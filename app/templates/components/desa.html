@@ -115,25 +115,39 @@ document.addEventListener('DOMContentLoaded', function() {
             box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
             color: white !important;
           }
+          .btn-fase-revisao-geral {
+            background-color: #fd7e14 !important;
+            border-color: #fd7e14 !important;
+          }
+          .btn-fase-revisao-geral:hover {
+            background-color: #e36a14 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(253, 126, 20, 0.3) !important;
+            color: white !important;
+          }
         </style>
 
         <!-- Área de Filtros e Busca -->
         <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-3">
           
-          <!-- Seletor de Fase (Lado Esquerdo) -->
-          <div>
-            {% if fase_ativa_desa == 'Devolvido' %}
-              <a href="{% url 'home' %}?fase=Revisão Des" class="btn btn-fase-desa btn-fase-revisao shadow-sm">
-                <i class="bi bi-list-task me-2"></i> Ver Revisão Des
-              </a>
-            {% else %}
-              <a href="{% url 'home' %}?fase=Devolvido" class="btn btn-fase-desa btn-fase-devolvido shadow-sm">
-                <i class="bi bi-arrow-left-circle me-2"></i> Ver Devolvidos
-              </a>
-            {% endif %}
+          <!-- Seletores de Fase Iniciais -->
+          <div class="d-flex gap-2">
+            <!-- Botão Devolvidos -->
+            <a href="{% url 'home' %}?fase=Devolvido" 
+               class="btn btn-fase-desa btn-fase-devolvido shadow-sm {% if fase_ativa_desa != 'Devolvido' %}opacity-50{% endif %}"
+               title="Ver processos devolvidos">
+              <i class="bi bi-arrow-left-circle me-2"></i> Devolvidos
+            </a>
+
+            <!-- Botão Revisão Des -->
+            <a href="{% url 'home' %}?fase=Revisão Des" 
+               class="btn btn-fase-desa btn-fase-revisao shadow-sm {% if fase_ativa_desa != 'Revisão Des' %}opacity-50{% endif %}"
+               title="Ver meus processos">
+              <i class="bi bi-list-task me-2"></i> Revisão Des
+            </a>
           </div>
 
-          <!-- Filtro por número de processo (Lado Direito) -->
+          <!-- Filtro por número de processo -->
           <form method="GET" action="{% url 'home' %}" class="m-0">
             <div class="input-group" style="max-width: 450px;">
               <input type="text" name="numero_processo" class="form-control shadow-sm" 
@@ -154,6 +168,13 @@ document.addEventListener('DOMContentLoaded', function() {
               </a>
             </div>
           </form>
+
+          <!-- Botão Revisão (Geral) -->
+          <a href="{% url 'home' %}?fase=Revisão" 
+             class="btn btn-fase-desa btn-fase-revisao-geral shadow-sm {% if fase_ativa_desa != 'Revisão' %}opacity-50{% endif %}"
+             title="Ver processos com o Revisor">
+            <i class="bi bi-person-check me-2"></i> Revisão
+          </a>
         </div>
 
         <!-- Total de processos em revisão -->
@@ -339,28 +360,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     {% endif %}
                   </div>
                   <div class="d-flex gap-2 align-items-center">
-                    <!-- Botão Devolvido -->
-                    <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="nova_fase" value="Devolvido">
-                      <input type="hidden" name="origem" value="home">
-                      <button type="submit" class="btn btn-sm btn-danger shadow-sm"
-                              onclick="return confirm('Tem certeza que deseja enviar para Devolvido?');"
-                              style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                        <i class="bi bi-arrow-left me-1"></i> Devolvido
-                      </button>
-                    </form>
-                    <!-- Botão L. PJE -->
-                    <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="nova_fase" value="L. PJE">
-                      <input type="hidden" name="origem" value="home">
-                      <button type="submit" class="btn btn-sm btn-success shadow-sm"
-                              onclick="return confirm('Tem certeza que deseja enviar para L. PJE?');"
-                              style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                        <i class="bi bi-arrow-right me-1"></i> L. PJE
-                      </button>
-                    </form>
+                    {% if fase_ativa_desa == 'Revisão Des' %}
+                      <!-- Botão Devolvido -->
+                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="nova_fase" value="Devolvido">
+                        <input type="hidden" name="origem" value="home">
+                        <button type="submit" class="btn btn-sm btn-danger shadow-sm"
+                                onclick="return confirm('Tem certeza que deseja enviar para Devolvido?');"
+                                style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                          <i class="bi bi-arrow-left me-1"></i> Devolvido
+                        </button>
+                      </form>
+                      <!-- Botão L. PJE -->
+                      <form method="post" action="{% url 'andamento_enviar' andamento.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="nova_fase" value="L. PJE">
+                        <input type="hidden" name="origem" value="home">
+                        <button type="submit" class="btn btn-sm btn-success shadow-sm"
+                                onclick="return confirm('Tem certeza que deseja enviar para L. PJE?');"
+                                style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                          <i class="bi bi-arrow-right me-1"></i> L. PJE
+                        </button>
+                      </form>
+                    {% endif %}
                     <a href="{% url 'andamento_list' %}?processo={{ andamento.processo_pk }}" title="Ver detalhes">
                       <button type="button" class="btn btn-sm shadow-sm"
                       title="Abrir" style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
