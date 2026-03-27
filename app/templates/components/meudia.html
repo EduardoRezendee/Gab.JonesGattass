@@ -1,28 +1,28 @@
-  <!-- Meu Dia -->
-  <div class="accordion mb-4" id="accordionMeuDia">
-    <div class="accordion-item shadow-sm">
-      <h2 class="accordion-header" id="headingMeuDia">
-        <button class="accordion-button d-flex align-items-center justify-content-between" type="button"
-                data-bs-toggle="collapse" data-bs-target="#collapseMeuDia" aria-expanded="true"
-                aria-controls="collapseMeuDia"
-                style="background: linear-gradient(135deg, #0834641e, #1e3b8a38); color: rgb(231, 198, 7); border-radius: 8px;">
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-sun-fill"></i>
-            <span class="fw-normal">Meu Dia</span>
-          </div>
-          <span class="badge bg-light text-dark fs-6 px-2 py-1 rounded-pill">{{ tarefas_do_dia|length }}</span>
-        </button>
-      </h2>
-      <div id="collapseMeuDia" class="accordion-collapse collapse show" aria-labelledby="headingMeuDia"
-           data-bs-parent="#accordionMeuDia">
-        <div class="accordion-body" style="background-color: #F9FAFB;">
-          {% if tarefas_do_dia %}
-            <ul class="list-group">
-              {% for tarefa in tarefas_do_dia %}
-                <li class="list-group-item shadow-sm p-3 mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center"
-                    style="border-radius: 10px; background: white;">
-                  <!-- Listras verticais para destaque -->
-                  <span style="
+<!-- Meu Dia -->
+<div class="accordion mb-4" id="accordionMeuDia">
+  <div class="accordion-item shadow-sm">
+    <h2 class="accordion-header" id="headingMeuDia">
+      <button class="accordion-button d-flex align-items-center justify-content-between" type="button"
+        data-bs-toggle="collapse" data-bs-target="#collapseMeuDia" aria-expanded="true" aria-controls="collapseMeuDia"
+        style="background: linear-gradient(135deg, #0834641e, #1e3b8a38); color: rgb(231, 198, 7); border-radius: 8px;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-sun-fill"></i>
+          <span class="fw-normal">Meu Dia</span>
+        </div>
+        <span class="badge bg-light text-dark fs-6 px-2 py-1 rounded-pill">{{ tarefas_do_dia|length }}</span>
+      </button>
+    </h2>
+    <div id="collapseMeuDia" class="accordion-collapse collapse show" aria-labelledby="headingMeuDia"
+      data-bs-parent="#accordionMeuDia">
+      <div class="accordion-body" style="background-color: #F9FAFB;">
+        {% if tarefas_do_dia %}
+        <ul class="list-group">
+          {% for tarefa in tarefas_do_dia %}
+          <li
+            class="list-group-item shadow-sm p-3 mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center"
+            style="border-radius: 10px; background: white;">
+            <!-- Listras verticais para destaque -->
+            <span style="
                     position: absolute;
                     top: 0;
                     left: 0;
@@ -30,108 +30,111 @@
                     height: 100%;
                     background-color: {% if tarefa.processo.especie == 'Liminar' %}#EF4444{% else %}#083464{% endif %};
                     border-radius: 2px;">
-                  </span>
-                  <div class="w-100">
-                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                      <!-- Informações à esquerda -->
-                      <div class="flex-grow-1">
-                        <h6 class="fw-bold text-primary">
-                          <i class="bi bi-folder-fill me-2" style="color: #083464;"></i> {{ tarefa.processo.numero_processo }}
-                          {% if tarefa.processo.id in tarefas_ids %}
-                            <i class="bi bi-sun-fill text-warning ms-3"
-                               title="Adicionado ao Meu Dia"
-                               style="font-size: 1.3rem; color: #F59E0B;"></i>
-                          {% endif %}
-                        </h6>
-                        <p class="mb-1" style="color: #1F2937;">
-                          <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
-                          <strong>Espécie:</strong>
-                          <span class="{% if tarefa.processo.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}" style="color: #1F2937;">
-                            {{ tarefa.processo.especie }}
-                          </span>
-                        </p>
-                        <p class="mb-1" style="color: #1F2937;">
-                          <i class="bi bi-list-check me-2" style="color: #083464;"></i>
-                          <strong>Fase:</strong>
-                          <span style="color: #1F2937;">{{ tarefa.processo.fase_atual }}</span>
-                        </p>
-                        <p class="mb-1" style="color: #1F2937;">
-                          <i class="bi bi-calendar2-date me-2" style="color: #083464;"></i>
-                          <strong>Data Distribuição:</strong>
-                          <span style="color: #1F2937;">{{ tarefa.processo.data_dist|date:"d/m/Y" }}</span>
-                        </p>
-                        <p class="mb-1" style="color: #1F2937;">
-                          <i class="bi bi-clock me-2" style="color: #083464;"></i>
-                          <strong>Dias no Gabinete:</strong>
-                          <span style="color: #1F2937;">{{ tarefa.processo.dias_no_gabinete }}</span>
-                        </p>
-                      </div>
-                      <!-- Botões à direita -->
-                      <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
-                        <!-- Botão Lembrete -->
-                        <button type="button" class="btn btn-sm toggle-comments shadow-sm"
-                                data-processo-id="{{ tarefa.processo.id|default_if_none:'' }}"
-                                style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                          <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
-                        </button>
-                        <!-- Botão Remover/Adicionar do Meu Dia -->
-                        {% if tarefa.processo and tarefa.processo.id in tarefas_ids %}
-                          <form method="post" action="{% url 'remover_tarefa' tarefa.processo.id %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="origem" value="home">
-                            <button type="submit" class="btn btn-sm shadow-sm d-flex align-items-center gap-1 px-3"
-                                    style="background-color: #F59E0B; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                              <i class="bi bi-dash me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1" style="color: white;"></i>
-                            </button>
-                          </form>
-                        {% elif tarefa.processo %}
-                          <form method="post" action="{% url 'adicionar_tarefa' tarefa.processo.id %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="origem" value="home">
-                            <button type="submit" class="btn btn-sm shadow-sm"
-                                    title="Adicionar ao Meu Dia"
-                                    style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                              <i class="bi bi-plus me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1" style="color: white;"></i>
-                            </button>
-                          </form>
-                        {% else %}
-                          <button class="btn btn-sm btn-secondary" disabled title="Processo não encontrado">
-                            <i class="bi bi-exclamation-triangle"></i>
-                          </button>
-                        {% endif %}
-                      </div>
-                    </div>
-                    <!-- Ações na base -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                      <div class="d-flex gap-2">
-                        <!-- Link do Documento (se existir) -->
-                        {% if tarefa.processo.andamento_link_doc %}
-                          <a href="{{ tarefa.processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
-                             style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
-                            <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
-                          </a>
-                        {% endif %}
-                        <!-- Botão Editar -->
-                        <button type="button" class="btn btn-sm shadow-sm"
-                                data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ tarefa.processo.id }}"
-                                title="Editar" style="background-color: #f2ee18; color: rgb(0, 0, 0); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                          <i class="bi bi-pencil" style="color: rgb(0, 0, 0);"></i> Adicionar Documento
-                        </button>
-                      </div>
-                      <div class="d-flex gap-2 align-items-center">
-                        <!-- Botões condicionais com base na fase atual -->
-                        {% if tarefa.processo.fase_atual == 'Elaboração' %}
-                          <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="nova_fase" value="Revisão Des">
-                            <input type="hidden" name="origem" value="home">
-                            <button type="submit" class="btn btn-sm btn-primary shadow-sm"
-                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão Des.?');"
-                                    style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão Des
-                            </button>
-                          </form>
-                        <!--{% elif tarefa.processo.fase_atual == 'Correção' %}
+            </span>
+            <div class="w-100">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <!-- Informações à esquerda -->
+                <div class="flex-grow-1">
+                  <h6 class="fw-bold text-primary">
+                    <i class="bi bi-folder-fill me-2" style="color: #083464;"></i> {{ tarefa.processo.numero_processo }}
+                    {% if tarefa.processo.id in tarefas_ids %}
+                    <i class="bi bi-sun-fill text-warning ms-3" title="Adicionado ao Meu Dia"
+                      style="font-size: 1.3rem; color: #F59E0B;"></i>
+                    {% endif %}
+                  </h6>
+                  <p class="mb-1" style="color: #1F2937;">
+                    <i class="bi bi-box-seam me-2" style="color: #083464;"></i>
+                    <strong>Espécie:</strong>
+                    <span
+                      class="{% if tarefa.processo.especie == 'Liminar' %}text-danger fw-bold{% else %}text-black{% endif %}"
+                      style="color: #1F2937;">
+                      {{ tarefa.processo.especie }}
+                    </span>
+                  </p>
+                  <p class="mb-1" style="color: #1F2937;">
+                    <i class="bi bi-list-check me-2" style="color: #083464;"></i>
+                    <strong>Fase:</strong>
+                    <span style="color: #1F2937;">{{ tarefa.processo.fase_atual }}</span>
+                  </p>
+                  <p class="mb-1" style="color: #1F2937;">
+                    <i class="bi bi-calendar2-date me-2" style="color: #083464;"></i>
+                    <strong>Data Distribuição:</strong>
+                    <span style="color: #1F2937;">{{ tarefa.processo.data_dist|date:"d/m/Y" }}</span>
+                  </p>
+                  <p class="mb-1" style="color: #1F2937;">
+                    <i class="bi bi-clock me-2" style="color: #083464;"></i>
+                    <strong>Dias no Gabinete:</strong>
+                    <span style="color: #1F2937;">{{ tarefa.processo.dias_no_gabinete }}</span>
+                  </p>
+                </div>
+                <!-- Botões à direita -->
+                <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
+                  <!-- Botão Lembrete -->
+                  <button type="button" class="btn btn-sm toggle-comments shadow-sm"
+                    data-processo-id="{{ tarefa.processo.id|default_if_none:'' }}"
+                    style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-pin-angle me-1" style="color: white;"></i> Lembrete
+                  </button>
+                  <!-- Botão Remover/Adicionar do Meu Dia -->
+                  {% if tarefa.processo and tarefa.processo.id in tarefas_ids %}
+                  <form method="post" action="{% url 'remover_tarefa' tarefa.processo.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="origem" value="home">
+                    <button type="submit" class="btn btn-sm shadow-sm d-flex align-items-center gap-1 px-3"
+                      style="background-color: #F59E0B; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                      <i class="bi bi-dash me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1"
+                        style="color: white;"></i>
+                    </button>
+                  </form>
+                  {% elif tarefa.processo %}
+                  <form method="post" action="{% url 'adicionar_tarefa' tarefa.processo.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="origem" value="home">
+                    <button type="submit" class="btn btn-sm shadow-sm" title="Adicionar ao Meu Dia"
+                      style="background-color: #6B7280; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                      <i class="bi bi-plus me-1" style="color: white;"></i> <i class="bi bi-sun-fill me-1"
+                        style="color: white;"></i>
+                    </button>
+                  </form>
+                  {% else %}
+                  <button class="btn btn-sm btn-secondary" disabled title="Processo não encontrado">
+                    <i class="bi bi-exclamation-triangle"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Ações na base -->
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="d-flex gap-2">
+                  <!-- Link do Documento (se existir) -->
+                  {% if tarefa.processo.andamento_link_doc %}
+                  <a href="{{ tarefa.processo.andamento_link_doc }}" target="_blank" class="btn btn-sm shadow-sm"
+                    style="background-color: #083464; color: white; border: none; border-radius: 20px; padding: 0.25rem 0.75rem; text-decoration: none;">
+                    <i class="bi bi-link-45deg me-1" style="color: white;"></i> Abrir Documento
+                  </a>
+                  {% endif %}
+                  <!-- Botão Editar -->
+                  <button type="button" class="btn btn-sm shadow-sm" data-bs-toggle="modal"
+                    data-bs-target="#editAndamentoModal{{ tarefa.processo.id }}" title="Editar"
+                    style="background-color: #f2ee18; color: rgb(0, 0, 0); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-pencil" style="color: rgb(0, 0, 0);"></i> Adicionar Documento
+                  </button>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                  <!-- Botões condicionais com base na fase atual -->
+                  {% if tarefa.processo.fase_atual == 'Elaboração' %}
+                  <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}"
+                    class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="nova_fase" value="Revisão Des">
+                    <input type="hidden" name="origem" value="home">
+                    <button type="submit" class="btn btn-sm btn-primary shadow-sm"
+                      onclick="return confirm('Tem certeza que deseja enviar para Revisão Des.?');"
+                      style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                      <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão Des
+                    </button>
+                  </form>
+                  <!--{% elif tarefa.processo.fase_atual == 'Correção' %}
                           <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
                             {% csrf_token %}
                             <input type="hidden" name="nova_fase" value="Revisão">
@@ -142,123 +145,135 @@
                               <i class="bi bi-arrow-right me-1" style="color: white;"></i> Enviar para Revisão
                             </button>
                           </form>-->
-                        {% elif tarefa.processo.fase_atual == 'Devolvido' %}
-                          <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="nova_fase" value="Revisão Des">
-                            <input type="hidden" name="origem" value="home">
-                            <button type="submit" class="btn btn-sm shadow-sm"
-                                    onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
-                                    style="background: linear-gradient(135deg, #083464, #6B7280); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                              <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Des
-                            </button>
-                          </form>
-                        {% elif tarefa.processo.fase_atual == 'L. PJE' %}
-                          <form method="post" action="{% url 'andamento_concluir' tarefa.processo.andamento.pk %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="origem" value="home">
-                            <button type="submit" class="btn btn-sm shadow-sm"
-                                    onclick="return confirm('Tem certeza que deseja concluir este processo?');"
-                                    style="background: linear-gradient(135deg, #05810d, #6B7280); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
-                              <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
-                            </button>
-                          </form>
-                        {% endif %}
-                        <!-- Ver Andamento -->
-                        <a href="{% url 'andamento_list' %}?processo={{ tarefa.processo.id }}"
-                           <button type="button" class="btn btn-sm shadow-sm"
-                            title="Abrir" style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
-                            <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
-                        </a>
-                          </button>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-
-                <!-- Modal de Edição para este Andamento -->
-                <div class="modal fade" id="editAndamentoModal{{ tarefa.processo.id }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ tarefa.processo.id }}" aria-hidden="true">
-                  <div class="modal-dialog">
-                    <div class="modal-content" style="border: 2px solid #6B7280;">
-                      <div class="modal-header" style="background: linear-gradient(135deg, #083464, #1E3A8A); color: white;">
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                      </div>
-                      <div class="modal-body" style="background-color: rgba(0, 0, 0, 0.05);">
-                        {% if tarefa.processo.andamento_pk %}
-                          <form method="POST" action="{% url 'andamento_update' tarefa.processo.andamento_pk %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="origem" value="home">
-                            <div class="mb-3">
-                              <label for="link_doc_{{ tarefa.processo.andamento_pk }}" class="form-label fw-semibold" style="color: #1F2937;">Link do Documento</label>
-                              <input type="url" id="link_doc_{{ tarefa.processo.andamento_pk }}" name="link_doc" class="form-control shadow-sm"
-                                     value="{{ tarefa.processo.andamento_link_doc|default:'' }}" style="border-radius: 10px; border-color: #083464; color: #1F2937;">
-                            </div>
-                            <div class="modal-footer">
-                              <button type="button" class="btn btn-outline-secondary shadow-sm"
-                                      data-bs-dismiss="modal" style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Cancelar</button>
-                              <button type="submit" class="btn shadow-sm"
-                                      style="background: linear-gradient(135deg, #083464, #6B7280); color: white; border: none; border-radius: 20px;">
-                                <i class="bi bi-save me-2" style="color: white;"></i> Salvar
-                              </button>
-                            </div>
-                          </form>
-                        {% else %}
-                          <p class="text-danger">Erro: Nenhum andamento associado para edição.</p>
-                        {% endif %}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Caixa de Comentários Flutuante -->
-                <div id="comment-box-{{ tarefa.processo.id }}"
-                     class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-                     style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
-                  <!-- Cabeçalho -->
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold m-0" style="color: #1F2937;">
-                      <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ tarefa.processo.numero_processo }}
-                    </h6>
-                    <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
-                            data-processo-id="{{ tarefa.processo.id }}"
-                            style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
-                  </div>
-
-                  <!-- Histórico de Comentários -->
-                  <div id="comentarios-{{ tarefa.processo.id }}"
-                       class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
-                       style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
-                    {% for comentario in tarefa.processo.comentarios.all %}
-                      <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #6B7280;">
-                        <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                             alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; border: 2px solid #083464;">
-                        <div class="w-100">
-                          <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
-                          <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                          <p class="mb-0 small bg-light p-2 rounded" style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
-                        </div>
-                      </div>
-                    {% empty %}
-                      <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
-                    {% endfor %}
-                  </div>
-
-                  <!-- Formulário de Novo Comentário -->
-                  <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ tarefa.processo.id }}" style="border-color: #6B7280;">
+                  {% elif tarefa.processo.fase_atual == 'Devolvido' %}
+                  <form method="post" action="{% url 'andamento_enviar' tarefa.processo.andamento.pk %}"
+                    class="d-inline">
                     {% csrf_token %}
-                    <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                              placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
-                    <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
+                    <input type="hidden" name="nova_fase" value="Revisão Des">
+                    <input type="hidden" name="origem" value="home">
+                    <button type="submit" class="btn btn-sm shadow-sm"
+                      onclick="return confirm('Tem certeza que deseja enviar para Revisão Des?');"
+                      style="background: linear-gradient(135deg, #083464, #6B7280); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                      <i class="bi bi-arrow-right me-1" style="color: white;"></i> Revisão Des
+                    </button>
                   </form>
+                  {% elif tarefa.processo.fase_atual == 'L. PJE' %}
+                  <form method="post" action="{% url 'andamento_concluir' tarefa.processo.andamento.pk %}"
+                    class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="origem" value="home">
+                    <button type="submit" class="btn btn-sm shadow-sm"
+                      onclick="return confirm('Tem certeza que deseja concluir este processo?');"
+                      style="background: linear-gradient(135deg, #05810d, #6B7280); border-radius: 20px; padding: 0.25rem 0.75rem; color: white;">
+                      <i class="bi bi-check me-1" style="color: white;"></i> Concluir Processo
+                    </button>
+                  </form>
+                  {% endif %}
+                  <!-- Ver Andamento -->
+                  <a href="{% url 'andamento_list' %}?processo={{ tarefa.processo.id }}" <button type="button"
+                    class="btn btn-sm shadow-sm" title="Abrir"
+                    style="background-color: #260457; color: rgb(255, 255, 255); border: none; border-radius: 20px; padding: 0.25rem 0.75rem;">
+                    <i class="bi bi-list" style="color: rgb(255, 255, 255);"></i> Detalhes
+                  </a>
+                  </button>
                 </div>
+              </div>
+            </div>
+          </li>
+
+          <!-- Modal de Edição para este Andamento -->
+          <div class="modal fade" id="editAndamentoModal{{ tarefa.processo.id }}" tabindex="-1"
+            aria-labelledby="editAndamentoModalLabel{{ tarefa.processo.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content" style="border: 2px solid #6B7280;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #083464, #1E3A8A); color: white;">
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" style="background-color: rgba(0, 0, 0, 0.05);">
+                  {% if tarefa.processo.andamento_pk %}
+                  <form method="POST" action="{% url 'andamento_update' tarefa.processo.andamento_pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="origem" value="home">
+                    <div class="mb-3">
+                      <label for="link_doc_{{ tarefa.processo.andamento_pk }}" class="form-label fw-semibold"
+                        style="color: #1F2937;">Link do Documento</label>
+                      <input type="url" id="link_doc_{{ tarefa.processo.andamento_pk }}" name="link_doc"
+                        class="form-control shadow-sm" value="{{ tarefa.processo.andamento_link_doc|default:'' }}"
+                        style="border-radius: 10px; border-color: #083464; color: #1F2937;">
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-dismiss="modal"
+                        style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Cancelar</button>
+                      <button type="submit" class="btn shadow-sm"
+                        style="background: linear-gradient(135deg, #083464, #6B7280); color: white; border: none; border-radius: 20px;">
+                        <i class="bi bi-save me-2" style="color: white;"></i> Salvar
+                      </button>
+                    </div>
+                  </form>
+                  {% else %}
+                  <p class="text-danger">Erro: Nenhum andamento associado para edição.</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caixa de Comentários Flutuante -->
+          <div id="comment-box-{{ tarefa.processo.id }}"
+            class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+            style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
+            <!-- Cabeçalho -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold m-0" style="color: #1F2937;">
+                <i class="bi bi-chat-dots me-2" style="color: #083464;"></i> Lembrete - {{ tarefa.processo.numero_processo }}
+              </h6>
+              <button class="btn btn-sm btn-outline-secondary shadow-sm close-comments"
+                data-processo-id="{{ tarefa.processo.id }}"
+                style="border-radius: 20px; color: #1F2937; border-color: #6B7280;">Fechar</button>
+            </div>
+
+            <!-- Histórico de Comentários -->
+            <div id="comentarios-{{ tarefa.processo.id }}"
+              class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
+              style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
+              {% for comentario in tarefa.processo.comentarios.all %}
+              <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #6B7280;">
+                <img
+                  src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
+                  alt="Foto" class="rounded-circle me-3" width="40" height="40"
+                  style="object-fit: cover; border: 2px solid #083464;">
+                <div class="w-100">
+                  <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
+                  <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
+                  <p class="mb-0 small bg-light p-2 rounded"
+                    style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
               {% endfor %}
-            </ul>
-          {% else %}
-            <p class="text-muted text-center mt-3">
-              <i class="bi bi-emoji-neutral"></i> Nenhuma tarefa adicionada ao Meu Dia.
-            </p>
-          {% endif %}
-        </div>
+            </div>
+
+            <!-- Formulário de Novo Comentário -->
+            <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ tarefa.processo.id }}"
+              style="border-color: #6B7280;">
+              {% csrf_token %}
+              <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+                placeholder="Escreva seu comentário..."
+                style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
+              <button type="submit" class="btn btn-sm shadow-sm"
+                style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
+            </form>
+          </div>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted text-center mt-3">
+          <i class="bi bi-emoji-neutral"></i> Nenhuma tarefa adicionada ao Meu Dia.
+        </p>
+        {% endif %}
       </div>
     </div>
   </div>
+</div>
