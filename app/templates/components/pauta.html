@@ -3,239 +3,564 @@
 
 {# ─── PAUTA STYLES ────────────────────────────────────────────────── #}
 <style>
-/* ── Reset / base ─────────────────────────────────────────────── */
-.pauta-wrapper {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-}
+  /* ── Reset / base ─────────────────────────────────────────────── */
+  .pauta-wrapper {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+  }
 
-/* ── Import Zone ──────────────────────────────────────────────── */
-.pauta-upload-zone {
-  border: 2px dashed #c7d7f0;
-  border-radius: 14px;
-  padding: 22px 20px;
-  background: linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%);
-  transition: border-color .2s, background .2s;
-  cursor: pointer;
-  text-align: center;
-}
-.pauta-upload-zone:hover, .pauta-upload-zone.drag-over {
-  border-color: #083464; background: #e8effd;
-}
-.pauta-upload-zone input[type="file"] { display: none; }
-.pauta-upload-icon { font-size: 2rem; color: #083464; }
-.pauta-upload-label { font-weight: 600; color: #083464; font-size: .95rem; }
-.pauta-upload-hint  { font-size: 0.8rem;  color: #6b7280; }
-.pauta-filename     { font-size: 0.82rem; color: #10b981; font-weight: 600; margin-top: 4px; }
+  /* ── Import Zone ──────────────────────────────────────────────── */
+  .pauta-upload-zone {
+    border: 2px dashed #c7d7f0;
+    border-radius: 14px;
+    padding: 22px 20px;
+    background: linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%);
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+    text-align: center;
+  }
 
-/* ── Filter tabs ──────────────────────────────────────────────── */
-.pauta-filters {
-  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-.pauta-filter-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 20px; border-radius: 30px; border: 2px solid transparent;
-  font-size: 0.88rem; font-weight: 600; cursor: pointer;
-  transition: all .18s ease; background: #f1f5f9; color: #64748b;
-}
-.pauta-filter-btn .cnt {
-  background: currentColor; color: #fff; border-radius: 20px;
-  padding: 1px 7px; font-size: .78rem; opacity: .9;
-  /* override */
-}
-.pauta-filter-btn.todos   { border-color: #cbd5e1; }
-.pauta-filter-btn.pres    { border-color: #bfdbfe; }
-.pauta-filter-btn.virt    { border-color: #ddd6fe; }
+  .pauta-upload-zone:hover,
+  .pauta-upload-zone.drag-over {
+    border-color: #083464;
+    background: #e8effd;
+  }
 
-.pauta-filter-btn.active.todos { background:#083464; color:#fff; border-color:#083464; }
-.pauta-filter-btn.active.pres  { background:#2563eb; color:#fff; border-color:#2563eb; }
-.pauta-filter-btn.active.cam3  { background:#059669; color:#fff; border-color:#059669; }
-.pauta-filter-btn.active.virt  { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+  .pauta-upload-zone input[type="file"] {
+    display: none;
+  }
 
-.pauta-filter-btn:hover:not(.active) { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .pauta-upload-icon {
+    font-size: 2rem;
+    color: #083464;
+  }
 
-/* ── Section headers ──────────────────────────────────────────── */
-.pauta-section {
-  margin-bottom: 28px;
-  transition: opacity .2s;
-}
-.pauta-section.hidden { display: none; }
-.pauta-section-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; border-radius: 12px; margin-bottom: 14px;
-  font-weight: 700; font-size: 1rem;
-}
-.pauta-section-header.pres {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #1d4ed8; border-left: 4px solid #2563eb;
-}
-.pauta-section-header.cam3 {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  color: #047857; border-left: 4px solid #059669;
-}
-.pauta-section-header.virt {
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  color: #5b21b6; border-left: 4px solid #7c3aed;
-}
-.pauta-section-header .badge-count {
-  margin-left: auto; padding: 3px 12px; border-radius: 20px;
-  font-size: .82rem; font-weight: 700;
-}
-.pauta-section-header.pres .badge-count { background:#2563eb; color:#fff; }
-.pauta-section-header.cam3 .badge-count { background:#059669; color:#fff; }
-.pauta-section-header.virt .badge-count { background:#7c3aed; color:#fff; }
+  .pauta-upload-label {
+    font-weight: 600;
+    color: #083464;
+    font-size: .95rem;
+  }
 
-/* ── Card grid ────────────────────────────────────────────────── */
-.pauta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
+  .pauta-upload-hint {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
 
-.pauta-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.07);
-  border-top: 4px solid transparent;
-  transition: box-shadow .18s, transform .18s;
-  position: relative;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.pauta-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
-.pauta-card.pres  { border-top-color: #2563eb; }
-.pauta-card.terceira_camara { border-top-color: #10b981; }
-.pauta-card.virt  { border-top-color: #7c3aed; }
+  .pauta-filename {
+    font-size: 0.82rem;
+    color: #10b981;
+    font-weight: 600;
+    margin-top: 4px;
+  }
 
-.pauta-card .card-num {
-  font-size: .95rem; font-weight: 700; color: #083464;
-  display: flex; align-items: center; gap: 6px;
-}
-.pauta-card .card-num .copy-btn {
-  background: none; border: none; color: #94a3b8; font-size: .85rem;
-  cursor: pointer; padding: 0 2px; transition: color .15s;
-}
-.pauta-card .card-num .copy-btn:hover { color: #083464; }
+  /* ── Filter tabs ──────────────────────────────────────────────── */
+  .pauta-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
 
-.pauta-card .card-meta {
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  font-size: .82rem; color: #64748b;
-}
-.pauta-card .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .pauta-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border-radius: 30px;
+    border: 2px solid transparent;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s ease;
+    background: #f1f5f9;
+    color: #64748b;
+  }
 
-.pauta-card .card-badges { 
-  display: flex; align-items: center; justify-content: space-between; 
-  margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9;
-}
-.pauta-card .badges-left { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .pauta-filter-btn .cnt {
+    background: currentColor;
+    color: #fff;
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: .78rem;
+    opacity: .9;
+    /* override */
+  }
 
-.badge-sessao {
-  font-size: .74rem; font-weight: 600; padding: 4px 10px; border-radius: 20px;
-}
-.badge-pres { background: #dbeafe; color: #1e40af; }
-.badge-virt { background: #ede9fe; color: #5b21b6; }
-.badge-vinculado   { background: #10b981; color: #fff; font-size: .72rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-.badge-naolocalizado { background: #cbd5e1; color: #475569; font-size: .72rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .pauta-filter-btn.todos {
+    border-color: #cbd5e1;
+  }
 
-.btn-documento {
-  background: #2563eb; color: #ffffff; font-size: .78rem; font-weight: 600; padding: 5px 12px;
-  border-radius: 8px; border: none; display: inline-flex; align-items: center;
-  text-decoration: none; transition: all .2s; box-shadow: 0 2px 4px rgba(37,99,235,.2); gap: 4px;
-}
-.btn-documento:hover { background: #1d4ed8; color: #f8fafc; transform: translateY(-1px); }
+  .pauta-filter-btn.pres {
+    border-color: #bfdbfe;
+  }
 
-.pauta-card .btn-del {
-  /* position: absolute; removido para não conflitar com .card-actions */
-  background: none; border: none; color: #cbd5e1;
-  cursor: pointer; font-size: .95rem; padding: 4px 6px; border-radius: 8px;
-  transition: color .15s, background .15s;
-}
-.pauta-card .btn-del:hover { color: #ef4444; background: #fee2e2; }
+  .pauta-filter-btn.virt {
+    border-color: #ddd6fe;
+  }
 
-/* ── Empty state ──────────────────────────────────────────────── */
-.pauta-empty {
-  grid-column: 1 / -1;
-  text-align: center; color: #94a3b8; padding: 30px 0;
-  font-size: .9rem; font-style: italic;
-}
+  .pauta-filter-btn.active.todos {
+    background: #083464;
+    color: #fff;
+    border-color: #083464;
+  }
 
-/* ── Action buttons ───────────────────────────────────────────── */
-.btn-pauta-import {
-  background: linear-gradient(135deg, #083464, #1a56a4);
-  color: #fff; border: none; border-radius: 10px; padding: 9px 20px;
-  font-size: .9rem; font-weight: 600; cursor: pointer;
-  transition: opacity .15s, transform .15s; display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-pauta-import:hover { opacity: .9; transform: translateY(-1px); }
-.btn-pauta-import:disabled { opacity: .5; cursor: not-allowed; }
+  .pauta-filter-btn.active.pres {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+  }
 
-.btn-pauta-clear {
-  background: #fee2e2; color: #dc2626; border: none; border-radius: 10px;
-  padding: 9px 16px; font-size: .86rem; font-weight: 600; cursor: pointer;
-  transition: background .15s; display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-pauta-clear:hover { background: #fecaca; }
+  .pauta-filter-btn.active.cam3 {
+    background: #059669;
+    color: #fff;
+    border-color: #059669;
+  }
 
-.btn-pauta-manual-add {
-  background: linear-gradient(135deg, #059669, #10b981);
-  color: #fff; border: none; border-radius: 10px; padding: 9px 20px;
-  font-size: .88rem; font-weight: 600; cursor: pointer; transition: opacity .15s;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.btn-pauta-manual-add:hover { opacity: .88; }
+  .pauta-filter-btn.active.virt {
+    background: #7c3aed;
+    color: #fff;
+    border-color: #7c3aed;
+  }
 
-/* ── Manual form ──────────────────────────────────────────────── */
-.pauta-manual-form {
-  background: #f8fafc; border: 1px solid #e2e8f0;
-  border-radius: 14px; padding: 18px;
-}
-.pauta-manual-form label { font-size: .83rem; font-weight: 600; color: #374151; }
-.pauta-manual-form .form-control,
-.pauta-manual-form .form-select {
-  border-radius: 10px; border-color: #d1d5db; font-size: .88rem;
-}
-.pauta-manual-form .form-control:focus,
-.pauta-manual-form .form-select:focus {
-  border-color: #083464; box-shadow: 0 0 0 3px rgba(8,52,100,.1);
-}
+  .pauta-filter-btn:hover:not(.active) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  }
 
-/* ── Divider ──────────────────────────────────────────────────── */
-.pauta-divider { height: 1px; background: #e5e7eb; margin: 18px 0; }
+  /* ── Section headers ──────────────────────────────────────────── */
+  .pauta-section {
+    margin-bottom: 28px;
+    transition: opacity .2s;
+  }
 
-/* ── Spinner ──────────────────────────────────────────────────── */
-.pauta-spinner {
-  display: none; width: 16px; height: 16px;
-  border: 3px solid rgba(255,255,255,.4); border-top-color: #fff;
-  border-radius: 50%; animation: pautaSpin .7s linear infinite;
-}
-@keyframes pautaSpin { to { transform: rotate(360deg); } }
+  .pauta-section.hidden {
+    display: none;
+  }
 
-/* ── Toast ────────────────────────────────────────────────────── */
-#pauta-toast {
-  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-  padding: 12px 20px; border-radius: 12px; font-size: .88rem; font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15); display: none; max-width: 340px;
-  animation: slideInRight .3s ease;
-}
-#pauta-toast.success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
-#pauta-toast.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
-@keyframes slideInRight { from { opacity:0; transform:translateX(30px);} to{opacity:1;transform:none;} }
+  .pauta-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    font-weight: 700;
+    font-size: 1rem;
+  }
 
-/* ── Card Actions (gear + del) ──────────────────────────────── */
-.card-actions {
-  position: absolute; top: 8px; right: 8px;
-  display: flex; gap: 4px;
-}
-.btn-del, .btn-gear {
-  border: none; cursor: pointer;
-  border-radius: 50%; width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; transition: all .2s;
-}
-.btn-del  { background: rgba(239,68,68,.12); color: #ef4444; }
-.btn-del:hover  { background: #ef4444; color: #fff; }
-.btn-gear { background: rgba(37,99,235,.12); color: #2563eb; }
-.btn-gear:hover { background: #2563eb; color: #fff; }
+  .pauta-section-header.pres {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: #1d4ed8;
+    border-left: 4px solid #2563eb;
+  }
+
+  .pauta-section-header.cam3 {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    color: #047857;
+    border-left: 4px solid #059669;
+  }
+
+  .pauta-section-header.virt {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    color: #5b21b6;
+    border-left: 4px solid #7c3aed;
+  }
+
+  .pauta-section-header .badge-count {
+    margin-left: auto;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+
+  .pauta-section-header.pres .badge-count {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .pauta-section-header.cam3 .badge-count {
+    background: #059669;
+    color: #fff;
+  }
+
+  .pauta-section-header.virt .badge-count {
+    background: #7c3aed;
+    color: #fff;
+  }
+
+  /* ── Card grid ────────────────────────────────────────────────── */
+  .pauta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .pauta-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .07);
+    border-top: 4px solid transparent;
+    transition: box-shadow .18s, transform .18s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pauta-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+    transform: translateY(-2px);
+  }
+
+  .pauta-card.pres {
+    border-top-color: #2563eb;
+  }
+
+  .pauta-card.terceira_camara {
+    border-top-color: #10b981;
+  }
+
+  .pauta-card.virt {
+    border-top-color: #7c3aed;
+  }
+
+  .pauta-card .card-num {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #083464;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pauta-card .card-num .copy-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: .85rem;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color .15s;
+  }
+
+  .pauta-card .card-num .copy-btn:hover {
+    color: #083464;
+  }
+
+  .pauta-card .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: .82rem;
+    color: #64748b;
+  }
+
+  .pauta-card .card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .pauta-card .card-badges {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .pauta-card .badges-left {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .badge-sessao {
+    font-size: .74rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .badge-pres {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .badge-virt {
+    background: #ede9fe;
+    color: #5b21b6;
+  }
+
+  .badge-vinculado {
+    background: #10b981;
+    color: #fff;
+    font-size: .72rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .badge-naolocalizado {
+    background: #cbd5e1;
+    color: #475569;
+    font-size: .72rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .btn-documento {
+    background: #2563eb;
+    color: #ffffff;
+    font-size: .78rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    transition: all .2s;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, .2);
+    gap: 4px;
+  }
+
+  .btn-documento:hover {
+    background: #1d4ed8;
+    color: #f8fafc;
+    transform: translateY(-1px);
+  }
+
+  .pauta-card .btn-del {
+    /* position: absolute; removido para não conflitar com .card-actions */
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: .95rem;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+  }
+
+  .pauta-card .btn-del:hover {
+    color: #ef4444;
+    background: #fee2e2;
+  }
+
+  /* ── Empty state ──────────────────────────────────────────────── */
+  .pauta-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #94a3b8;
+    padding: 30px 0;
+    font-size: .9rem;
+    font-style: italic;
+  }
+
+  /* ── Action buttons ───────────────────────────────────────────── */
+  .btn-pauta-import {
+    background: linear-gradient(135deg, #083464, #1a56a4);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-pauta-import:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+  }
+
+  .btn-pauta-import:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  .btn-pauta-clear {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: .86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-pauta-clear:hover {
+    background: #fecaca;
+  }
+
+  .btn-pauta-manual-add {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-pauta-manual-add:hover {
+    opacity: .88;
+  }
+
+  /* ── Manual form ──────────────────────────────────────────────── */
+  .pauta-manual-form {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .pauta-manual-form label {
+    font-size: .83rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .pauta-manual-form .form-control,
+  .pauta-manual-form .form-select {
+    border-radius: 10px;
+    border-color: #d1d5db;
+    font-size: .88rem;
+  }
+
+  .pauta-manual-form .form-control:focus,
+  .pauta-manual-form .form-select:focus {
+    border-color: #083464;
+    box-shadow: 0 0 0 3px rgba(8, 52, 100, .1);
+  }
+
+  /* ── Divider ──────────────────────────────────────────────────── */
+  .pauta-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 18px 0;
+  }
+
+  /* ── Spinner ──────────────────────────────────────────────────── */
+  .pauta-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255, 255, 255, .4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pautaSpin .7s linear infinite;
+  }
+
+  @keyframes pautaSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ── Toast ────────────────────────────────────────────────────── */
+  #pauta-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: .88rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
+    display: none;
+    max-width: 340px;
+    animation: slideInRight .3s ease;
+  }
+
+  #pauta-toast.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+  }
+
+  #pauta-toast.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ── Card Actions (gear + del) ──────────────────────────────── */
+  .card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .btn-del,
+  .btn-gear {
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    transition: all .2s;
+  }
+
+  .btn-del {
+    background: rgba(239, 68, 68, .12);
+    color: #ef4444;
+  }
+
+  .btn-del:hover {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .btn-gear {
+    background: rgba(37, 99, 235, .12);
+    color: #2563eb;
+  }
+
+  .btn-gear:hover {
+    background: #2563eb;
+    color: #fff;
+  }
 </style>
 
 {# ─── PAUTA HTML ─────────────────────────────────────────────────── #}
@@ -266,7 +591,8 @@
 
   {# Manual addition #}
   <details class="mb-3">
-    <summary style="cursor:pointer;font-weight:700;color:#083464;font-size:.92rem;list-style:none;display:flex;align-items:center;gap:8px;">
+    <summary
+      style="cursor:pointer;font-weight:700;color:#083464;font-size:.92rem;list-style:none;display:flex;align-items:center;gap:8px;">
       <i class="bi bi-plus-circle"></i> Adicionar manualmente
     </summary>
     <div class="pauta-manual-form mt-3">
@@ -323,27 +649,41 @@
     <div class="pauta-filters m-0" id="pauta-filters">
       <button class="pauta-filter-btn todos active" data-filter="todos">
         <i class="bi bi-grid-3x3-gap-fill"></i> Todos
-        <span class="badge ms-1" style="background:#083464;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-todos">—</span>
+        <span class="badge ms-1"
+          style="background:#083464;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-todos">—</span>
       </button>
       <button class="pauta-filter-btn pres" data-filter="presencial">
         <i class="bi bi-building-fill"></i> Presencial
-        <span class="badge ms-1" style="background:#2563eb;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-pres">—</span>
+        <span class="badge ms-1"
+          style="background:#2563eb;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-pres">—</span>
       </button>
       <button class="pauta-filter-btn cam3" data-filter="terceira_camara" style="border-color: #a7f3d0;">
         <i class="bi bi-collection-fill"></i> 3ª Câmara
-        <span class="badge ms-1" style="background:#059669;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-cam3">—</span>
+        <span class="badge ms-1"
+          style="background:#059669;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-cam3">—</span>
       </button>
-      <button class="pauta-filter-btn" data-filter="vandymara" style="border: 1px solid #d8b4e2; background:#faf5ff; color:#9333ea;">
+      <button class="pauta-filter-btn" data-filter="vandymara"
+        style="border: 1px solid #d8b4e2; background:#faf5ff; color:#9333ea;">
         <i class="bi bi-person-fill"></i> Vandymara
-        <span class="badge ms-1" style="background:#9333ea;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-vandy">—</span>
+        <span class="badge ms-1"
+          style="background:#9333ea;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-vandy">—</span>
       </button>
-      <button class="pauta-filter-btn" data-filter="marcio_vidal" style="border: 1px solid #d4d4d8; background:#f8fafc; color:#52525b;">
+      <button class="pauta-filter-btn" data-filter="marcio_vidal"
+        style="border: 1px solid #d4d4d8; background:#f8fafc; color:#52525b;">
         <i class="bi bi-person-fill"></i> Márcio Vidal
-        <span class="badge ms-1" style="background:#52525b;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-marcio">—</span>
+        <span class="badge ms-1"
+          style="background:#52525b;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-marcio">—</span>
       </button>
       <button class="pauta-filter-btn virt" data-filter="virtual">
         <i class="bi bi-camera-video-fill"></i> Virtual
-        <span class="badge ms-1" style="background:#7c3aed;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;" id="cnt-virt">—</span>
+        <span class="badge ms-1"
+          style="background:#7c3aed;color:#fff;border-radius:20px;padding:2px 8px;font-size:.76rem;"
+          id="cnt-virt">—</span>
       </button>
     </div>
     {% else %}
@@ -353,17 +693,21 @@
     {% endif %}
 
     <div class="d-flex flex-wrap align-items-center gap-2 ms-md-auto pauta-search-controls">
-      <div class="d-flex align-items-center" style="background:#fff; border:1px solid #e2e8f0; border-radius:30px; padding:2px 14px; box-shadow:0 1px 2px rgba(0,0,0,.03);">
+      <div class="d-flex align-items-center"
+        style="background:#fff; border:1px solid #e2e8f0; border-radius:30px; padding:2px 14px; box-shadow:0 1px 2px rgba(0,0,0,.03);">
         <i class="bi bi-calendar-event text-primary me-2"></i>
         <label for="pauta-date-filter" class="d-none">Data:</label>
-        <select id="pauta-date-filter" style="border:none; outline:none; background:transparent; font-size:.88rem; font-weight:600; color:#475569; padding:6px 0; cursor:pointer; min-width:130px;">
+        <select id="pauta-date-filter"
+          style="border:none; outline:none; background:transparent; font-size:.88rem; font-weight:600; color:#475569; padding:6px 0; cursor:pointer; min-width:130px;">
           <option value="todas">Todas as datas</option>
         </select>
       </div>
-      
+
       <div class="position-relative" style="width:260px;">
-        <i class="bi bi-search position-absolute" style="top:50%;left:12px;transform:translateY(-50%);color:#94a3b8;"></i>
-        <input type="text" id="pauta-search" class="form-control" placeholder="Buscar por número..." style="padding-left:36px; border-radius:30px;">
+        <i class="bi bi-search position-absolute"
+          style="top:50%;left:12px;transform:translateY(-50%);color:#94a3b8;"></i>
+        <input type="text" id="pauta-search" class="form-control" placeholder="Buscar por número..."
+          style="padding-left:36px; border-radius:30px;">
       </div>
     </div>
   </div>
@@ -399,7 +743,8 @@
   {# ── Sessão Vandymara ── #}
   {% if not only_presencial %}
   <div class="pauta-section" id="section-vandymara">
-    <div class="pauta-section-header vandy" style="background: rgba(147, 51, 234, 0.08); border-left: 4px solid #9333ea; color: #9333ea;">
+    <div class="pauta-section-header vandy"
+      style="background: rgba(147, 51, 234, 0.08); border-left: 4px solid #9333ea; color: #9333ea;">
       <i class="bi bi-person-fill" style="font-size:1.1rem;"></i>
       Sessão Vandymara
       <span class="badge-count" id="badge-vandy-count" style="background:#9333ea;">0</span>
@@ -413,7 +758,8 @@
   {# ── Sessão Márcio Vidal ── #}
   {% if not only_presencial %}
   <div class="pauta-section" id="section-marcio-vidal">
-    <div class="pauta-section-header marcio" style="background: rgba(82, 82, 91, 0.08); border-left: 4px solid #52525b; color: #52525b;">
+    <div class="pauta-section-header marcio"
+      style="background: rgba(82, 82, 91, 0.08); border-left: 4px solid #52525b; color: #52525b;">
       <i class="bi bi-person-fill" style="font-size:1.1rem;"></i>
       Sessão Márcio Vidal
       <span class="badge-count" id="badge-marcio-count" style="background:#52525b;">0</span>
@@ -448,7 +794,8 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,.15);">
       <div class="modal-header" style="border-bottom:none; padding: 20px 24px 8px;">
-        <h5 class="modal-title fw-bold" id="pautaEditModalLabel"><i class="bi bi-pencil-square me-2 text-primary"></i>Editar Processo</h5>
+        <h5 class="modal-title fw-bold" id="pautaEditModalLabel"><i
+            class="bi bi-pencil-square me-2 text-primary"></i>Editar Processo</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" style="padding:16px 24px 24px;">
@@ -488,7 +835,8 @@
       </div>
       <div class="modal-footer" style="border-top:none; padding:0 24px 24px;">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary fw-semibold" id="btn-edit-save" style="background:#2563eb;border:none;border-radius:10px;">
+        <button type="button" class="btn btn-primary fw-semibold" id="btn-edit-save"
+          style="background:#2563eb;border:none;border-radius:10px;">
           <i class="bi bi-check-lg me-1"></i> Salvar
         </button>
       </div>
@@ -498,25 +846,25 @@
 
 {# ─── PAUTA JS ─────────────────────────────────────────────────── #}
 <script>
-(function() {
-  'use strict';
+  (function () {
+    'use strict';
 
-  const URLS = {
-    json     : "{% url 'pauta_json' %}",
-    importar : "{% url 'importar_pauta' %}",
-    manual   : "{% url 'adicionar_pauta_manual' %}",
-    limpar   : "{% url 'limpar_pauta' %}",
-    remover  : (id) => `/pauta/remover/${id}/`,
-  };
+    const URLS = {
+      json: "{% url 'pauta_json' %}",
+      importar: "{% url 'importar_pauta' %}",
+      manual: "{% url 'adicionar_pauta_manual' %}",
+      limpar: "{% url 'limpar_pauta' %}",
+      remover: (id) => `/pauta/remover/${id}/`,
+    };
 
-  const isOnlyPresencial = {{ only_presencial|yesno:"true,false"|default:"false" }};
+    const isOnlyPresencial = {{ only_presencial|yesno:"true,false"|default:"false" }};
   const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
   let pautaData = [];
   let searchTerm = '';
 
   /* ── Toast ── */
-  function showToast(msg, type='success') {
+  function showToast(msg, type = 'success') {
     const t = document.getElementById('pauta-toast');
     t.textContent = msg;
     t.className = type;
@@ -527,26 +875,25 @@
   /* ── Render card ── */
   function renderCard(item) {
     let sessionBadge = `<span class="badge-sessao badge-pres" style="font-size:.7rem;padding:3px 8px;">🏛️ Presencial</span>`;
-    if(item.tipo_sessao === 'virtual') sessionBadge = `<span class="badge-sessao badge-virt" style="font-size:.7rem;padding:3px 8px;">💻 Virtual</span>`;
-    else if(item.tipo_sessao === 'terceira_camara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#10b981;color:#fff;">📂 3ª Câmara</span>`;
-    else if(item.tipo_sessao === 'vandymara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#9333ea;color:#fff;">🟣 Vandymara</span>`;
-    else if(item.tipo_sessao === 'marcio_vidal') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#52525b;color:#fff;">🟤 Márcio</span>`;
+    if (item.tipo_sessao === 'virtual') sessionBadge = `<span class="badge-sessao badge-virt" style="font-size:.7rem;padding:3px 8px;">💻 Virtual</span>`;
+    else if (item.tipo_sessao === 'terceira_camara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#10b981;color:#fff;">📂 3ª Câmara</span>`;
+    else if (item.tipo_sessao === 'vandymara') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#9333ea;color:#fff;">🟣 Vandymara</span>`;
+    else if (item.tipo_sessao === 'marcio_vidal') sessionBadge = `<span class="badge-sessao" style="font-size:.7rem;padding:3px 8px;background:#52525b;color:#fff;">🟤 Márcio</span>`;
 
     if (!isOnlyPresencial) {
       sessionBadge = `
         <select class="form-select form-select-sm d-inline-block w-auto py-0 text-white border-0 me-2" 
-                style="background-color: ${
-                  item.tipo_sessao==='presencial' ? '#2563eb' :
-                  item.tipo_sessao==='terceira_camara' ? '#10b981' :
-                  item.tipo_sessao==='virtual' ? '#7c3aed' :
-                  item.tipo_sessao==='vandymara' ? '#9333ea' : '#52525b'
-                }; font-size:.75rem; border-radius: 20px; font-weight: 600;"
+                style="background-color: ${item.tipo_sessao === 'presencial' ? '#2563eb' :
+          item.tipo_sessao === 'terceira_camara' ? '#10b981' :
+            item.tipo_sessao === 'virtual' ? '#7c3aed' :
+              item.tipo_sessao === 'vandymara' ? '#9333ea' : '#52525b'
+        }; font-size:.75rem; border-radius: 20px; font-weight: 600;"
                 onchange="pautaAlterarTipo(${item.id}, this.value)">
-          <option value="presencial" ${item.tipo_sessao==='presencial'?'selected':''}>🏛️ Presencial</option>
-          <option value="terceira_camara" ${item.tipo_sessao==='terceira_camara'?'selected':''}>📂 3ª Câmara</option>
-          <option value="virtual" ${item.tipo_sessao==='virtual'?'selected':''}>💻 Virtual</option>
-          <option value="vandymara" ${item.tipo_sessao==='vandymara'?'selected':''}>🟣 Vandymara</option>
-          <option value="marcio_vidal" ${item.tipo_sessao==='marcio_vidal'?'selected':''}>🟤 Márcio</option>
+          <option value="presencial" ${item.tipo_sessao === 'presencial' ? 'selected' : ''}>🏛️ Presencial</option>
+          <option value="terceira_camara" ${item.tipo_sessao === 'terceira_camara' ? 'selected' : ''}>📂 3ª Câmara</option>
+          <option value="virtual" ${item.tipo_sessao === 'virtual' ? 'selected' : ''}>💻 Virtual</option>
+          <option value="vandymara" ${item.tipo_sessao === 'vandymara' ? 'selected' : ''}>🟣 Vandymara</option>
+          <option value="marcio_vidal" ${item.tipo_sessao === 'marcio_vidal' ? 'selected' : ''}>🟤 Márcio</option>
         </select>
       `;
     }
@@ -594,7 +941,7 @@
   }
 
   /* ── Copy number ── */
-  window.pautaCopiar = function(num, btn) {
+  window.pautaCopiar = function (num, btn) {
     navigator.clipboard.writeText(num).then(() => {
       btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
       btn.style.color = '#10b981';
@@ -607,23 +954,23 @@
 
   function renderDateFilter() {
     const dates = [...new Set(pautaData.map(i => i.data_sessao).filter(Boolean))];
-    dates.sort((a,b) => {
-      const [ da, ma, ya ] = a.split('/');
-      const [ db, mb, yb ] = b.split('/');
-      return new Date(yb, mb-1, db) - new Date(ya, ma-1, da); 
+    dates.sort((a, b) => {
+      const [da, ma, ya] = a.split('/');
+      const [db, mb, yb] = b.split('/');
+      return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
     });
-    
+
     let nextDate = null;
     if (dates.length > 0) {
       const today = new Date();
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
       const ascDates = [...dates].reverse(); // Do mais antigo pro mais novo (futuro)
       nextDate = ascDates.find(d => {
-        const [da,ma,ya] = d.split('/');
-        return new Date(ya,ma-1,da) >= today;
+        const [da, ma, ya] = d.split('/');
+        return new Date(ya, ma - 1, da) >= today;
       }) || dates[0]; // fallback para a mais recente se todas passadas
     }
-    
+
     const select = document.getElementById('pauta-date-filter');
     if (!select) return;
 
@@ -632,9 +979,9 @@
     }
 
     const currentVal = select.value === 'todas' ? 'todas' : searchDate;
-    select.innerHTML = '<option value="todas">Todas as datas</option>' + 
+    select.innerHTML = '<option value="todas">Todas as datas</option>' +
       dates.map(d => `<option value="${d}">${d}</option>`).join('');
-    
+
     if (dates.includes(currentVal)) {
       select.value = currentVal;
     } else if (dates.length > 0) {
@@ -657,7 +1004,7 @@
     };
 
     const filtered = pautaData.filter(filterFn);
-    
+
     // Separação por tipo
     const fPres = filtered.filter(i => i.tipo_sessao === 'presencial');
     const fTerceira = filtered.filter(i => i.tipo_sessao === 'terceira_camara');
@@ -682,7 +1029,7 @@
       renderSec('lista-vandymara', 'badge-vandy-count', 'cnt-vandy', fVandy, 'Nenhum processo Vandymara encontrado.');
       renderSec('lista-marcio', 'badge-marcio-count', 'cnt-marcio', fMarcio, 'Nenhum processo Márcio Vidal encontrado.');
       renderSec('lista-virtual', 'badge-virt-count', 'cnt-virt', fVirt, 'Nenhum processo virtual encontrado.');
-      
+
       const elCntTodos = document.getElementById('cnt-todos');
       if (elCntTodos) elCntTodos.textContent = filtered.length;
     }
@@ -704,7 +1051,7 @@
   function applyFilter(filter) {
     currentFilter = filter;
     const sections = ['presencial', 'terceira-camara', 'vandymara', 'marcio-vidal', 'virtual'];
-    
+
     sections.forEach(sec => {
       const el = document.getElementById(`section-${sec}`);
       if (el) {
@@ -734,17 +1081,17 @@
       .then(data => {
         pautaData = data.itens || [];
         renderDateFilter();
-        renderLists(); 
+        renderLists();
         applyFilter(currentFilter);
       })
       .catch((e) => {
-          console.error(e);
-          showToast('Erro ao carregar a pauta.', 'error');
+        console.error(e);
+        showToast('Erro ao carregar a pauta.', 'error');
       });
   }
 
   /* ── Gear Edit Modal ── */
-  window.pautaEditar = function(id) {
+  window.pautaEditar = function (id) {
     const item = pautaData.find(i => i.id === id);
     if (!item) return;
 
@@ -755,7 +1102,7 @@
     document.getElementById('edit-tema').value = item.tema !== '—' ? (item.tema || '') : '';
     document.getElementById('edit-link').value = item.link_documento || '';
     document.getElementById('edit-tipo').value = item.tipo_sessao || 'presencial';
-    
+
     let modalEl = document.getElementById('pautaEditModal');
     let modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
@@ -788,49 +1135,49 @@
   });
 
   /* ── Alterar Tipo via AJAX ── */
-  window.pautaAlterarTipo = function(id, novoTipo) {
+  window.pautaAlterarTipo = function (id, novoTipo) {
     fetch(`/pauta/alterar-tipo/${id}/`, {
       method: 'POST',
       headers: {
-          'X-CSRFToken': csrfToken,
-          'Content-Type': 'application/json'
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ tipo_sessao: novoTipo })
-    }).then(r=>r.json()).then(d=>{
-      if(d.success) {
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
         showToast('Tipo de sessão alterado!');
         loadPauta(); // Recarrega os dados completos
       } else {
         showToast(d.message || 'Erro ao alterar.', 'error');
         loadPauta(); // reverte visualmente
       }
-    }).catch(e=>{
+    }).catch(e => {
       showToast('Erro de rede.', 'error');
       loadPauta();
     });
   };
 
   /* ── Remove ── */
-  window.pautaRemover = function(id) {
+  window.pautaRemover = function (id) {
     if (!confirm('Remover este processo da pauta?')) return;
     fetch(URLS.remover(id), {
       method: 'POST', headers: { 'X-CSRFToken': csrfToken }
     })
-    .then(r => r.json())
-    .then(d => {
-      if (d.success) {
-        const el = document.getElementById(`pauta-item-${id}`);
-        if (el) { el.style.opacity='0'; el.style.transform='scale(.95)'; el.style.transition='.2s'; setTimeout(()=>{el.remove();loadPauta();},220); }
-        showToast('Processo removido da pauta.', 'success');
-      }
-    })
-    .catch(() => showToast('Erro ao remover.', 'error'));
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          const el = document.getElementById(`pauta-item-${id}`);
+          if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.95)'; el.style.transition = '.2s'; setTimeout(() => { el.remove(); loadPauta(); }, 220); }
+          showToast('Processo removido da pauta.', 'success');
+        }
+      })
+      .catch(() => showToast('Erro ao remover.', 'error'));
   };
 
   {% if show_import != False %}
   /* ── File input ── */
   const fileInput = document.getElementById('pauta-file-input');
-  const dropZone  = document.getElementById('pauta-drop-zone');
+  const dropZone = document.getElementById('pauta-drop-zone');
   const btnImport = document.getElementById('btn-import-excel');
   const fileLabel = document.getElementById('pauta-file-name');
 
@@ -859,35 +1206,35 @@
 
     const fd = new FormData();
     fd.append('arquivo', file);
-    fetch(URLS.importar, { method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd })
+    fetch(URLS.importar, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: fd })
       .then(r => r.json())
       .then(d => {
-        if (d.success) { showToast(d.message,'success'); setFile(null); fileInput.value=''; loadPauta(); }
-        else           { showToast(d.message,'error'); }
+        if (d.success) { showToast(d.message, 'success'); setFile(null); fileInput.value = ''; loadPauta(); }
+        else { showToast(d.message, 'error'); }
       })
-      .catch(() => showToast('Erro ao importar o arquivo.','error'))
-      .finally(() => { btnImport.disabled=false; spinner.style.display='none'; btnText.style.display='inline-flex'; });
+      .catch(() => showToast('Erro ao importar o arquivo.', 'error'))
+      .finally(() => { btnImport.disabled = false; spinner.style.display = 'none'; btnText.style.display = 'inline-flex'; });
   });
 
   document.getElementById('btn-limpar-pauta').addEventListener('click', () => {
     if (!confirm('Tem certeza que deseja limpar toda a pauta?')) return;
-    fetch(URLS.limpar, { method:'POST', headers:{'X-CSRFToken':csrfToken} })
+    fetch(URLS.limpar, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
       .then(r => r.json())
-      .then(d => { showToast(d.message,'success'); loadPauta(); })
-      .catch(() => showToast('Erro ao limpar.','error'));
+      .then(d => { showToast(d.message, 'success'); loadPauta(); })
+      .catch(() => showToast('Erro ao limpar.', 'error'));
   });
 
   document.getElementById('btn-add-manual').addEventListener('click', (e) => {
     const numero = document.getElementById('manual-numero').value.trim();
-    const dataSessao   = document.getElementById('manual-data').value.trim();
-    const tipo   = document.getElementById('manual-tipo').value;
+    const dataSessao = document.getElementById('manual-data').value.trim();
+    const tipo = document.getElementById('manual-tipo').value;
     const responsavel = document.getElementById('manual-responsavel')?.value.trim() || '';
     const especie = document.getElementById('manual-especie')?.value.trim() || '';
     const tema = document.getElementById('manual-tema')?.value.trim() || '';
     const linkDocumento = document.getElementById('manual-link-documento')?.value.trim() || '';
 
-    if (!numero || !dataSessao) { showToast('Preencha o número e a data.','error'); return; }
-    
+    if (!numero || !dataSessao) { showToast('Preencha o número e a data.', 'error'); return; }
+
     const postData = {
       numero_processo: numero,
       data_sessao: dataSessao,
@@ -903,29 +1250,29 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    fetch(URLS.manual, { 
-        method: 'POST', 
-        body: JSON.stringify(postData), 
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json'
-        } 
+    fetch(URLS.manual, {
+      method: 'POST',
+      body: JSON.stringify(postData),
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/json'
+      }
     })
       .then(r => r.json())
       .then(d => {
-        if (d.success) { 
-          showToast('Processo adicionado à pauta!','success'); 
-          document.getElementById('manual-numero').value=''; 
-          document.getElementById('manual-data').value=''; 
+        if (d.success) {
+          showToast('Processo adicionado à pauta!', 'success');
+          document.getElementById('manual-numero').value = '';
+          document.getElementById('manual-data').value = '';
           if (document.getElementById('manual-responsavel')) document.getElementById('manual-responsavel').value = '';
           if (document.getElementById('manual-especie')) document.getElementById('manual-especie').value = '';
           if (document.getElementById('manual-tema')) document.getElementById('manual-tema').value = '';
           if (document.getElementById('manual-link-documento')) document.getElementById('manual-link-documento').value = '';
-          loadPauta(); 
+          loadPauta();
         }
-        else           { showToast(d.message,'error'); }
+        else { showToast(d.message, 'error'); }
       })
-      .catch(() => showToast('Erro ao adicionar.','error'))
+      .catch(() => showToast('Erro ao adicionar.', 'error'))
       .finally(() => {
         btn.disabled = false;
         btn.innerHTML = originalBtnContent;
@@ -937,5 +1284,5 @@
   document.addEventListener('DOMContentLoaded', loadPauta);
   if (document.readyState !== 'loading') loadPauta();
 
-})();
+}) ();
 </script>

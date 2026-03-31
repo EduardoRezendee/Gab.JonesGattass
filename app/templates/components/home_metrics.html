@@ -8,15 +8,12 @@
     color: #1F2937;
   }
 
-  h4,
-  h5,
-  h6 {
+  h4, h5, h6 {
     color: #083464;
     font-weight: 700;
   }
 
-  p,
-  span {
+  p, span {
     color: #4B5563;
   }
 
@@ -46,17 +43,15 @@
     border-color: #4B5563;
   }
 
-  .card,
-  .accordion-item {
+  .card, .accordion-item {
     border: none;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    background-color: #FFFFFF;
+    background-color: white;
     transition: all 0.3s ease;
   }
 
-  .card:hover,
-  .list-group-item:hover {
+  .card:hover, .list-group-item:hover {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
   }
@@ -89,16 +84,11 @@
   }
 
   .text-primary {
-    color: #083464 !important;
-    /* Changed from #808000 to #083464 */
+    color: #808000 !important;
   }
 
   .text-secondary {
     color: #6B7280 !important;
-  }
-
-  .bg-primary {
-    background-color: #083464 !important;
   }
 
   .modal-content {
@@ -112,62 +102,6 @@
     color: white;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
-    border-bottom: none;
-  }
-
-  /* Added styles from common block */
-  .rounded-circle {
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-    font-weight: bold;
-  }
-
-  .processo-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-
-  .processo-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-  }
-
-  .badge {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 10px;
-  }
-
-  .accordion-button {
-    font-weight: 700;
-    background-color: #F9FAFB;
-    color: #1F2937;
-  }
-
-  .accordion-button:not(.collapsed) {
-    background-color: #E5E7EB;
-    color: #083464;
-  }
-
-  .accordion-button::after {
-    filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(200%) hue-rotate(180deg);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .chat-container {
-    max-height: 70vh;
-  }
-
-  .copiar-icon {
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.3s ease, color 0.3s ease;
-  }
-
-  .copiar-icon:hover {
-    opacity: 1;
-    color: #083464;
   }
 </style>
 
@@ -178,65 +112,127 @@
       <div class="d-flex align-items-center">
         <!-- Foto do Usuário -->
         <div class="text-center me-4">
-          <img src="{{ photo_url }}" class="rounded-circle shadow-sm" alt="Foto de {{ user.first_name }}" loading="lazy"
-            style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #fff;">
+          <img src="{{ photo_url }}" class="rounded-circle" alt="Foto de {{ user.first_name }}" loading="lazy"
+               style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #2f2f2f;">
         </div>
         <!-- Informações do Usuário -->
         <div>
           <h4 class="card-title mb-1 text-primary fw-bold">{{ user.first_name }} {{ user.last_name }}</h4>
           <p class="text-muted mb-0" style="font-size: 1rem;">Atividades em andamento</p>
-          <span
-            style="display: block; width: 50px; height: 4px; background-color: #808000; margin-top: 5px; border-radius: 2px;"></span>
+          <span style="display: block; width: 50px; height: 4px; background-color: #808000; margin-top: 5px; border-radius: 2px;"></span>
         </div>
       </div>
       <!-- Exibição das Espécies -->
       <div class="row text-center justify-content-center">
         {% if process_metrics.metrics.contagem_por_especie %}
-        {% for especie in process_metrics.metrics.contagem_por_especie %}
-        <div class="col-md-3 col-sm-6 mb-3">
-          <a href="{% url 'home' %}?especie={{ especie.especie__sigla|urlencode }}" class="text-decoration-none">
-            <div
-              class="card shadow-sm border-0 {% if especie.especie__sigla == 'LIM' %}border border-danger{% endif %}"
-              style="border-radius: 8px;">
-              <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                <h6
-                  class="fw-bold {% if especie.especie__sigla == 'LIM' %}text-danger{% else %}text-primary{% endif %} mb-0">
-                  {{ especie.especie__sigla|default:"Sem Sigla" }}
-                </h6>
-                <div
-                  class="rounded-circle {% if especie.especie__sigla == 'LIM' %}bg-danger text-white{% else %}bg-primary text-white{% endif %} d-flex justify-content-center align-items-center"
-                  style="width: 20px; height: 20px; font-size: 0.7rem;">
-                  {{ especie.total }}
+          {% for especie in process_metrics.metrics.contagem_por_especie %}
+            <div class="col-md-3 col-sm-6 mb-3">
+              <a href="{% url 'home' %}?especie={{ especie.especie__sigla|urlencode }}" class="text-decoration-none">
+                <div class="card shadow-sm border-0 {% if especie.especie__sigla == 'LIM' %}bg-light border border-danger{% else %}bg-light{% endif %}" style="border-radius: 8px;">
+                  <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold {% if especie.especie__sigla == 'LIM' %}text-danger{% else %}text-primary{% endif %} mb-0">
+                      {{ especie.especie__sigla|default:"Sem Sigla" }}
+                    </h6>
+                    <div class="rounded-circle {% if especie.especie__sigla == 'LIM' %}bg-danger text-white{% else %}bg-primary text-white{% endif %} d-flex justify-content-center align-items-center"
+                         style="width: 20px; height: 20px; font-size: 0.7rem;">
+                      {{ especie.total }}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </a>
             </div>
-          </a>
-        </div>
-        {% endfor %}
+          {% endfor %}
         {% else %}
-        <div class="col-12">
-          <p class="text-muted">Nenhuma espécie encontrada.</p>
-        </div>
+          <div class="col-12">
+            <p class="text-muted">Nenhuma espécie encontrada.</p>
+          </div>
         {% endif %}
       </div>
     </div>
   </div>
-
+  
 
   <!-- Visão da Desembargadora -->
   {% if is_desembargador %}
-  {% include 'components/desa.html' %}
+    {% include 'components/desa.html' %} 
   {% elif is_revisor %}
-  {% include 'components/revisor.html' %}
+    {% include 'components/revisor.html' %} 
   <!-- Visão do Chefe de Gabinete -->
   {% elif is_chefe %}
   <div class="container mt-5">
     <h2 class="mb-4 text-center" style="color: #083464; font-weight: 700; position: relative;">
       <i class="bi bi-graph-up me-2" style="color: #083464;"></i>
       Chefe de Gabinete
-      <span
-        style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
+      <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
     </h2>
+
+    <!-- ── Processos em Pauta (Chefe de Gabinete) ── -->
+    <div class="accordion shadow-sm mb-4" id="accordionPautaChefe">
+      <div class="accordion-item" style="border-radius:12px;overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed position-relative fw-bold" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#collapsePautaChefe" aria-expanded="false">
+            <span style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,#1d4ed8,#7c3aed);border-radius:2px 2px 0 0;"></span>
+            <i class="bi bi-calendar3-week me-2" style="color:#1d4ed8;"></i>
+            📋 Processos em Pauta
+            <span id="chefePautaHeaderDate" class="badge ms-2" style="background:#2563eb; color:#ffffff; font-size:.85rem; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);"><i class="bi bi-calendar-event me-1"></i> Carregando...</span>
+            <span class="badge ms-2" style="background:#dbeafe;color:#1d4ed8;font-size:.8rem;">
+              Presencial&nbsp;<span id="chefePautaBadgePres">—</span>
+              &nbsp;|&nbsp;Virtual&nbsp;<span id="chefePautaBadgeVirt">—</span>
+            </span>
+          </button>
+        </h2>
+        <div id="collapsePautaChefe" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            {% include 'components/pauta.html' %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch("{% url 'pauta_json' %}").then(r=>r.json()).then(d=>{
+        const ep = document.getElementById('chefePautaBadgePres');
+        const ev = document.getElementById('chefePautaBadgeVirt');
+        const eh = document.getElementById('chefePautaHeaderDate');
+
+        const all = d.itens || [];
+        let nextDate = null;
+        
+        if (all.length > 0) {
+          const dates = [...new Set(all.map(i => i.data_sessao).filter(Boolean))];
+          dates.sort((a,b) => {
+            const [da,ma,ya] = a.split('/');
+            const [db,mb,yb] = b.split('/');
+            return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
+          });
+          
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          nextDate = dates.find(dtStr => {
+            const [da,ma,ya] = dtStr.split('/');
+            return new Date(ya,ma-1,da) >= today;
+          }) || dates[dates.length - 1];
+        }
+
+        if (nextDate) {
+          const pCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'presencial').length;
+          const vCount = all.filter(i => i.data_sessao === nextDate && i.tipo_sessao === 'virtual').length;
+          if(ep) ep.textContent = pCount;
+          if(ev) ev.textContent = vCount;
+          if(eh) {
+            eh.innerHTML = `<i class="bi bi-calendar-event me-1"></i> ${nextDate}`;
+            eh.style.display = 'inline-block';
+          }
+        } else {
+          if(ep) ep.textContent = 0;
+          if(ev) ev.textContent = 0;
+          if(eh) eh.style.display = 'none';
+        }
+      });
+    });
+    </script>
 
     <div class="mt-5">
       <h3 class="text-center mb-4 section-title">
@@ -247,69 +243,77 @@
       </h3>
 
       {% with dados=processos_mais_30_por_assessor|default:atrasados_por_assessor %}
-      {% if dados %}
-      <div class="row g-4">
-        {% for entry in dados %}
-        {% with assessor=entry.assessor lista=entry.processos %}
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="card shadow-sm h-100 border-start border-4" style="border-color:#083464;">
+        {% if dados %}
+          <div class="row g-4">
+            {% for entry in dados %}
+              {% with assessor=entry.assessor lista=entry.processos %}
+                <div class="col-12 col-md-6 col-lg-4">
+                  <div class="card shadow-sm h-100 border-start border-4"
+                      style="border-color:#083464;">
 
-            <!-- Cabeçalho clicável -->
-            <button class="btn btn-link w-100 text-start p-3 d-flex
-                                  justify-content-between align-items-center" data-bs-toggle="collapse"
-              data-bs-target="#assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false">
-              <span class="fw-semibold">{{ assessor }}</span>
-              <span class="badge" style="background:#CFE2FF;color:#083464;">{{ lista|length }}</span>
-            </button>
+                    <!-- Cabeçalho clicável -->
+                    <button class="btn btn-link w-100 text-start p-3 d-flex
+                                  justify-content-between align-items-center"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                            aria-expanded="false">
+                      <span class="fw-semibold">{{ assessor }}</span>
+                      <span class="badge"
+                            style="background:#CFE2FF;color:#083464;">{{ lista|length }}</span>
+                    </button>
 
-            <!-- Lista de processos -->
-            <div class="collapse" id="assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-              <ul class="list-group list-group-flush small">
-                {% for p in lista %}
-                <li class="list-group-item">
-                  <div class="fw-semibold">
-                    {{ p.numero_processo }}
-                    <small class="text-muted">({{ p.especie }})</small>
+                    <!-- Lista de processos -->
+                    <div class="collapse"
+                        id="assessor-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                      <ul class="list-group list-group-flush small">
+                        {% for p in lista %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">
+                              {{ p.numero_processo }}
+                              <small class="text-muted">({{ p.especie }})</small>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                              <span class="badge bg-light text-dark">
+                                {{ p.dias_no_gabinete }} dias
+                              </span>
+                              <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                                {{ p.fase_atual }}
+                              </span>
+                              <span class="badge"
+                                    style="background:#CFE2FF;color:#083464;">
+                                {{ p.tipo }}
+                              </span>
+
+                              {% if p.is_liminar %}
+                                <span class="badge bg-info text-dark">Liminar</span>
+                              {% endif %}
+                              {% if p.prioridade == 'U' %}
+                                <span class="badge bg-danger-subtle text-danger-emphasis">Urgente</span>
+                              {% elif p.prioridade == 'P' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis">Prioridade</span>
+                              {% endif %}
+                            </div>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
                   </div>
-
-                  <div class="d-flex flex-wrap gap-1 mt-1">
-                    <span class="badge bg-light text-dark">
-                      {{ p.dias_no_gabinete }} dias
-                    </span>
-                    <span class="badge bg-secondary-subtle text-secondary-emphasis">
-                      {{ p.fase_atual }}
-                    </span>
-                    <span class="badge" style="background:#CFE2FF;color:#083464;">
-                      {{ p.tipo }}
-                    </span>
-
-                    {% if p.is_liminar %}
-                    <span class="badge bg-info text-dark">Liminar</span>
-                    {% endif %}
-                    {% if p.prioridade == 'U' %}
-                    <span class="badge bg-danger-subtle text-danger-emphasis">Urgente</span>
-                    {% elif p.prioridade == 'P' %}
-                    <span class="badge bg-warning-subtle text-warning-emphasis">Prioridade</span>
-                    {% endif %}
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-            </div>
+                </div>
+              {% endwith %}
+            {% endfor %}
           </div>
-        </div>
-        {% endwith %}
-        {% endfor %}
-      </div>
-      {% else %}
-      <p class="text-muted text-center">
-        Nenhum processo com mais de 30 dias encontrado.
-      </p>
-      {% endif %}
+        {% else %}
+          <p class="text-muted text-center">
+            Nenhum processo com mais de 30 dias encontrado.
+          </p>
+        {% endif %}
       {% endwith %}
     </div>
 
 
+
+    
 
     <!-- Seção de Gráficos -->
     <div class="row g-4">
@@ -334,7 +338,7 @@
         </div>
       </div>
     </div>
-
+    
 
     <!-- Seção dos 10 Processos Mais Antigos -->
     <div class="mt-5">
@@ -342,34 +346,34 @@
       <div class="card shadow-lg mt-3">
         <div class="card-body">
           {% if processos_antigos_detalhados %}
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Número do Processo</th>
-                  <th>Espécie</th>
-                  <th>Data de Entrada no Gabinete</th>
-                  <th>Dias no Gabinete</th>
-                  <th>Fase Atual</th>
-                  <th>Responsável</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for processo in processos_antigos_detalhados %}
-                <tr>
-                  <td>{{ processo.numero_processo }}</td>
-                  <td>{{ processo.especie }}</td>
-                  <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
-                  <td>{{ processo.dias_no_gabinete }}</td>
-                  <td>{{ processo.fase_atual }}</td>
-                  <td>{{ processo.usuario }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Número do Processo</th>
+                    <th>Espécie</th>
+                    <th>Data de Entrada no Gabinete</th>
+                    <th>Dias no Gabinete</th>
+                    <th>Fase Atual</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for processo in processos_antigos_detalhados %}
+                    <tr>
+                      <td>{{ processo.numero_processo }}</td>
+                      <td>{{ processo.especie }}</td>
+                      <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
+                      <td>{{ processo.dias_no_gabinete }}</td>
+                      <td>{{ processo.fase_atual }}</td>
+                      <td>{{ processo.usuario }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           {% else %}
-          <p class="text-muted text-center">Nenhum processo antigo encontrado.</p>
+            <p class="text-muted text-center">Nenhum processo antigo encontrado.</p>
           {% endif %}
         </div>
       </div>
@@ -381,32 +385,32 @@
       <div class="card shadow-lg mt-3">
         <div class="card-body">
           {% if processos_liminares_detalhados %}
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Número do Processo</th>
-                  <th>Data de Entrada no Gabinete</th>
-                  <th>Dias no Gabinete</th>
-                  <th>Fase Atual</th>
-                  <th>Responsável</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for processo in processos_liminares_detalhados %}
-                <tr>
-                  <td>{{ processo.numero_processo }}</td>
-                  <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
-                  <td>{{ processo.dias_no_gabinete }}</td>
-                  <td>{{ processo.fase_atual }}</td>
-                  <td>{{ processo.usuario }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Número do Processo</th>
+                    <th>Data de Entrada no Gabinete</th>
+                    <th>Dias no Gabinete</th>
+                    <th>Fase Atual</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for processo in processos_liminares_detalhados %}
+                    <tr>
+                      <td>{{ processo.numero_processo }}</td>
+                      <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
+                      <td>{{ processo.dias_no_gabinete }}</td>
+                      <td>{{ processo.fase_atual }}</td>
+                      <td>{{ processo.usuario }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           {% else %}
-          <p class="text-muted text-center">Nenhum processo liminar não concluído encontrado.</p>
+            <p class="text-muted text-center">Nenhum processo liminar não concluído encontrado.</p>
           {% endif %}
         </div>
       </div>
@@ -414,7 +418,7 @@
   </div>
 
   {% else %}
-  {% include 'components/comum.html' %}
+    {% include 'components/comum.html' %} 
   {% endif %}
 
   <!-- Dependências do Chart.js (adicione no final do template, antes do </body>) -->
@@ -427,179 +431,179 @@
 
     // Gráfico Revisões Hoje (Colunas)
     fetch("{% url 'get_revisoes_hoje_data' %}")
-      .then(response => response.json())
-      .then(data => {
-        const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: data.datasets
-          },
-          options: {
-            plugins: {
-              title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
-              legend: { display: false },
-              datalabels: {
-                anchor: 'end',
-                align: 'top',
-                color: '#000',
-                font: { weight: 'bold' },
-                formatter: (value) => value || ''
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { display: false }
-              }
-            }
-          }
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('revisoesHojeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Revisões Hoje ({{ today|date:"d/m/Y" }})' },
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         });
-      });
 
     // Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
     fetch("{% url 'get_entries_exits_data' %}")
-      .then(response => response.json())
-      .then(data => {
-        const ctx = document.getElementById('entriesExitsChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: data.datasets
-          },
-          options: {
-            plugins: {
-              title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
-              legend: { display: true },
-              datalabels: {
-                anchor: 'end',
-                align: 'top',
-                color: '#000',
-                font: { weight: 'bold' },
-                formatter: (value) => value || ''
-              }
-            },
-            scales: {
-              x: {
-                title: { display: true, text: 'Data' },
-                ticks: { maxRotation: 45, minRotation: 45 },
-                grid: { display: false }
-              },
-              y: {
-                beginAtZero: true,
-                grid: { display: false }
-              }
-            }
-          }
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('entriesExitsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
+                        legend: { display: true },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Data' },
+                            ticks: { maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         });
-      });
 
     // Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
     fetch("{% url 'get_es_assessor_hoje_data' %}")
-      .then(response => response.json())
-      .then(data => {
-        const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: data.labels,
-            datasets: data.datasets
-          },
-          options: {
-            plugins: {
-              title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
-              legend: { display: true },
-              datalabels: {
-                anchor: 'end',
-                align: 'top',
-                color: '#000',
-                font: { weight: 'bold' },
-                formatter: (value) => value || ''
-              }
-            },
-            scales: {
-              x: {
-                title: { display: true, text: 'Assessor' },
-                ticks: { maxRotation: 45, minRotation: 45 },
-                grid: { display: false }
-              },
-              y: {
-                beginAtZero: true,
-                grid: { display: false }
-              }
-            }
-          }
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
+                        legend: { display: true },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold' },
+                            formatter: (value) => value || ''
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Assessor' },
+                            ticks: { maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         });
-      });
   </script>
 </div>
 
-<!-- Script para Comentários e Depuração das Abas -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Depuração das abas
-    const tabs = document.querySelectorAll('#faseTabs .nav-link');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', function (e) {
-        e.preventDefault();
-        console.log('Clicou na aba:', this.id, 'Target:', this.getAttribute('data-bs-target'));
-        const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
-        if (targetPane) {
-          console.log('Painel encontrado:', targetPane.id, 'Conteúdo:', targetPane.innerHTML);
-          document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.remove('show', 'active');
-          });
-          targetPane.classList.add('show', 'active');
-          tabs.forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-        } else {
-          console.error('Painel não encontrado para:', this.getAttribute('data-bs-target'));
-        }
-      });
-    });
-
-    // Abrir/Fechar Caixa de Comentários
-    document.querySelectorAll(".toggle-comments").forEach(button => {
-      button.addEventListener("click", function () {
-        const processoId = this.getAttribute("data-processo-id");
-        const commentBox = document.getElementById("comment-box-" + processoId);
-        commentBox.classList.toggle("d-none");
-      });
-    });
-
-    document.querySelectorAll(".close-comments").forEach(button => {
-      button.addEventListener("click", function () {
-        const processoId = this.getAttribute("data-processo-id");
-        const commentBox = document.getElementById("comment-box-" + processoId);
-        commentBox.classList.add("d-none");
-      });
-    });
-
-    // Envio de Comentários via AJAX
-    document.querySelectorAll(".comentario-form").forEach(form => {
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        const processoId = form.getAttribute("data-processo-id");
-        if (!processoId || processoId.trim() === "") {
-          console.error("❌ Erro: processo_id não encontrado.");
-          alert("Erro: Não foi possível identificar o processo.");
-          return;
-        }
-
-        const comentarioInput = form.querySelector("textarea");
-        const comentariosDiv = document.getElementById("comentarios-" + processoId);
-
-        fetch(/adicionar-comentario/${ processoId } /, {
-          method: "POST",
-          body: new FormData(form),
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+  <!-- Script para Comentários e Depuração das Abas -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Depuração das abas
+      const tabs = document.querySelectorAll('#faseTabs .nav-link');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function (e) {
+          e.preventDefault();
+          console.log('Clicou na aba:', this.id, 'Target:', this.getAttribute('data-bs-target'));
+          const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+          if (targetPane) {
+            console.log('Painel encontrado:', targetPane.id, 'Conteúdo:', targetPane.innerHTML);
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+              pane.classList.remove('show', 'active');
+            });
+            targetPane.classList.add('show', 'active');
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+          } else {
+            console.error('Painel não encontrado para:', this.getAttribute('data-bs-target'));
           }
-        })
+        });
+      });
+
+      // Abrir/Fechar Caixa de Comentários
+      document.querySelectorAll(".toggle-comments").forEach(button => {
+        button.addEventListener("click", function () {
+          const processoId = this.getAttribute("data-processo-id");
+          const commentBox = document.getElementById("comment-box-" + processoId);
+          commentBox.classList.toggle("d-none");
+        });
+      });
+
+      document.querySelectorAll(".close-comments").forEach(button => {
+        button.addEventListener("click", function () {
+          const processoId = this.getAttribute("data-processo-id");
+          const commentBox = document.getElementById("comment-box-" + processoId);
+          commentBox.classList.add("d-none");
+        });
+     });
+
+      // Envio de Comentários via AJAX
+      document.querySelectorAll(".comentario-form").forEach(form => {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const processoId = form.getAttribute("data-processo-id");
+          if (!processoId || processoId.trim() === "") {
+            console.error("❌ Erro: processo_id não encontrado.");
+            alert("Erro: Não foi possível identificar o processo.");
+            return;
+          }
+
+          const comentarioInput = form.querySelector("textarea");
+          const comentariosDiv = document.getElementById("comentarios-" + processoId);
+
+          fetch(`/adicionar-comentario/${processoId}/`, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+          })
           .then(response => response.json())
           .then(data => {
             if (data.texto) {
@@ -623,246 +627,333 @@
             }
           })
           .catch(error => console.error("❌ Erro:", error));
+        });
       });
     });
-  });
 
-  function copiarNumero(processoId) {
-    let texto = document.getElementById("numeroProcesso-" + processoId).innerText;
-    navigator.clipboard.writeText(texto).then(() => {
-      let icone = document.querySelector(#numeroProcesso - ${ processoId } + .copiar - icon);
-      icone.classList.replace("bi-clipboard", "bi-clipboard-check");
-      setTimeout(() => icone.classList.replace("bi-clipboard-check", "bi-clipboard"), 1500);
-    }).catch(err => console.error("Erro ao copiar o texto:", err));
-  }
-</script>
+    function copiarNumero(processoId) {
+      let texto = document.getElementById("numeroProcesso-" + processoId).innerText;
+      navigator.clipboard.writeText(texto).then(() => {
+        let icone = document.querySelector(`#numeroProcesso-${processoId} + .copiar-icon`);
+        icone.classList.replace("bi-clipboard", "bi-clipboard-check");
+        setTimeout(() => icone.classList.replace("bi-clipboard-check", "bi-clipboard"), 1500);
+      }).catch(err => console.error("Erro ao copiar o texto:", err));
+    }
+  </script>
 
-<!-- CSS Adicional -->
-<style>
-  .processo-card {
-    transition: all 0.3s ease;
-  }
+  <!-- CSS Adicional -->
+  <style>
+    .processo-card {
+      transition: all 0.3s ease;
+    }
 
-  .processo-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
+    .processo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
-  .nav-link {
-    transition: background-color 0.3s ease;
-  }
+    .nav-link {
+      transition: background-color 0.3s ease;
+    }
 
-  .nav-link:hover {
-    background-color: #E5E7EB !important;
-  }
+    .nav-link:hover {
+      background-color: #E5E7EB !important;
+    }
 
-  .copiar-icon:hover {
-    color: #083464 !important;
-  }
-</style>
+    .copiar-icon:hover {
+      color: #083464 !important;
+    }
+  </style>
+  
+  <style>
+    .card {
+      border-radius: 8px;
+      background-color: #F9FAFB;
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      font-size: 0.9rem;
+    }
 
-{% if is_chefe or is_desembargador %}
-<!-- Gamificação Completa -->
-<hr class="my-5">
-<div class="container">
-  <h2 class="mb-4 text-center" style="color: #083464; font-weight: 700; position: relative;">
-    <i class="bi bi-trophy-fill me-2" style="color: #083464;"></i>
-    Gamificação de Processos
-    <span
-      style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
-  </h2>
-  <!-- Contagem por Espécie -->
-  <div class="card shadow-lg mb-4" style="max-width: 100%; margin: 0 auto;">
-    <div class="card-body">
-      <h4 class="card-title text-center" style="color: #083464; font-weight: 700;">
-        Pontuação por Espécie
-        <span
-          style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
-      </h4>
-      <div class="row mt-4 text-center justify-content-center">
-        {% for especie, count in process_gamification.species_count.items %}
-        <div class="col-md-3 col-sm-6 mb-3">
-          <div class="card shadow-sm border-0" style="border-radius: 8px;">
-            <div class="card-body py-2 d-flex justify-content-between align-items-center">
-              <h6 class="fw-bold text-primary mb-0">{{ especie }}</h6>
-              <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-                style="width: 30px; height: 30px; font-size: 0.9rem;">
-                {{ count }}
+    .card:hover {
+      background-color: #E5E7EB;
+      transform: translateY(-3px);
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+      padding: 10px;
+    }
+
+    .text-primary {
+      color: #083464 !important;
+    }
+
+    .bg-primary {
+      background-color: #083464 !important;
+    }
+
+    .rounded-circle {
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+      font-weight: bold;
+    }
+
+    .processo-card {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+
+    .processo-card:hover {
+        transform: translateY(-3px);
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 10px;
+    }
+
+    .accordion-button {
+      font-weight: 700;
+      background-color: #F9FAFB;
+      color: #1F2937;
+    }
+
+    .accordion-button:not(.collapsed) {
+      background-color: #E5E7EB;
+      color: #083464;
+    }
+
+    .accordion-button::after {
+      filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(200%) hue-rotate(180deg);
+    }
+
+    .modal-header {
+      border-bottom: none;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .chat-container {
+      max-height: 70vh;
+    }
+
+    .copiar-icon {
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.3s ease, color 0.3s ease;
+    }
+
+    .copiar-icon:hover {
+      opacity: 1;
+      color: #083464;
+    }
+  
+  </style>
+  {% if is_chefe or is_desembargador %}
+  <!-- Gamificação Completa -->
+  <hr class="my-5">
+  <div class="container">
+    <h2 class="mb-4 text-center" style="color: #083464; font-weight: 700; position: relative;">
+      <i class="bi bi-trophy-fill me-2" style="color: #083464;"></i>
+      Gamificação de Processos
+      <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
+    </h2>
+    <!-- Contagem por Espécie -->
+    <div class="card shadow-lg mb-4" style="max-width: 100%; margin: 0 auto;">
+      <div class="card-body">
+        <h4 class="card-title text-center" style="color: #083464; font-weight: 700;">
+          Pontuação por Espécie
+          <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
+        </h4>
+        <div class="row mt-4 text-center justify-content-center">
+          {% for especie, count in process_gamification.species_count.items %}
+            <div class="col-md-3 col-sm-6 mb-3">
+              <div class="card shadow-sm border-0" style="border-radius: 8px;">
+                <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                  <h6 class="fw-bold text-primary mb-0">{{ especie }}</h6>
+                  <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                       style="width: 30px; height: 30px; font-size: 0.9rem;">
+                    {{ count }}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Pódio do Top 3 Usuários -->
+    <div class="container">
+      <h2 class="text-center" style="color: #083464; font-weight: 700;">Top 3 Usuários com Mais Pontos</h2>
+      <div class="d-flex justify-content-center align-items-end mt-4">
+        <!-- Segundo Lugar -->
+        {% if top_users|length > 1 %}
+          <div class="text-center mx-3">
+            <img src="{{ top_users.1.photo|default:'/static/default-profile.png' }}"
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.1.name }}"
+                 style="width: 70px; height: 70px; object-fit: cover; border: 3px solid silver;">
+            <h5 class="mt-2" style="color: #4B5563;">2º Lugar</h5>
+            <p><strong>{{ top_users.1.name }}</strong></p>
+            <span class="badge bg-secondary">Pontos: {{ top_users.1.points }}</span>
+          </div>
+        {% endif %}
+
+        <!-- Primeiro Lugar -->
+        {% if top_users|length > 0 %}
+          <div class="text-center mx-3">
+            <img src="{{ top_users.0.photo|default:'/static/default-profile.png' }}"
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.0.name }}"
+                 style="width: 100px; height: 100px; object-fit: cover; border: 3px solid gold;">
+            <h5 class="mt-2" style="color: #083464;">1º Lugar</h5>
+            <p><strong>{{ top_users.0.name }}</strong></p>
+            <span class="badge bg-warning text-dark">Pontos: {{ top_users.0.points }}</span>
+          </div>
+        {% endif %}
+
+        <!-- Terceiro Lugar -->
+        {% if top_users|length > 2 %}
+          <div class="text-center mx-3">
+            <img src="{{ top_users.2.photo|default:'/static/default-profile.png' }}"
+                 class="rounded-circle"
+                 alt="Foto de {{ top_users.2.name }}"
+                 style="width: 60px; height: 60px; object-fit: cover; border: 3px solid #cd7f32;">
+            <h5 class="mt-2" style="color: #4B5563;">3º Lugar</h5>
+            <p><strong>{{ top_users.2.name }}</strong></p>
+            <span class="badge bg-danger">Pontos: {{ top_users.2.points }}</span>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>
-
-  <!-- Pódio do Top 3 Usuários -->
-  <div class="container">
-    <h2 class="text-center" style="color: #083464; font-weight: 700;">Top 3 Usuários com Mais Pontos</h2>
-    <div class="d-flex justify-content-center align-items-end mt-4">
-      <!-- Segundo Lugar -->
-      {% if top_users|length > 1 %}
-      <div class="text-center mx-3">
-        <img src="{{ top_users.1.photo|default:'/static/default-profile.png' }}" class="rounded-circle"
-          alt="Foto de {{ top_users.1.name }}"
-          style="width: 70px; height: 70px; object-fit: cover; border: 3px solid silver;">
-        <h5 class="mt-2" style="color: #4B5563;">2º Lugar</h5>
-        <p><strong>{{ top_users.1.name }}</strong></p>
-        <span class="badge bg-secondary">Pontos: {{ top_users.1.points }}</span>
-      </div>
-      {% endif %}
-
-      <!-- Primeiro Lugar -->
-      {% if top_users|length > 0 %}
-      <div class="text-center mx-3">
-        <img src="{{ top_users.0.photo|default:'/static/default-profile.png' }}" class="rounded-circle"
-          alt="Foto de {{ top_users.0.name }}"
-          style="width: 100px; height: 100px; object-fit: cover; border: 3px solid gold;">
-        <h5 class="mt-2" style="color: #083464;">1º Lugar</h5>
-        <p><strong>{{ top_users.0.name }}</strong></p>
-        <span class="badge bg-warning text-dark">Pontos: {{ top_users.0.points }}</span>
-      </div>
-      {% endif %}
-
-      <!-- Terceiro Lugar -->
-      {% if top_users|length > 2 %}
-      <div class="text-center mx-3">
-        <img src="{{ top_users.2.photo|default:'/static/default-profile.png' }}" class="rounded-circle"
-          alt="Foto de {{ top_users.2.name }}"
-          style="width: 60px; height: 60px; object-fit: cover; border: 3px solid #cd7f32;">
-        <h5 class="mt-2" style="color: #4B5563;">3º Lugar</h5>
-        <p><strong>{{ top_users.2.name }}</strong></p>
-        <span class="badge bg-danger">Pontos: {{ top_users.2.points }}</span>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
+  
 
 <div class="container mt-5">
   <h3 class="text-center mb-4" style="color: #083464; font-weight: bold;">
-    Produtividade Hoje (<span id="dataHoje"></span>)
+  Produtividade Hoje (<span id="dataHoje"></span>)
   </h3>
   <div id="revisoesContainer" class="revisoes-container"></div>
 </div>
 
 <style>
-  .revisoes-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-    margin-top: 30px;
-  }
+.revisoes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
 
-  .assessor-card {
-    width: 150px;
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    text-align: center;
-    padding: 10px;
-    background-color: #FFFFFF;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, border-color 0.3s;
-  }
+.assessor-card {
+  width: 150px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px;
+  background-color: #f9fafb;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s, border-color 0.3s;
+}
 
-  .assessor-card.success {
-    border-color: #10B981;
-  }
+.assessor-card.success {
+  border-color: #10B981;
+}
 
-  .assessor-card.fail {
-    border-color: #EF4444;
-  }
+.assessor-card.fail {
+  border-color: #EF4444;
+}
 
-  .assessor-card img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 10px;
-    border: 3px solid #808000;
-  }
+.assessor-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #808000;
+}
 
-  .assessor-card h4 {
-    margin: 0;
-    font-size: 16px;
-    color: #083464;
-  }
+.assessor-card h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #083464;
+}
 
-  .assessor-card p {
-    margin: 5px 0;
-    font-size: 14px;
-  }
+.assessor-card p {
+  margin: 5px 0;
+  font-size: 14px;
+}
 </style>
 
 <script>
-  (function () {
-    function logError(message, error) {
-      console.error(`[Desa Error] ${message}`, error);
-    }
+(function() {
+  function logError(message, error) {
+    console.error(`[Desa Error] ${message}`, error);
+  }
 
-    function initCartoesDesa() {
-      fetch("{% url 'get_revisoes_hoje_data' %}")
-        .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          const container = document.getElementById('revisoesContainer');
-          const dataHojeEl = document.getElementById('dataHoje');
-          container.innerHTML = '';
+  function initCartoesDesa() {
+    fetch("{% url 'get_revisoes_hoje_data' %}")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const container = document.getElementById('revisoesContainer');
+        const dataHojeEl = document.getElementById('dataHoje');
+        container.innerHTML = '';
 
-          const meta = 5;
-          const today = new Date();
-          const hojeFormatado = today.toLocaleDateString('pt-BR');
-          dataHojeEl.textContent = hojeFormatado;
+        const meta = 5;
+        const today = new Date();
+        const hojeFormatado = today.toLocaleDateString('pt-BR');
+        dataHojeEl.textContent = hojeFormatado;
 
-          const combinedData = data.labels.map((label, index) => ({
-            label,
-            enviados: data.datasets[0].data[index],
-            photoUrl: data.datasets[0].photo_urls
-              ? data.datasets[0].photo_urls[index]
-              : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
-          }));
+        const combinedData = data.labels.map((label, index) => ({
+          label,
+          enviados: data.datasets[0].data[index],
+          photoUrl: data.datasets[0].photo_urls 
+            ? data.datasets[0].photo_urls[index] 
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
+        }));
 
-          combinedData.sort((a, b) => b.enviados - a.enviados);
+        combinedData.sort((a, b) => b.enviados - a.enviados);
 
-          combinedData.forEach(item => {
-            const statusClass = item.enviados >= meta ? 'success' : 'fail';
-            const diff = item.enviados - meta;
+        combinedData.forEach(item => {
+          const statusClass = item.enviados >= meta ? 'success' : 'fail';
+          const diff = item.enviados - meta;
 
-            const card = document.createElement('div');
-            card.className = `assessor-card ${statusClass}`;
+          const card = document.createElement('div');
+          card.className = `assessor-card ${statusClass}`;
 
-            card.innerHTML = `
+          card.innerHTML = `
             <img src="${item.photoUrl}" alt="Foto de ${item.label}">
             <h4>${item.label}</h4>
             <p>Enviados: <strong>${item.enviados}</strong></p>
-            <p>${item.enviados >= meta
-                ? '✅ Bateu a meta'
+            <p>${item.enviados >= meta 
+                ? '✅ Bateu a meta' 
                 : `⚠ Faltam <strong>${Math.abs(diff)}</strong>`}</p>
           `;
 
-            container.appendChild(card);
-          });
-        })
-        .catch(err => {
-          logError('Erro ao carregar dados do cartão Enviados para Des:', err);
-          const container = document.getElementById('revisoesContainer');
-          container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+          container.appendChild(card);
         });
-    }
+      })
+      .catch(err => {
+        logError('Erro ao carregar dados do cartão Enviados para Des:', err);
+        const container = document.getElementById('revisoesContainer');
+        container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+      });
+  }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      try {
-        initCartoesDesa();
-      } catch (err) {
-        logError('Erro na inicialização geral:', err);
-      }
-    });
-  })();
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      initCartoesDesa();
+    } catch (err) {
+      logError('Erro na inicialização geral:', err);
+    }
+  });
+})();
 </script>
 
 
@@ -876,103 +967,103 @@
 
 
 <style>
-  .revisoes-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-    margin-top: 30px;
-  }
+.revisoes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
 
-  .assessor-card {
-    width: 160px;
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    text-align: center;
-    padding: 10px;
-    background-color: #f9fafb;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
+.assessor-card {
+  width: 160px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px;
+  background-color: #f9fafb;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
 
-  .assessor-card img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 10px;
-    border: 3px solid #808000;
-  }
+.assessor-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #808000;
+}
 
-  .assessor-card h4 {
-    margin: 0;
-    font-size: 16px;
-    color: #083464;
-  }
+.assessor-card h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #083464;
+}
 
-  .assessor-card p {
-    margin: 5px 0;
-    font-size: 14px;
-  }
+.assessor-card p {
+  margin: 5px 0;
+  font-size: 14px;
+}
 </style>
 
 <script>
-  (function () {
-    function logError(message, error) {
-      console.error(`[Desa Error] ${message}`, error);
-    }
+(function() {
+  function logError(message, error) {
+    console.error(`[Desa Error] ${message}`, error);
+  }
 
-    function getCurrentWeekRange() {
-      const today = new Date();
-      const day = today.getDay();
-      const diffToMonday = today.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(today.setDate(diffToMonday));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      return `${monday.toLocaleDateString('pt-BR')} - ${sunday.toLocaleDateString('pt-BR')}`;
-    }
+  function getCurrentWeekRange() {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diffToMonday));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return `${monday.toLocaleDateString('pt-BR')} - ${sunday.toLocaleDateString('pt-BR')}`;
+  }
 
-    function initCartoesSemana() {
-      fetch("{% url 'get_revisoes_semana_data' %}")
-        .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          const container = document.getElementById('revisoesSemanaContainer');
-          const semanaEl = document.getElementById('semanaAtual');
-          container.innerHTML = '';
+  function initCartoesSemana() {
+    fetch("{% url 'get_revisoes_semana_data' %}")
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const container = document.getElementById('revisoesSemanaContainer');
+        const semanaEl = document.getElementById('semanaAtual');
+        container.innerHTML = '';
 
-          semanaEl.textContent = getCurrentWeekRange();
+        semanaEl.textContent = getCurrentWeekRange();
 
-          const meta = 25; // Exemplo: meta semanal de 25 por pessoa
-          const enviadosData = data.datasets[0].data;
-          const photoUrls = data.datasets[0].photo_urls;
-          const mediasDiarias = data.datasets[1]?.data || [];
+        const meta = 25; // Exemplo: meta semanal de 25 por pessoa
+        const enviadosData = data.datasets[0].data;
+        const photoUrls = data.datasets[0].photo_urls;
+        const mediasDiarias = data.datasets[1]?.data || [];
 
-          const combinedData = data.labels.map((label, index) => ({
-            label,
-            enviados: enviadosData[index],
-            mediaDia: mediasDiarias[index],
-            photoUrl: photoUrls
-              ? photoUrls[index]
-              : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
-          }));
+        const combinedData = data.labels.map((label, index) => ({
+          label,
+          enviados: enviadosData[index],
+          mediaDia: mediasDiarias[index],
+          photoUrl: photoUrls
+            ? photoUrls[index]
+            : `https://via.placeholder.com/60/083464/FFFFFF?text=${label.charAt(0).toUpperCase()}`
+        }));
 
-          combinedData.sort((a, b) => b.enviados - a.enviados);
+        combinedData.sort((a, b) => b.enviados - a.enviados);
 
-          const emojis = ['🥇', '🥈', '🥉', '🎖', '🏅'];
+        const emojis = ['🥇', '🥈', '🥉', '🎖', '🏅'];
 
-          combinedData.forEach((item, index) => {
-            const emoji = emojis[index] || '⭐';
-            const diff = meta - item.enviados;
-            const statusText = item.enviados >= meta
-              ? '✅ Bateu a meta'
-              : `⚠ Faltam <strong>${diff}</strong>`;
+        combinedData.forEach((item, index) => {
+          const emoji = emojis[index] || '⭐';
+          const diff = meta - item.enviados;
+          const statusText = item.enviados >= meta 
+            ? '✅ Bateu a meta'
+            : `⚠ Faltam <strong>${diff}</strong>`;
 
-            const card = document.createElement('div');
-            card.className = 'assessor-card';
+          const card = document.createElement('div');
+          card.className = 'assessor-card';
 
-            card.innerHTML = `
+          card.innerHTML = `
             <img src="${item.photoUrl}" alt="Foto de ${item.label}">
             <h4>${emoji} ${item.label}</h4>
             <p>Enviados: <strong>${item.enviados}</strong></p>
@@ -980,25 +1071,25 @@
             <p>${statusText}</p>
           `;
 
-            container.appendChild(card);
-          });
-        })
-        .catch(err => {
-          logError('Erro ao carregar dados do cartão de produtividade da semana:', err);
-          const container = document.getElementById('revisoesSemanaContainer');
-          container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+          container.appendChild(card);
         });
-    }
+      })
+      .catch(err => {
+        logError('Erro ao carregar dados do cartão de produtividade da semana:', err);
+        const container = document.getElementById('revisoesSemanaContainer');
+        container.innerHTML = '<p style="color:red;">Erro ao carregar os dados.</p>';
+      });
+  }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      try {
-        initCartoesSemana();
-      } catch (err) {
-        logError('Erro na inicialização geral:', err);
-      }
-    });
-  })();
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      initCartoesSemana();
+    } catch (err) {
+      logError('Erro na inicialização geral:', err);
+    }
+  });
+})();
 
 </script>
-{% endif %}
 </div>
+{% endif %}

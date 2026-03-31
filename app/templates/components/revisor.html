@@ -124,7 +124,7 @@
                     <p class="mb-1 d-flex align-items-center">
                       <i class="bi bi-file-earmark-text me-2"></i>
                       <strong>Processo:</strong>
-                      <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1">{{ andamento.numero_processo }}</span>
+                      <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1 fw-bold">{{ andamento.numero_processo }}</span>
                       {% if andamento.tem_comentario %}
                               <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm" 
                                     title="{{ andamento.total_comentarios }} lembretes registrados"
