@@ -1029,3 +1029,453 @@ def chat_ia_view(request):
             return JsonResponse({'response': f'Erro no processamento da IA: {str(e)}'})
     
     return JsonResponse({'error': 'Apenas requisições POST são permitidas'}, status=400)
+
+
+# ─── AGENDA DO DESEMBARGADOR ──────────────────────────────────────────────────
+
+from processos.models import Compromisso
+import json
+
+def _is_agenda_authorized(request):
+    """Verifica se o usuário é Desembargador ou Chefe de Gabinete."""
+    user = request.user
+    return UserProfile.objects.filter(
+        user=user,
+        funcao__in=["Desembargador", "Chefe de Gabinete"]
+    ).exists()
+
+
+@login_required(login_url='login')
+def agenda_eventos_json(request):
+    """Retorna todos os compromissos como JSON, opcionalmente filtrado por mês/ano."""
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    mes = request.GET.get('mes')
+    ano = request.GET.get('ano')
+
+    qs = Compromisso.objects.all()
+    if mes and ano:
+        try:
+            qs = qs.filter(data__month=int(mes), data__year=int(ano))
+        except ValueError:
+            pass
+
+    eventos = []
+    for c in qs:
+        eventos.append({
+            'id': c.pk,
+            'titulo': c.titulo,
+            'tipo': c.tipo,
+            'data': c.data.strftime('%Y-%m-%d'),
+            'hora_inicio': c.hora_inicio.strftime('%H:%M') if c.hora_inicio else '',
+            'hora_fim': c.hora_fim.strftime('%H:%M') if c.hora_fim else '',
+            'local': c.local,
+            'descricao': c.descricao,
+            'cor': c.cor,
+            'presencial': c.presencial,
+            'numero_processo': c.numero_processo,
+            'criado_por': c.criado_por.get_full_name() if c.criado_por else '',
+        })
+    return JsonResponse({'eventos': eventos})
+
+
+@login_required(login_url='login')
+def agenda_criar(request):
+    """Cria um novo compromisso."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    try:
+        c = Compromisso.objects.create(
+            titulo=data.get('titulo', '').strip(),
+            tipo=data.get('tipo', 'geral'),
+            data=data['data'],
+            hora_inicio=data['hora_inicio'],
+            hora_fim=data.get('hora_fim') or None,
+            local=data.get('local', ''),
+            descricao=data.get('descricao', ''),
+            cor=data.get('cor', '#083464'),
+            presencial=data.get('presencial', True),
+            numero_processo=data.get('numero_processo', ''),
+            criado_por=request.user,
+        )
+        return JsonResponse({'ok': True, 'id': c.pk})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required(login_url='login')
+def agenda_editar(request, pk):
+    """Edita um compromisso existente."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    try:
+        c = Compromisso.objects.get(pk=pk)
+    except Compromisso.DoesNotExist:
+        return JsonResponse({'error': 'Compromisso não encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    c.titulo = data.get('titulo', c.titulo).strip()
+    c.tipo = data.get('tipo', c.tipo)
+    c.data = data.get('data', c.data)
+    c.hora_inicio = data.get('hora_inicio', c.hora_inicio)
+    c.hora_fim = data.get('hora_fim') or None
+    c.local = data.get('local', c.local)
+    c.descricao = data.get('descricao', c.descricao)
+    c.cor = data.get('cor', c.cor)
+    c.presencial = data.get('presencial', c.presencial)
+    c.numero_processo = data.get('numero_processo', c.numero_processo)
+    c.save()
+    return JsonResponse({'ok': True})
+
+
+@login_required(login_url='login')
+def agenda_excluir(request, pk):
+    """Exclui um compromisso."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    try:
+        Compromisso.objects.get(pk=pk).delete()
+        return JsonResponse({'ok': True})
+    except Compromisso.DoesNotExist:
+        return JsonResponse({'error': 'Compromisso não encontrado'}, status=404)
+
+
+@login_required(login_url='login')
+def agenda_importar_bookings(request):
+    """
+    Importa atendimentos a partir de um arquivo TSV/CSV/XLSX exportado do Microsoft Bookings.
+    Colunas esperadas (case-insensitive, flexível):
+      - Data/Date, Hora/Start time, Nome/Customer name, Presencial (Sim/Não), Número do processo/Process
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    arquivo = request.FILES.get('arquivo')
+    if not arquivo:
+        return JsonResponse({'error': 'Nenhum arquivo enviado'}, status=400)
+
+    nome = arquivo.name.lower()
+    importados = 0
+    erros = []
+
+    try:
+        import io
+        if nome.endswith('.tsv'):
+            import csv
+            content = arquivo.read().decode('utf-8-sig', errors='replace')
+            reader = csv.DictReader(io.StringIO(content), delimiter='\t')
+            rows = list(reader)
+        elif nome.endswith('.csv'):
+            import csv
+            content = arquivo.read().decode('utf-8-sig', errors='replace')
+            reader = csv.DictReader(io.StringIO(content))
+            rows = list(reader)
+        elif nome.endswith('.xlsx') or nome.endswith('.xls'):
+            import openpyxl
+
+            wb = openpyxl.load_workbook(arquivo, data_only=True)
+            ws = wb.active
+            headers = [str(cell.value).strip() if cell.value else '' for cell in next(ws.iter_rows(max_row=1))]
+            rows = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                rows.append(dict(zip(headers, row)))
+        else:
+            return JsonResponse({'error': 'Formato não suportado. Use .csv ou .xlsx'}, status=400)
+
+        def _find_col(row_dict, candidates):
+            """Encontra chave no dicionário de forma flexível (case-insensitive, strip)."""
+            for key in row_dict:
+                if key is None:
+                    continue
+                key_lower = str(key).lower().strip()
+                for c in candidates:
+                    if c in key_lower:
+                        return row_dict[key]
+            return None
+
+        from datetime import date as date_type, time as time_type, datetime as datetime_type
+        import json as _json
+
+        for i, row in enumerate(rows, start=2):
+            try:
+                # ── Date Time (coluna combinada do Bookings: "04/03/2026 15:00") ──
+                raw_dt = _find_col(row, ['date time', 'data e hora', 'datetime'])
+                if raw_dt is None:
+                    # Fallback: tenta colunas separadas
+                    raw_dt = _find_col(row, ['data', 'date', 'start date'])
+                if raw_dt is None:
+                    continue
+
+                hora_from_dt = None
+
+                if isinstance(raw_dt, datetime_type):
+                    evento_data = raw_dt.date()
+                    hora_from_dt = raw_dt.time()
+                elif isinstance(raw_dt, date_type):
+                    evento_data = raw_dt
+                else:
+                    raw_dt = str(raw_dt).strip()
+                    # Tenta data+hora (formato do Bookings)
+                    parsed_dt = None
+                    for fmt in ('%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S',
+                                '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S',
+                                '%m/%d/%Y %H:%M', '%m/%d/%Y %H:%M:%S'):
+                        try:
+                            parsed_dt = datetime_type.strptime(raw_dt, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    if parsed_dt:
+                        evento_data = parsed_dt.date()
+                        hora_from_dt = parsed_dt.time()
+                    else:
+                        # Converte data pura
+                        for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%m/%d/%Y', '%d-%m-%Y'):
+                            try:
+                                evento_data = datetime_type.strptime(raw_dt, fmt).date()
+                                break
+                            except ValueError:
+                                continue
+                        else:
+                            erros.append(f"Linha {i}: data inválida '{raw_dt}'")
+                            continue
+
+                # ── Hora início ──
+                hora_inicio = hora_from_dt
+                if hora_inicio is None:
+                    raw_hora = _find_col(row, ['hora', 'start time', 'horário', 'time'])
+                    if isinstance(raw_hora, time_type):
+                        hora_inicio = raw_hora
+                    elif isinstance(raw_hora, datetime_type):
+                        hora_inicio = raw_hora.time()
+                    else:
+                        try:
+                            hora_inicio = datetime_type.strptime(str(raw_hora or '08:00').strip()[:5], '%H:%M').time()
+                        except ValueError:
+                            hora_inicio = datetime_type.strptime('08:00', '%H:%M').time()
+
+                # ── Hora fim ──
+                raw_hora_fim = _find_col(row, ['duration', 'duração', 'end time', 'término', 'end'])
+                hora_fim = None
+                if raw_hora_fim:
+                    if isinstance(raw_hora_fim, time_type):
+                        hora_fim = raw_hora_fim
+                    elif isinstance(raw_hora_fim, datetime_type):
+                        hora_fim = raw_hora_fim.time()
+                    else:
+                        try:
+                            hora_fim = datetime_type.strptime(str(raw_hora_fim).strip()[:5], '%H:%M').time()
+                        except ValueError:
+                            hora_fim = None
+
+                # ── Nome do cliente (Customer Name) ──
+                titulo = ''
+                raw_nome = _find_col(row, ['customer name', 'nome', 'client name', 'name'])
+                if raw_nome:
+                    titulo = str(raw_nome).strip()
+                if not titulo:
+                    titulo = 'Atendimento'
+
+                # ── Custom Fields (JSON do Bookings) ──
+                # O Bookings exporta um campo "Custom Fields" com JSON:
+                # {"Reunião Presencial?": "Sim", "Número do Processo:": "XXXX"}
+                presencial = True
+                numero_processo = ''
+
+                raw_cf = _find_col(row, ['custom fields', 'custom field', 'campos personalizados'])
+                if raw_cf:
+                    try:
+                        cf = _json.loads(str(raw_cf))
+                        # Presencial
+                        pres_val = cf.get('Reunião Presencial?', cf.get('presencial', cf.get('Presencial', '')))
+                        if str(pres_val).strip().lower() in ('não', 'nao', 'no', 'false', '0', 'virtual'):
+                            presencial = False
+                        # Número do processo
+                        proc_val = cf.get('Número do Processo:', cf.get('Número do Processo', cf.get('numero_processo', '')))
+                        numero_processo = str(proc_val).strip() if proc_val else ''
+                        if numero_processo.lower() in ('none', 'nan', 'n/i', ''):
+                            numero_processo = ''
+                    except Exception:
+                        pass  # campo não é JSON válido — usa defaults
+
+                # Fallback presencial se não veio em Custom Fields
+                if not raw_cf:
+                    raw_pres = _find_col(row, ['presencial', 'location type', 'modalidade'])
+                    if raw_pres is not None:
+                        if str(raw_pres).strip().lower() in ('não', 'nao', 'no', 'virtual', 'online', 'false', '0'):
+                            presencial = False
+
+                # Fallback nº processo se não veio em Custom Fields
+                if not numero_processo:
+                    raw_proc = _find_col(row, ['número do processo', 'processo', 'process number', 'proc'])
+                    if raw_proc:
+                        numero_processo = str(raw_proc).strip()
+                        if numero_processo.lower() in ('none', 'nan', 'n/i', ''):
+                            numero_processo = ''
+
+                # ── Local ──
+                local_raw = _find_col(row, ['sala', 'room', 'local', 'address', 'endereço'])
+                local = str(local_raw).strip() if local_raw else ''
+                if local.lower() in ('none', 'nan'):
+                    local = ''
+
+                Compromisso.objects.create(
+                    titulo=titulo[:200],
+                    tipo='atendimento',
+                    data=evento_data,
+                    hora_inicio=hora_inicio,
+                    hora_fim=hora_fim,
+                    local=local[:200],
+                    descricao='',
+                    cor='#1d4ed8',
+                    presencial=presencial,
+                    numero_processo=numero_processo[:100],
+                    criado_por=request.user,
+                )
+                importados += 1
+            except Exception as e:
+                erros.append(f"Linha {i}: {str(e)}")
+
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao processar arquivo: {str(e)}'}, status=400)
+
+    return JsonResponse({'ok': True, 'importados': importados, 'erros': erros})
+
+
+# ─── WEBHOOK POWER AUTOMATE ────────────────────────────────────────────────────
+
+from django.views.decorators.csrf import csrf_exempt
+
+# Token secreto configurado no settings.py ou hardcoded aqui.
+# O Power Automate enviará esse token no header X-Webhook-Token.
+# ALTERE PARA UM VALOR SEGURO E ÚNICO antes de usar em produção.
+AGENDA_WEBHOOK_TOKEN = getattr(__import__('django.conf', fromlist=['settings']).settings,
+                               'AGENDA_WEBHOOK_TOKEN', 'TROQUE_ESTE_TOKEN_SECRETO')
+
+
+@csrf_exempt
+def agenda_webhook_bookings(request):
+    """
+    Endpoint chamado automaticamente pelo Power Automate quando uma reserva
+    é criada/atualizada no Microsoft Bookings.
+
+    Autenticação: header  X-Webhook-Token: <token>
+
+    Payload JSON esperado (enviado pelo Power Automate):
+    {
+        "customerName": "João Silva",
+        "startDateTime": "2026-04-15T15:00:00",
+        "endDateTime":   "2026-04-15T15:30:00",
+        "serviceNotes":  "...",
+        "customQuestionAnswers": [
+            {"question": "Reunião Presencial?", "answer": "Sim"},
+            {"question": "Número do Processo:", "answer": "1234567-89.2023.8.11.0001"}
+        ]
+    }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+    # ── Autenticação por token ──
+    token = request.headers.get('X-Webhook-Token', '')
+    if token != AGENDA_WEBHOOK_TOKEN:
+        return JsonResponse({'error': 'Token inválido'}, status=401)
+
+    try:
+        import json as _json
+        from datetime import datetime as _dt
+
+        body = _json.loads(request.body)
+
+        # ── Nome / título ──
+        titulo = str(body.get('customerName', '') or body.get('CustomerName', '') or 'Atendimento Bookings').strip()
+        if not titulo:
+            titulo = 'Atendimento Bookings'
+
+        # ── Data e hora (ISO 8601: "2026-04-15T15:00:00" ou "2026-04-15T15:00:00Z") ──
+        def _parse_iso(s):
+            s = str(s or '').strip().replace('Z', '')
+            for fmt in ('%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+                try:
+                    return _dt.strptime(s, fmt)
+                except ValueError:
+                    continue
+            return None
+
+        raw_start = body.get('startDateTime') or body.get('StartDateTime') or body.get('start') or ''
+        raw_end   = body.get('endDateTime')   or body.get('EndDateTime')   or body.get('end')   or ''
+
+        dt_start = _parse_iso(raw_start)
+        dt_end   = _parse_iso(raw_end)
+
+        if not dt_start:
+            return JsonResponse({'error': f"startDateTime inválido: '{raw_start}'"}, status=400)
+
+        evento_data   = dt_start.date()
+        hora_inicio   = dt_start.time()
+        hora_fim      = dt_end.time() if dt_end else None
+
+        # ── Custom Question Answers (Reunião Presencial? / Número do Processo:) ──
+        presencial = True
+        numero_processo = ''
+
+        answers = body.get('customQuestionAnswers') or body.get('CustomQuestionAnswers') or []
+        for qa in answers:
+            q = str(qa.get('question', '') or qa.get('Question', '')).strip()
+            a = str(qa.get('answer',   '') or qa.get('Answer',   '')).strip()
+            if 'presencial' in q.lower():
+                if a.lower() in ('não', 'nao', 'no', 'false', '0', 'virtual'):
+                    presencial = False
+            if 'processo' in q.lower():
+                numero_processo = a
+
+        # Fallback plano (campos diretos sem aninhamento)
+        if not answers:
+            pres_raw = str(body.get('presencial', '') or body.get('locationtype', '')).lower()
+            if pres_raw in ('não', 'nao', 'no', 'virtual', 'false', '0'):
+                presencial = False
+            numero_processo = str(body.get('processo', '') or body.get('processNumber', '')).strip()
+
+        # ── Local e notas ──
+        local    = str(body.get('location', '') or body.get('Location', '') or '').strip()[:200]
+        descricao = str(body.get('serviceNotes', '') or body.get('notes', '') or '').strip()
+
+        Compromisso.objects.create(
+            titulo=titulo[:200],
+            tipo='atendimento',
+            data=evento_data,
+            hora_inicio=hora_inicio,
+            hora_fim=hora_fim,
+            local=local,
+            descricao=descricao,
+            cor='#1d4ed8',
+            presencial=presencial,
+            numero_processo=numero_processo[:100],
+            criado_por=None,  # vem de automação externa
+        )
+
+        return JsonResponse({'ok': True, 'mensagem': f'Compromisso criado: {titulo}'})
+
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao processar webhook: {str(e)}'}, status=400)

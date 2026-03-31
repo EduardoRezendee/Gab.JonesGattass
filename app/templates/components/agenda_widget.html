@@ -1,0 +1,1470 @@
+{% load app_filters %}
+{% if is_desembargador or is_chefe %}
+
+<!-- ═══════════════════════════════════════════════════
+     AGENDA DO DESEMBARGADOR — Botão Flutuante + Modal
+     ═══════════════════════════════════════════════════ -->
+<style>
+  /* ── Botão Flutuante AGENDA ── */
+  .agenda-widget-btn {
+    position: fixed;
+    bottom: 100px;
+    /* acima do chat bot */
+    right: 20px;
+    width: auto;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 22px;
+    /* píl/cápsula */
+    background: linear-gradient(135deg, #083464, #1561b0);
+    color: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px rgba(8, 52, 100, 0.4);
+    cursor: pointer;
+    z-index: 1060;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+    outline: none;
+    white-space: nowrap;
+  }
+
+  .agenda-widget-btn i {
+    font-size: 18px;
+    color: white;
+  }
+
+  .agenda-widget-btn span {
+    color: white;
+  }
+
+  .agenda-widget-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 8px 28px rgba(8, 52, 100, 0.55);
+  }
+
+  /* ── Modal Fullscreen ── */
+  #agendaModal .modal-dialog {
+    max-width: 100%;
+    margin: 0;
+    height: 100vh;
+  }
+
+  #agendaModal .modal-content {
+    height: 100vh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    background: #f1f5f9;
+  }
+
+  #agendaModal .modal-header {
+    background: linear-gradient(135deg, #083464, #1561b0);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 0;
+    flex-shrink: 0;
+    border-bottom: none;
+  }
+
+  #agendaModal .modal-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Toolbar ── */
+  .agenda-toolbar {
+    background: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  .agenda-toolbar .nav-view button {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .agenda-toolbar .nav-view button.active,
+  .agenda-toolbar .nav-view button:hover {
+    background: #083464;
+    color: white;
+    border-color: #083464;
+  }
+
+  .agenda-filter-btns button {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .agenda-filter-btns button.filter-todos {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #6366f1;
+  }
+
+  .agenda-filter-btns button.filter-atendimento {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #3b82f6;
+  }
+
+  .agenda-filter-btns button.filter-geral {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #22c55e;
+  }
+
+  .agenda-filter-btns button.active {
+    opacity: 1;
+    filter: none;
+  }
+
+  .agenda-filter-btns button:not(.active) {
+    opacity: 0.55;
+  }
+
+  /* ── Layout principal ── */
+  .agenda-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar esquerda ── */
+  .agenda-sidebar {
+    width: 260px;
+    min-width: 220px;
+    background: white;
+    border-right: 1px solid #e2e8f0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .agenda-mini-cal {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .mini-cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #083464;
+    font-size: 0.9rem;
+  }
+
+  .mini-cal-header button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #083464;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .mini-cal-header button:hover {
+    background: #e0e7ff;
+  }
+
+  .mini-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+    font-size: 0.78rem;
+  }
+
+  .mini-cal-grid .day-label {
+    color: #6b7280;
+    font-weight: 700;
+    padding: 3px 0;
+  }
+
+  .mini-cal-grid .day-num {
+    padding: 4px 2px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+    line-height: 1.6;
+  }
+
+  .mini-cal-grid .day-num:hover {
+    background: #dbeafe;
+  }
+
+  .mini-cal-grid .day-num.today {
+    background: #083464;
+    color: white;
+    font-weight: 700;
+  }
+
+  .mini-cal-grid .day-num.selected {
+    background: #1d4ed8;
+    color: white;
+  }
+
+  .mini-cal-grid .day-num.has-event::after {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ef4444;
+    margin: 0 auto;
+  }
+
+  .mini-cal-grid .day-num.other-month {
+    color: #d1d5db;
+  }
+
+  /* ── Lista do Dia (sidebar) ── */
+  .agenda-day-list {
+    padding: 12px;
+    flex: 1;
+  }
+
+  .agenda-day-list h6 {
+    color: #083464;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .day-event-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border-left: 4px solid;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.8rem;
+  }
+
+  .day-event-pill:hover {
+    background: #e0e7ff;
+  }
+
+  .day-event-pill .pill-time {
+    font-weight: 700;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  .day-event-pill .pill-title {
+    color: #1f2937;
+    line-height: 1.3;
+  }
+
+  .day-event-pill .pill-badge {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    border-radius: 10px;
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+
+  /* ── Calendário principal ── */
+  .agenda-calendar-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  /* Vista mês */
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .month-day-header {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #6b7280;
+    padding: 6px 0;
+    text-transform: uppercase;
+  }
+
+  .month-day-cell {
+    background: white;
+    border-radius: 8px;
+    min-height: 90px;
+    padding: 6px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+    position: relative;
+  }
+
+  .month-day-cell:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .month-day-cell.today {
+    border-color: #083464;
+    border-width: 2px;
+  }
+
+  .month-day-cell.selected {
+    background: #eff6ff;
+    border-color: #1d4ed8;
+  }
+
+  .month-day-cell.other-month {
+    background: #f9fafb;
+    opacity: 0.6;
+  }
+
+  .month-day-num {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+
+  .month-day-cell.today .month-day-num {
+    background: #083464;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+  }
+
+  .month-event-chip {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  /* Vista semana/dia — timeline */
+  .week-timeline {
+    display: grid;
+    overflow-x: auto;
+  }
+
+  .timeline-header-row {
+    display: flex;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 2;
+  }
+
+  .timeline-time-col {
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .timeline-day-col {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #374151;
+    border-left: 1px solid #e2e8f0;
+  }
+
+  .timeline-day-col.today-col {
+    color: #083464;
+    background: #eff6ff;
+  }
+
+  .timeline-body {
+    display: flex;
+    position: relative;
+  }
+
+  .timeline-times {
+    width: 60px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .timeline-hour-label {
+    height: 60px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-right: 8px;
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .timeline-cols {
+    flex: 1;
+    display: flex;
+    position: relative;
+  }
+
+  .timeline-col {
+    flex: 1;
+    min-width: 120px;
+    border-left: 1px solid #e2e8f0;
+    position: relative;
+  }
+
+  .timeline-col .hour-line {
+    height: 60px;
+    border-bottom: 1px solid #f1f5f9;
+    position: relative;
+  }
+
+  .timeline-col .hour-line.half-line::after {
+    content: '';
+    position: absolute;
+    bottom: 50%;
+    left: 0;
+    right: 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+
+  .agenda-event-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    color: white;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+    transition: filter 0.15s, transform 0.1s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .agenda-event-block:hover {
+    filter: brightness(1.12);
+    transform: scale(1.01);
+    z-index: 2;
+  }
+
+  .event-block-title {
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .event-block-sub {
+    opacity: 0.88;
+    font-size: 0.68rem;
+    margin-top: 2px;
+  }
+
+  /* ── Modal de criação / edição ── */
+  #agendaFormModal .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  }
+
+  #agendaFormModal .modal-header {
+    background: linear-gradient(135deg, #083464, #1561b0);
+    color: white;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.15s, transform 0.15s;
+    display: inline-block;
+  }
+
+  .color-swatch.selected {
+    border-color: #1f2937;
+    transform: scale(1.2);
+  }
+
+  /* ── Importação Bookings ── */
+  .import-drop-zone {
+    border: 2px dashed #93c5fd;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    background: #eff6ff;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .import-drop-zone:hover {
+    background: #dbeafe;
+  }
+
+  .import-drop-zone i {
+    font-size: 2.5rem;
+    color: #3b82f6;
+  }
+
+  /* ── Abas da agenda (Atendimentos / Agenda Geral) ── */
+  .agenda-section-tabs .nav-link {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #4b5563;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 8px 16px;
+    background: none;
+  }
+
+  .agenda-section-tabs .nav-link.active {
+    color: #083464;
+    border-bottom-color: #083464;
+    background: none;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .agenda-sidebar {
+      display: none;
+    }
+
+    .agenda-widget-btn {
+      bottom: 90px;
+      height: 38px;
+      font-size: 11px;
+      padding: 0 14px;
+    }
+  }
+
+  /* Garante que modais filhos apareçam acima do fullscreen */
+  #agendaFormModal {
+    z-index: 1100 !important;
+  }
+
+  #agendaBookingsModal {
+    z-index: 1100 !important;
+  }
+
+  #agendaFormModal+.modal-backdrop,
+  #agendaBookingsModal+.modal-backdrop {
+    z-index: 1099 !important;
+  }
+</style>
+
+<!-- ── Botão Flutuante ── -->
+<button class="agenda-widget-btn" onclick="abrirAgenda()" title="Abrir Agenda">
+  <i class="bi bi-calendar-week-fill"></i>
+  <span>AGENDA</span>
+</button>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL PRINCIPAL DA AGENDA (fullscreen)
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="agendaModal" tabindex="-1" data-bs-backdrop="false">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+          <span class="fw-bold fs-5" style="color:white;"><i class="bi bi-calendar-week-fill me-2"></i>Agenda do
+            Desembargador</span>
+
+          <!-- Navegação de data -->
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-light" onclick="agendaNavAnterior()"><i
+                class="bi bi-chevron-left"></i></button>
+            <span id="agendaTituloData" class="fw-bold" style="min-width:180px;text-align:center;color:white;"></span>
+            <button class="btn btn-sm btn-light" onclick="agendaNavProximo()"><i
+                class="bi bi-chevron-right"></i></button>
+            <button class="btn btn-sm"
+              style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);"
+              onclick="agendaHoje()">Hoje</button>
+          </div>
+
+          <!-- Vista -->
+          <div class="nav-view d-flex gap-1">
+            <button id="btnViewMes" class="active" onclick="agendaSetView('mes')">Mês</button>
+            <button id="btnViewSemana" onclick="agendaSetView('semana')">Semana</button>
+            <button id="btnViewDia" onclick="agendaSetView('dia')">Dia</button>
+          </div>
+
+          <!-- Filtros -->
+          <div class="agenda-filter-btns d-flex gap-1">
+            <button class="filter-todos active" onclick="agendaSetFiltro('todos', this)">📋 Todos</button>
+            <button class="filter-atendimento" onclick="agendaSetFiltro('atendimento', this)">🤝 Atendimentos</button>
+            <button class="filter-geral" onclick="agendaSetFiltro('geral', this)">📅 Agenda Geral</button>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          {% if is_desembargador or is_chefe %}
+          <button class="btn btn-sm" style="background:#22c55e;color:white;font-weight:700;"
+            onclick="abrirFormNovoCompromisso()">
+            <i class="bi bi-plus-circle me-1"></i> Novo Compromisso
+          </button>
+          <button class="btn btn-sm"
+            style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);"
+            onclick="abrirImportarBookings()">
+            <i class="bi bi-upload me-1"></i> Importar Bookings
+          </button>
+          {% endif %}
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- Abas de seção -->
+        <div class="px-3 pt-2" style="background:white;border-bottom:1px solid #e2e8f0;">
+          <ul class="nav agenda-section-tabs" id="agendaSectionTabs">
+            <li class="nav-item">
+              <button class="nav-link active" onclick="agendaSetSecao('todos')" id="tabTodos">
+                <i class="bi bi-grid-3x3-gap me-1"></i> Todos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" onclick="agendaSetSecao('atendimento')" id="tabAtendimentos">
+                <i class="bi bi-people me-1"></i> Atendimentos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" onclick="agendaSetSecao('geral')" id="tabGeral">
+                <i class="bi bi-calendar3 me-1"></i> Agenda Geral
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Layout: sidebar + calendário -->
+        <div class="agenda-main">
+          <!-- Sidebar -->
+          <div class="agenda-sidebar">
+            <!-- Mini calendário -->
+            <div class="agenda-mini-cal">
+              <div class="mini-cal-header">
+                <button onclick="miniCalNav(-1)"><i class="bi bi-chevron-left"></i></button>
+                <span id="miniCalTitulo"></span>
+                <button onclick="miniCalNav(1)"><i class="bi bi-chevron-right"></i></button>
+              </div>
+              <div class="mini-cal-grid" id="miniCalGrid"></div>
+            </div>
+            <!-- Lista do dia -->
+            <div class="agenda-day-list">
+              <h6 id="agendaDayListTitle">Compromissos do Dia</h6>
+              <div id="agendaDayList"></div>
+            </div>
+          </div>
+
+          <!-- Calendário principal -->
+          <div class="agenda-calendar-wrap" id="agendaCalendarWrap">
+            <div id="agendaCalendarContent"></div>
+          </div>
+        </div>
+      </div><!-- /modal-body -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL DE CRIAÇÃO/EDIÇÃO DE COMPROMISSO
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="agendaFormModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="agendaFormModalTitle">
+          <i class="bi bi-calendar-plus me-2"></i><span id="agendaFormTitleText">Novo Compromisso</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="agendaFormId">
+        <div class="row g-3">
+          <!-- Título -->
+          <div class="col-12">
+            <label class="form-label fw-bold">Título <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="agendaFormTitulo"
+              placeholder="Ex.: Atendimento Adv. João Silva">
+          </div>
+          <!-- Tipo -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Tipo</label>
+            <select class="form-select" id="agendaFormTipo">
+              <option value="atendimento">🤝 Atendimento</option>
+              <option value="geral">📅 Agenda Geral</option>
+            </select>
+          </div>
+          <!-- Presencial/Virtual -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Modalidade</label>
+            <select class="form-select" id="agendaFormPresencial">
+              <option value="true">🏢 Presencial</option>
+              <option value="false">💻 Virtual</option>
+            </select>
+          </div>
+          <!-- Data -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Data <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="agendaFormData">
+          </div>
+          <!-- Hora Início -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Horário Início</label>
+            <input type="time" class="form-control" id="agendaFormHoraInicio">
+          </div>
+          <!-- Hora Fim -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Horário Fim</label>
+            <input type="time" class="form-control" id="agendaFormHoraFim">
+          </div>
+          <!-- Local -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Local / Sala</label>
+            <input type="text" class="form-control" id="agendaFormLocal" placeholder="Ex.: Gabinete, Sala 201">
+          </div>
+          <!-- Número do processo -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Número do Processo</label>
+            <input type="text" class="form-control" id="agendaFormProcesso"
+              placeholder="Ex.: 1234567-89.2023.8.11.0001">
+          </div>
+          <!-- Descrição -->
+          <div class="col-12">
+            <label class="form-label fw-bold">Descrição / Observações</label>
+            <textarea class="form-control" id="agendaFormDescricao" rows="2"
+              placeholder="Informações adicionais..."></textarea>
+          </div>
+          <!-- Cor -->
+          <div class="col-12">
+            <label class="form-label fw-bold d-block">Cor do Evento</label>
+            <div class="d-flex gap-2 flex-wrap" id="agendaColorSwatches">
+              <!-- swatches gerados por JS -->
+            </div>
+            <input type="hidden" id="agendaFormCor" value="#083464">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger me-auto d-none" id="agendaBtnDeletar" onclick="agendaDeletarCompromisso()">
+          <i class="bi bi-trash me-1"></i> Excluir
+        </button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary fw-bold" onclick="agendaSalvarCompromisso()">
+          <i class="bi bi-check-circle me-1"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL IMPORTAR BOOKINGS
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="agendaBookingsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:white;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cloud-upload me-2"></i>Importar Atendimentos do Bookings</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          Faça upload do arquivo exportado do <strong>Microsoft Bookings</strong> (.tsv, .csv ou .xlsx).<br>
+          O sistema vai extrair: <strong>data, horário, nome, presencial/virtual e número do processo</strong>.
+        </div>
+        <div class="import-drop-zone" id="importDropZone"
+          onclick="document.getElementById('importArquivoInput').click()">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          <p class="mt-2 mb-0 fw-bold text-primary">Clique para selecionar ou arraste o arquivo aqui</p>
+          <small class="text-muted">Formatos suportados: .tsv, .csv, .xlsx</small>
+          <p class="mt-2 mb-0" id="importNomeArquivo" style="font-size:0.85rem;color:#374151;"></p>
+        </div>
+        <input type="file" id="importArquivoInput" accept=".tsv,.csv,.xlsx,.xls" class="d-none"
+          onchange="importArquivoSelecionado(this)">
+        <div id="importResultado" class="mt-3 d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn fw-bold" id="btnImportarBookings" style="background:#1d4ed8;color:white;"
+          onclick="importarBookings()">
+          <i class="bi bi-upload me-1"></i> Importar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL DE VISUALIZAÇÃO DO COMPROMISSO (somente leitura)
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="agendaViewModal" tabindex="-1" style="z-index:1100;">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content" style="border-radius:14px;border:none;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+      <!-- Header colorido com a cor do evento -->
+      <div class="modal-header" id="agendaViewHeader" style="border-radius:14px 14px 0 0;border:none;padding:16px 20px;color:white;">
+        <div>
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.85;color:white;" id="agendaViewTipo"></div>
+          <h5 class="modal-title fw-bold mb-0" id="agendaViewTitulo" style="font-size:1.1rem;color:white;"></h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <!-- Body -->
+      <div class="modal-body px-4 py-3">
+        <div class="d-flex flex-column gap-3" id="agendaViewBody"></div>
+      </div>
+      <!-- Footer -->
+      <div class="modal-footer" style="border-top:1px solid #e2e8f0;padding:12px 20px;">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+        {% if is_desembargador or is_chefe %}
+        <button class="btn btn-sm fw-bold" id="agendaViewBtnEditar"
+          style="background:#083464;color:white;" onclick="agendaViewEditarAtual()">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT DA AGENDA
+═══════════════════════════════════════════════════ -->
+<script>
+  (function () {
+    'use strict';
+
+    // ── Estado ──────────────────────────────────────────
+    const AG = {
+      hoje: new Date(),
+      viewDate: new Date(),     // data central da visualização
+      selectedDate: new Date(), // data selecionada (destaque)
+      view: 'mes',              // 'mes' | 'semana' | 'dia'
+      filtro: 'todos',          // 'todos' | 'atendimento' | 'geral'
+      eventos: [],
+      mesCache: {},             // cache de eventos por "YYYY-MM"
+      editingId: null,
+    };
+
+    const CORES_PRESET = [
+      '#083464', '#1d4ed8', '#7c3aed', '#db2777', '#dc2626',
+      '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#374151'
+    ];
+
+    const MESES_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const DIAS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const CSRF = () => {
+      const el = document.querySelector('[name=csrfmiddlewaretoken]');
+      return el ? el.value : '';
+    };
+
+    // ── Abertura ─────────────────────────────────────────
+    window.abrirAgenda = function () {
+      const modal = new bootstrap.Modal(document.getElementById('agendaModal'));
+      modal.show();
+      AG.viewDate = new Date();
+      AG.selectedDate = new Date();
+      carregarEventos().then(() => {
+        renderizarTudo();
+      });
+    };
+
+    // ── Carga de eventos ──────────────────────────────────
+    async function carregarEventos() {
+      const res = await fetch('{% url "agenda_eventos" %}');
+      const data = await res.json();
+      AG.eventos = data.eventos || [];
+    }
+
+    function eventosFiltrados() {
+      if (AG.filtro === 'todos') return AG.eventos;
+      return AG.eventos.filter(e => e.tipo === AG.filtro);
+    }
+
+    // ── Render geral ──────────────────────────────────────
+    function renderizarTudo() {
+      atualizarTituloData();
+      renderMiniCal();
+      renderDayList();
+      if (AG.view === 'mes') renderMes();
+      else if (AG.view === 'semana') renderSemana();
+      else renderDia();
+    }
+
+    function atualizarTituloData() {
+      const el = document.getElementById('agendaTituloData');
+      const d = AG.viewDate;
+      if (AG.view === 'mes') {
+        el.textContent = `${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`;
+      } else if (AG.view === 'semana') {
+        const seg = new Date(d); seg.setDate(d.getDate() - d.getDay() + 1);
+        const sab = new Date(seg); sab.setDate(seg.getDate() + 6);
+        el.textContent = `${seg.getDate()} ${MESES_PT[seg.getMonth()].slice(0, 3)} — ${sab.getDate()} ${MESES_PT[sab.getMonth()].slice(0, 3)} ${sab.getFullYear()}`;
+      } else {
+        el.textContent = `${String(d.getDate()).padStart(2, '0')} de ${MESES_PT[d.getMonth()]} de ${d.getFullYear()}`;
+      }
+    }
+
+    // ── Mini calendário ──────────────────────────────────
+    function renderMiniCal() {
+      const d = AG.viewDate;
+      const ano = d.getFullYear(), mes = d.getMonth();
+      document.getElementById('miniCalTitulo').textContent = `${MESES_PT[mes].slice(0, 3)} ${ano}`;
+
+      const grid = document.getElementById('miniCalGrid');
+      grid.innerHTML = '';
+
+      // Labels de dias
+      ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(l => {
+        const sp = document.createElement('div');
+        sp.className = 'day-label';
+        sp.textContent = l;
+        grid.appendChild(sp);
+      });
+
+      const primeiro = new Date(ano, mes, 1);
+      const diaSemana = primeiro.getDay();
+      const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+      const hoje = AG.hoje;
+      const eventosDatas = new Set(eventosFiltrados().map(e => e.data));
+
+      // Dias do mês anterior
+      for (let i = 0; i < diaSemana; i++) {
+        const dia = new Date(ano, mes, -(diaSemana - i - 1));
+        const cell = makeMiniDay(dia, true, eventosDatas);
+        grid.appendChild(cell);
+      }
+      for (let i = 1; i <= ultimoDia; i++) {
+        const dia = new Date(ano, mes, i);
+        const cell = makeMiniDay(dia, false, eventosDatas);
+        grid.appendChild(cell);
+      }
+      // Completar a última semana
+      const total = diaSemana + ultimoDia;
+      const resto = 7 - (total % 7);
+      if (resto < 7) {
+        for (let i = 1; i <= resto; i++) {
+          const dia = new Date(ano, mes + 1, i);
+          const cell = makeMiniDay(dia, true, eventosDatas);
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function makeMiniDay(dia, otherMonth, eventosDatas) {
+      const div = document.createElement('div');
+      div.className = 'day-num';
+      div.textContent = dia.getDate();
+      if (otherMonth) div.classList.add('other-month');
+      if (isSameDay(dia, AG.hoje)) div.classList.add('today');
+      if (isSameDay(dia, AG.selectedDate)) div.classList.add('selected');
+      const key = fmtDate(dia);
+      if (eventosDatas.has(key)) div.classList.add('has-event');
+      div.onclick = () => {
+        AG.selectedDate = new Date(dia);
+        AG.viewDate = new Date(dia);
+        renderizarTudo();
+      };
+      return div;
+    }
+
+    window.miniCalNav = function (delta) {
+      AG.viewDate.setMonth(AG.viewDate.getMonth() + delta);
+      renderizarTudo();
+    };
+
+    // ── Day List (sidebar) ────────────────────────────────
+    function renderDayList() {
+      const d = AG.selectedDate;
+      const key = fmtDate(d);
+      const dayEvts = eventosFiltrados().filter(e => e.data === key).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+      const el = document.getElementById('agendaDayList');
+      const title = document.getElementById('agendaDayListTitle');
+      title.textContent = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} — ${dayEvts.length} compromisso${dayEvts.length !== 1 ? 's' : ''}`;
+      el.innerHTML = '';
+      if (!dayEvts.length) {
+        el.innerHTML = '<p class="text-muted small">Sem compromissos neste dia.</p>';
+        return;
+      }
+      dayEvts.forEach(e => {
+        const pill = document.createElement('div');
+        pill.className = 'day-event-pill';
+        pill.style.borderLeftColor = e.cor;
+        const presLabel = e.presencial ? '<span style="background:#2e7d32;color:white;font-size:0.65rem;padding:1px 5px;border-radius:10px;">🏢 Presencial</span>'
+          : '<span style="background:#0078d4;color:white;font-size:0.65rem;padding:1px 5px;border-radius:10px;">💻 Virtual</span>';
+        pill.innerHTML = `
+      <div>
+        <div class="pill-time">${e.hora_inicio}${e.hora_fim ? ' ‑ ' + e.hora_fim : ''}</div>
+        <div class="pill-title">${escHtml(e.titulo)}</div>
+        <div style="margin-top:3px;display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          ${presLabel}
+          ${e.numero_processo ? `<span style="font-size:0.7rem;color:#6b7280;">📋 <b>${escHtml(e.numero_processo)}</b></span>` : ''}
+        </div>
+      </div>`;
+        pill.onclick = () => agendaAbrirEvento(e.id);
+        el.appendChild(pill);
+      });
+    }
+
+    // ── Vista Mês ──────────────────────────────────────
+    function renderMes() {
+      const d = AG.viewDate;
+      const ano = d.getFullYear(), mes = d.getMonth();
+      const primeiro = new Date(ano, mes, 1);
+      const ultimo = new Date(ano, mes + 1, 0);
+      const hoje = AG.hoje;
+      const evts = eventosFiltrados();
+
+      let html = '<div class="month-grid">';
+      DIAS_PT.forEach(dn => { html += `<div class="month-day-header">${dn}</div>`; });
+
+      let dia = new Date(primeiro);
+      dia.setDate(dia.getDate() - dia.getDay()); // recua até domingo
+
+      while (dia <= ultimo || dia.getDay() !== 0 || isSameDay(dia, primeiro)) {
+        const key = fmtDate(dia);
+        const dayEvts = evts.filter(e => e.data === key);
+        const cls = [
+          'month-day-cell',
+          isSameDay(dia, hoje) ? 'today' : '',
+          isSameDay(dia, AG.selectedDate) ? 'selected' : '',
+          (dia.getMonth() !== mes) ? 'other-month' : '',
+        ].filter(Boolean).join(' ');
+
+        const diaCopia = new Date(dia);
+        html += `<div class="${cls}" onclick="agendaClicarDia('${key}')">`;
+        html += isSameDay(dia, hoje)
+          ? `<div class="month-day-num"><span>${dia.getDate()}</span></div>`
+          : `<div class="month-day-num">${dia.getDate()}</div>`;
+        const max = 3;
+        dayEvts.slice(0, max).forEach(e => {
+          const mod = e.presencial ? '🏢' : '💻';
+          html += `<div class="month-event-chip" style="background:${e.cor};" onclick="event.stopPropagation();agendaAbrirEvento(${e.id})">${e.hora_inicio} ${mod} ${escHtml(e.titulo)}</div>`;
+        });
+        if (dayEvts.length > max) html += `<div style="font-size:0.7rem;color:#6b7280;">+${dayEvts.length - max} mais</div>`;
+        html += '</div>';
+
+        dia.setDate(dia.getDate() + 1);
+        if (dia > ultimo && dia.getDay() === 0) break;
+      }
+      html += '</div>';
+      document.getElementById('agendaCalendarContent').innerHTML = html;
+    }
+
+    window.agendaClicarDia = function (key) {
+      const [y, m, d] = key.split('-').map(Number);
+      AG.selectedDate = new Date(y, m - 1, d);
+      renderMiniCal();
+      renderDayList();
+      // destacar célula
+      document.querySelectorAll('.month-day-cell').forEach(el => el.classList.remove('selected'));
+      event && event.currentTarget && event.currentTarget.classList.add('selected');
+    };
+
+    window.agendaAbrirEvento = function (id) {
+      const e = AG.eventos.find(x => x.id === id);
+      if (!e) return;
+      AG._viewingEvento = e;
+
+      // Preenche o header com a cor do evento
+      const header = document.getElementById('agendaViewHeader');
+      header.style.background = `linear-gradient(135deg, ${e.cor}, ${e.cor}cc)`;
+      header.style.color = 'white';
+
+      // Tipo badge
+      document.getElementById('agendaViewTipo').textContent =
+        e.tipo === 'atendimento' ? '🤝 Atendimento' : '📅 Agenda Geral';
+
+      // Título
+      document.getElementById('agendaViewTitulo').textContent = e.titulo;
+
+      // Body com as infos
+      const [y, m, d] = e.data.split('-');
+      const dataFmt = `${d}/${m}/${y}`;
+      const horaFmt = e.hora_inicio + (e.hora_fim ? ' → ' + e.hora_fim : '');
+      const presLabel = e.presencial
+        ? '<span style="background:#2e7d32;color:white;font-size:0.75rem;padding:2px 10px;border-radius:20px;font-weight:700;">🏢 Presencial</span>'
+        : '<span style="background:#0078d4;color:white;font-size:0.75rem;padding:2px 10px;border-radius:20px;font-weight:700;">💻 Virtual</span>';
+
+      const rows = [
+        { icon: 'bi-calendar3',      label: 'Data',             val: dataFmt },
+        { icon: 'bi-clock',          label: 'Horário',          val: horaFmt },
+        { icon: 'bi-person-badge',   label: 'Modalidade',       val: presLabel, raw: true },
+        e.numero_processo ? { icon: 'bi-file-text', label: 'Processo', val: `<b>${escHtml(e.numero_processo)}</b>`, raw: true } : null,
+        e.local           ? { icon: 'bi-geo-alt',   label: 'Local',    val: escHtml(e.local) } : null,
+        e.descricao       ? { icon: 'bi-chat-left-text', label: 'Obs.',  val: escHtml(e.descricao) } : null,
+        e.criado_por      ? { icon: 'bi-person',    label: 'Criado por', val: escHtml(e.criado_por) } : null,
+      ].filter(Boolean);
+
+      document.getElementById('agendaViewBody').innerHTML = rows.map(r => `
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <i class="bi ${r.icon}" style="font-size:1.1rem;color:#083464;margin-top:2px;flex-shrink:0;"></i>
+          <div>
+            <div style="font-size:0.72rem;text-transform:uppercase;font-weight:700;color:#9ca3af;letter-spacing:0.5px;">${r.label}</div>
+            <div style="font-size:0.95rem;color:#1f2937;margin-top:1px;">${r.raw ? r.val : escHtml(String(r.val))}</div>
+          </div>
+        </div>`).join('');
+
+      // Abre o modal de visualização
+      const viewEl = document.getElementById('agendaViewModal');
+      viewEl.style.zIndex = '1100';
+      new bootstrap.Modal(viewEl, {backdrop: false}).show();
+    };
+
+    window.agendaViewEditarAtual = function() {
+      // Fecha o modal de visualização e abre o de edição
+      const viewModal = bootstrap.Modal.getInstance(document.getElementById('agendaViewModal'));
+      if (viewModal) viewModal.hide();
+      if (AG._viewingEvento) {
+        setTimeout(() => abrirFormEditarCompromisso(AG._viewingEvento), 200);
+      }
+    };
+
+    // ── Vista Semana ─────────────────────────────────────
+    function renderSemana() {
+      const d = AG.viewDate;
+      const seg = new Date(d); seg.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      const dias = [];
+      for (let i = 0; i < 7; i++) { const x = new Date(seg); x.setDate(seg.getDate() + i); dias.push(x); }
+      renderTimeline(dias);
+    }
+
+    // ── Vista Dia ─────────────────────────────────────────
+    function renderDia() {
+      renderTimeline([new Date(AG.viewDate)]);
+    }
+
+    // ── Timeline (semana / dia) ──────────────────────────
+    function renderTimeline(dias) {
+      const evts = eventosFiltrados();
+      let html = `<div style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);">`;
+
+      // Header
+      html += `<div class="timeline-header-row">`;
+      html += `<div class="timeline-time-col"></div>`;
+      dias.forEach(dia => {
+        const cls = isSameDay(dia, AG.hoje) ? 'timeline-day-col today-col' : 'timeline-day-col';
+        html += `<div class="${cls}">${DIAS_PT[dia.getDay()]} ${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}</div>`;
+      });
+      html += '</div>';
+
+      // Body
+      html += `<div class="timeline-body">`;
+      // Coluna de horas
+      html += `<div class="timeline-times">`;
+      for (let h = 7; h <= 22; h++) {
+        html += `<div class="timeline-hour-label">${String(h).padStart(2, '0')}:00</div>`;
+      }
+      html += '</div>';
+
+      // Colunas de dias
+      html += `<div class="timeline-cols">`;
+      dias.forEach(dia => {
+        const key = fmtDate(dia);
+        const dayEvts = evts.filter(e => e.data === key);
+        html += `<div class="timeline-col" style="position:relative;">`;
+        for (let h = 7; h <= 22; h++) {
+          html += `<div class="hour-line half-line"></div>`;
+        }
+        dayEvts.forEach(e => {
+          const [hI, mI] = (e.hora_inicio || '08:00').split(':').map(Number);
+          const [hF, mF] = (e.hora_fim || `${hI + 1}:00`).split(':').map(Number);
+          const topPct = ((hI - 7) * 60 + mI) / (16 * 60) * 100;
+          const heightPct = ((hF - hI) * 60 + (mF - mI)) / (16 * 60) * 100;
+          const minH = Math.max(heightPct, 2.5);
+          html += `<div class="agenda-event-block" style="background:${e.cor};top:${topPct}%;height:${minH}%;" onclick="agendaAbrirEvento(${e.id})">
+        <div class="event-block-title">${escHtml(e.titulo)}</div>
+        <div class="event-block-sub">${e.hora_inicio}${e.hora_fim ? ' – ' + e.hora_fim : ''} ${e.presencial ? '🏢 Presencial' : '💻 Virtual'}</div>
+        ${e.numero_processo ? `<div class="event-block-sub">📋 Proc: <b>${escHtml(e.numero_processo)}</b></div>` : ''}
+      </div>`;
+        });
+        html += '</div>';
+      });
+      html += '</div></div></div>';
+
+      document.getElementById('agendaCalendarContent').innerHTML = html;
+    }
+
+    // ── Navegação ─────────────────────────────────────────
+    window.agendaNavAnterior = function () {
+      if (AG.view === 'mes') AG.viewDate.setMonth(AG.viewDate.getMonth() - 1);
+      else if (AG.view === 'semana') AG.viewDate.setDate(AG.viewDate.getDate() - 7);
+      else AG.viewDate.setDate(AG.viewDate.getDate() - 1);
+      renderizarTudo();
+    };
+    window.agendaNavProximo = function () {
+      if (AG.view === 'mes') AG.viewDate.setMonth(AG.viewDate.getMonth() + 1);
+      else if (AG.view === 'semana') AG.viewDate.setDate(AG.viewDate.getDate() + 7);
+      else AG.viewDate.setDate(AG.viewDate.getDate() + 1);
+      renderizarTudo();
+    };
+    window.agendaHoje = function () {
+      AG.viewDate = new Date(); AG.selectedDate = new Date();
+      renderizarTudo();
+    };
+    window.agendaSetView = function (v) {
+      AG.view = v;
+      document.querySelectorAll('.nav-view button').forEach(b => b.classList.remove('active'));
+      document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`).classList.add('active');
+      renderizarTudo();
+    };
+    window.agendaSetFiltro = function (f, btn) {
+      AG.filtro = f;
+      document.querySelectorAll('.agenda-filter-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderizarTudo();
+    };
+    window.agendaSetSecao = function (s) {
+      AG.filtro = s;
+      document.querySelectorAll('#agendaSectionTabs .nav-link').forEach(b => b.classList.remove('active'));
+      const map = { todos: 'tabTodos', atendimento: 'tabAtendimentos', geral: 'tabGeral' };
+      document.getElementById(map[s]).classList.add('active');
+      renderizarTudo();
+    };
+
+    // ── Swatches de cores ─────────────────────────────────
+    function renderSwatches(corAtual) {
+      const cont = document.getElementById('agendaColorSwatches');
+      cont.innerHTML = '';
+      CORES_PRESET.forEach(cor => {
+        const div = document.createElement('div');
+        div.className = 'color-swatch' + (cor === corAtual ? ' selected' : '');
+        div.style.background = cor;
+        div.title = cor;
+        div.onclick = () => {
+          document.getElementById('agendaFormCor').value = cor;
+          cont.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+          div.classList.add('selected');
+        };
+        cont.appendChild(div);
+      });
+    }
+
+    // ── Form Novo Compromisso ─────────────────────────────
+    window.abrirFormNovoCompromisso = function () {
+      AG.editingId = null;
+      document.getElementById('agendaFormTitleText').textContent = 'Novo Compromisso';
+      document.getElementById('agendaFormId').value = '';
+      document.getElementById('agendaFormTitulo').value = '';
+      document.getElementById('agendaFormTipo').value = 'geral';
+      document.getElementById('agendaFormPresencial').value = 'true';
+      document.getElementById('agendaFormData').value = fmtDate(AG.selectedDate);
+      document.getElementById('agendaFormHoraInicio').value = '09:00';
+      document.getElementById('agendaFormHoraFim').value = '10:00';
+      document.getElementById('agendaFormLocal').value = '';
+      document.getElementById('agendaFormProcesso').value = '';
+      document.getElementById('agendaFormDescricao').value = '';
+      document.getElementById('agendaFormCor').value = '#083464';
+      document.getElementById('agendaBtnDeletar').classList.add('d-none');
+      renderSwatches('#083464');
+      // Garante z-index correto ao abrir sobre o modal fullscreen
+      const formEl = document.getElementById('agendaFormModal');
+      formEl.style.zIndex = '1100';
+      const m = new bootstrap.Modal(formEl, { backdrop: false });
+      m.show();
+    };
+
+    function abrirFormEditarCompromisso(e) {
+      AG.editingId = e.id;
+      document.getElementById('agendaFormTitleText').textContent = 'Editar Compromisso';
+      document.getElementById('agendaFormId').value = e.id;
+      document.getElementById('agendaFormTitulo').value = e.titulo;
+      document.getElementById('agendaFormTipo').value = e.tipo;
+      document.getElementById('agendaFormPresencial').value = e.presencial ? 'true' : 'false';
+      document.getElementById('agendaFormData').value = e.data;
+      document.getElementById('agendaFormHoraInicio').value = e.hora_inicio;
+      document.getElementById('agendaFormHoraFim').value = e.hora_fim || '';
+      document.getElementById('agendaFormLocal').value = e.local || '';
+      document.getElementById('agendaFormProcesso').value = e.numero_processo || '';
+      document.getElementById('agendaFormDescricao').value = e.descricao || '';
+      document.getElementById('agendaFormCor').value = e.cor;
+      document.getElementById('agendaBtnDeletar').classList.remove('d-none');
+      renderSwatches(e.cor);
+      // Garante z-index correto ao abrir sobre o modal fullscreen
+      const formEl = document.getElementById('agendaFormModal');
+      formEl.style.zIndex = '1100';
+      const m = new bootstrap.Modal(formEl, { backdrop: false });
+      m.show();
+    }
+
+    window.agendaSalvarCompromisso = async function () {
+      const titulo = document.getElementById('agendaFormTitulo').value.trim();
+      if (!titulo) { alert('Informe o título do compromisso.'); return; }
+      const corpo = {
+        titulo,
+        tipo: document.getElementById('agendaFormTipo').value,
+        presencial: document.getElementById('agendaFormPresencial').value === 'true',
+        data: document.getElementById('agendaFormData').value,
+        hora_inicio: document.getElementById('agendaFormHoraInicio').value,
+        hora_fim: document.getElementById('agendaFormHoraFim').value || null,
+        local: document.getElementById('agendaFormLocal').value,
+        numero_processo: document.getElementById('agendaFormProcesso').value,
+        descricao: document.getElementById('agendaFormDescricao').value,
+        cor: document.getElementById('agendaFormCor').value,
+      };
+
+      const id = AG.editingId;
+      const url = id ? `/agenda/editar/${id}/` : `/agenda/criar/`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF() },
+        body: JSON.stringify(corpo),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('agendaFormModal')).hide();
+        await carregarEventos();
+        renderizarTudo();
+      } else {
+        alert('Erro ao salvar: ' + (data.error || 'desconhecido'));
+      }
+    };
+
+    window.agendaDeletarCompromisso = async function () {
+      if (!confirm('Deseja excluir este compromisso?')) return;
+      const id = AG.editingId;
+      const res = await fetch(`/agenda/excluir/${id}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF() },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('agendaFormModal')).hide();
+        await carregarEventos();
+        renderizarTudo();
+      } else {
+        alert('Erro ao excluir: ' + (data.error || 'desconhecido'));
+      }
+    };
+
+    // ── Importar Bookings ──────────────────────────────────
+    window.abrirImportarBookings = function () {
+      document.getElementById('importArquivoInput').value = '';
+      document.getElementById('importNomeArquivo').textContent = '';
+      document.getElementById('importResultado').classList.add('d-none');
+      new bootstrap.Modal(document.getElementById('agendaBookingsModal')).show();
+    };
+
+    window.importArquivoSelecionado = function (input) {
+      const f = input.files[0];
+      if (f) document.getElementById('importNomeArquivo').textContent = '📄 ' + f.name;
+    };
+
+    // Drag & drop
+    (function () {
+      const zone = document.getElementById('importDropZone');
+      if (!zone) return;
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.background = '#bfdbfe'; });
+      zone.addEventListener('dragleave', () => { zone.style.background = ''; });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.style.background = '';
+        const f = e.dataTransfer.files[0];
+        if (f) {
+          const dt = new DataTransfer(); dt.items.add(f);
+          document.getElementById('importArquivoInput').files = dt.files;
+          document.getElementById('importNomeArquivo').textContent = '📄 ' + f.name;
+        }
+      });
+    })();
+
+    window.importarBookings = async function () {
+      const input = document.getElementById('importArquivoInput');
+      if (!input.files.length) { alert('Selecione um arquivo.'); return; }
+      const btn = document.getElementById('btnImportarBookings');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Importando...';
+      const form = new FormData();
+      form.append('arquivo', input.files[0]);
+      try {
+        const res = await fetch('{% url "agenda_importar" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': CSRF() },
+          body: form,
+        });
+        const data = await res.json();
+        const resultDiv = document.getElementById('importResultado');
+        resultDiv.classList.remove('d-none');
+        if (data.ok) {
+          let html = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i><strong>${data.importados} atendimento(s)</strong> importado(s) com sucesso!</div>`;
+          if (data.erros && data.erros.length) {
+            html += `<div class="alert alert-warning small"><b>Avisos:</b><ul class="mb-0 mt-1">`;
+            data.erros.slice(0, 10).forEach(e => { html += `<li>${escHtml(e)}</li>`; });
+            html += '</ul></div>';
+          }
+          resultDiv.innerHTML = html;
+          await carregarEventos();
+          renderizarTudo();
+        } else {
+          resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${escHtml(data.error || 'Erro desconhecido')}</div>`;
+        }
+      } catch (err) {
+        document.getElementById('importResultado').innerHTML = `<div class="alert alert-danger">Erro de conexão: ${err.message}</div>`;
+        document.getElementById('importResultado').classList.remove('d-none');
+      }
+      btn.disabled = false; btn.innerHTML = '<i class="bi bi-upload me-1"></i> Importar';
+    };
+
+    // ── Helpers ──────────────────────────────────────────
+    function isSameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+    function fmtDate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function escHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+  })(); // fim IIFE
+</script>
+{% endif %}

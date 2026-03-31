@@ -11,7 +11,13 @@ from .views import (
     get_revisoes_hoje_data,
     get_es_assessor_hoje_data,
     get_especies_data,
-    get_fases_data
+    get_fases_data,
+    agenda_eventos_json,
+    agenda_criar,
+    agenda_editar,
+    agenda_excluir,
+    agenda_importar_bookings,
+    agenda_webhook_bookings,
 )
 
 
@@ -36,6 +42,14 @@ urlpatterns = [
     path('', include('processos.urls')),
     path('', include('publico.urls')),
     path('home3/', views.home3, name='home3'),
+
+    # Agenda do Desembargador
+    path('agenda/eventos/', agenda_eventos_json, name='agenda_eventos'),
+    path('agenda/criar/', agenda_criar, name='agenda_criar'),
+    path('agenda/editar/<int:pk>/', agenda_editar, name='agenda_editar'),
+    path('agenda/excluir/<int:pk>/', agenda_excluir, name='agenda_excluir'),
+    path('agenda/importar/', agenda_importar_bookings, name='agenda_importar'),
+    path('agenda/webhook/bookings/', agenda_webhook_bookings, name='agenda_webhook_bookings'),
 
     # Chatbot API Route
     path('api/chat-ia/', views.chat_ia_view, name='chat_ia'),

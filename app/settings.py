@@ -174,5 +174,9 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    
+
 }
+
+# ── Token secreto para o webhook do Power Automate ──────────────────────────
+# Altere para um valor forte e único. Use o mesmo valor no Power Automate.
+AGENDA_WEBHOOK_TOKEN = 'tjmt-gab-jones-webhook-2026'

@@ -265,4 +265,44 @@ class Aviso(models.Model):
         ordering = ['-fixado', '-criado_em']
 
     def __str__(self):
-        return self.titulo
+        return self.titulo
+
+
+class Compromisso(models.Model):
+    TIPO_CHOICES = [
+        ('atendimento', 'Atendimento'),
+        ('geral', 'Agenda Geral'),
+    ]
+    titulo = models.CharField(max_length=200, verbose_name='Título')
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default='geral',
+        verbose_name='Tipo'
+    )
+    data = models.DateField(verbose_name='Data')
+    hora_inicio = models.TimeField(verbose_name='Horário de Início')
+    hora_fim = models.TimeField(null=True, blank=True, verbose_name='Horário de Fim')
+    local = models.CharField(max_length=200, blank=True, verbose_name='Local')
+    descricao = models.TextField(blank=True, verbose_name='Descrição')
+    cor = models.CharField(max_length=10, default='#083464', verbose_name='Cor')
+    presencial = models.BooleanField(default=True, verbose_name='Presencial?')
+    numero_processo = models.CharField(max_length=100, blank=True, verbose_name='Número do Processo')
+    criado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='compromissos_criados'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['data', 'hora_inicio']
+        verbose_name = 'Compromisso'
+        verbose_name_plural = 'Compromissos'
+
+    def __str__(self):
+        return f"{self.titulo} — {self.data:%d/%m/%Y} {self.hora_inicio:%H:%M}"
+
