@@ -94,15 +94,15 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Banco Servidor Local
-DATABASES = {
+'''DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.sqlite3',
 'NAME': BASE_DIR / 'db.sqlite3',
 }
-}
+}'''
 
 # Banco Servidor Produção
-'''DATABASES = {
+DATABASES = {
 'default': {
 'ENGINE': 'django.db.backends.postgresql',
 'NAME': 'gabjonesgattass',
@@ -111,7 +111,7 @@ DATABASES = {
 'HOST': 'localhost',
 'PORT': '5432',
 }
-}'''
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
