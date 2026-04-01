@@ -1070,10 +1070,11 @@ def agenda_eventos_json(request):
     processos_dict = {}
     for p in processos_qs:
         link = f'/processos/{p.id}/'
-        # Emula o comportamento da pauta: tenta pegar o link_doc do último andamento
-        andamento_atual = p.andamentos.order_by('-dt_criacao').first()
-        if andamento_atual and getattr(andamento_atual, 'link_doc', None):
-            link = andamento_atual.link_doc
+        # Check all related andamentos in python to avoid N+1 and correctly strip spaces
+        andamentos_validos = [a for a in p.andamentos.all() if a.link_doc and str(a.link_doc).strip()]
+        if andamentos_validos:
+            andamento_com_link = max(andamentos_validos, key=lambda x: x.dt_criacao)
+            link = andamento_com_link.link_doc
         
         processos_dict[p.numero_processo] = {
             'id': p.id,

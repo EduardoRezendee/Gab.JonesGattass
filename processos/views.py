@@ -1141,7 +1141,8 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
             usuario=request.user,
             status=Status.objects.get(status="Concluído"),
             dt_inicio=now(),
-            dt_conclusao=now()
+            dt_conclusao=now(),
+            link_doc=andamento.link_doc  # Copiar o link do documento
         )
 
         # Remover o processo do "Meu Dia" (deletar o registro em TarefaDoDia)
@@ -2733,9 +2734,10 @@ def pauta_json(request):
         p = item.processo_vinculado
         link_doc = None
         if p:
-            # Busca o andamento mais recente que contenha um link de documento
-            andamento_com_link = p.andamentos.exclude(link_doc__isnull=True).exclude(link_doc='').order_by('-dt_criacao').first()
-            if andamento_com_link:
+            # Busca o andamento mais recente que contenha um link de documento válido
+            andamentos_validos = [a for a in p.andamentos.all() if a.link_doc and str(a.link_doc).strip()]
+            if andamentos_validos:
+                andamento_com_link = max(andamentos_validos, key=lambda x: x.dt_criacao)
                 link_doc = andamento_com_link.link_doc
 
         responsavel_final = item.responsavel_manual or (p.usuario.get_full_name() if p and p.usuario else 'Não atribuído')
