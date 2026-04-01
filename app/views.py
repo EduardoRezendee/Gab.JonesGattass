@@ -1075,6 +1075,7 @@ def agenda_eventos_json(request):
             'cor': c.cor,
             'presencial': c.presencial,
             'numero_processo': c.numero_processo,
+            'cancelado': c.cancelado,
             'criado_por': c.criado_por.get_full_name() if c.criado_por else '',
         })
     return JsonResponse({'eventos': eventos})
@@ -1340,20 +1341,34 @@ def agenda_importar_bookings(request):
                 if local.lower() in ('none', 'nan'):
                     local = ''
 
-                Compromisso.objects.create(
-                    titulo=titulo[:200],
-                    tipo='atendimento',
+                existente = Compromisso.objects.filter(
+                    titulo__iexact=titulo[:200],
                     data=evento_data,
-                    hora_inicio=hora_inicio,
-                    hora_fim=hora_fim,
-                    local=local[:200],
-                    descricao='',
-                    cor='#1d4ed8',
-                    presencial=presencial,
-                    numero_processo=numero_processo[:100],
-                    criado_por=request.user,
-                )
-                importados += 1
+                    hora_inicio=hora_inicio
+                ).first()
+
+                if existente:
+                    # Atualiza os dados do existente (atualiza com os novos)
+                    existente.hora_fim = hora_fim
+                    existente.local = local[:200]
+                    existente.presencial = presencial
+                    existente.numero_processo = numero_processo[:100]
+                    existente.save()
+                else:
+                    Compromisso.objects.create(
+                        titulo=titulo[:200],
+                        tipo='atendimento',
+                        data=evento_data,
+                        hora_inicio=hora_inicio,
+                        hora_fim=hora_fim,
+                        local=local[:200],
+                        descricao='',
+                        cor='#1d4ed8',
+                        presencial=presencial,
+                        numero_processo=numero_processo[:100],
+                        criado_por=request.user,
+                    )
+                    importados += 1
             except Exception as e:
                 erros.append(f"Linha {i}: {str(e)}")
 
@@ -1478,4 +1493,19 @@ def agenda_webhook_bookings(request):
         return JsonResponse({'ok': True, 'mensagem': f'Compromisso criado: {titulo}'})
 
     except Exception as e:
-        return JsonResponse({'error': f'Erro ao processar webhook: {str(e)}'}, status=400)
+        return JsonResponse({'error': f'Erro ao processar webhook: {str(e)}'}, status=400)
+
+@login_required
+def agenda_cancelar(request, pk):
+    from django.shortcuts import get_object_or_404
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido.'}, status=405)
+    if not _is_agenda_authorized(request):
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+    
+    comp = get_object_or_404(Compromisso, pk=pk)
+    comp.cancelado = not comp.cancelado
+    comp.save()
+    status_msg = "cancelado" if comp.cancelado else "restaurado"
+    return JsonResponse({'ok': True, 'mensagem': f'Compromisso {status_msg} com sucesso.', 'cancelado': comp.cancelado})
+

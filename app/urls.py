@@ -18,6 +18,7 @@ from .views import (
     agenda_excluir,
     agenda_importar_bookings,
     agenda_webhook_bookings,
+    agenda_cancelar,
 )
 
 
@@ -48,6 +49,7 @@ urlpatterns = [
     path('agenda/criar/', agenda_criar, name='agenda_criar'),
     path('agenda/editar/<int:pk>/', agenda_editar, name='agenda_editar'),
     path('agenda/excluir/<int:pk>/', agenda_excluir, name='agenda_excluir'),
+    path('agenda/cancelar/<int:pk>/', agenda_cancelar, name='agenda_cancelar'),
     path('agenda/importar/', agenda_importar_bookings, name='agenda_importar'),
     path('agenda/webhook/bookings/', agenda_webhook_bookings, name='agenda_webhook_bookings'),
 

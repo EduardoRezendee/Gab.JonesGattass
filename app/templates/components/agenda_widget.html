@@ -317,18 +317,18 @@
 
   .month-day-header {
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #6b7280;
-    padding: 6px 0;
+    padding: 10px 0;
     text-transform: uppercase;
   }
 
   .month-day-cell {
     background: white;
     border-radius: 8px;
-    min-height: 90px;
-    padding: 6px;
+    min-height: 125px;
+    padding: 8px;
     border: 1px solid #e2e8f0;
     cursor: pointer;
     transition: box-shadow 0.15s;
@@ -355,34 +355,35 @@
   }
 
   .month-day-num {
-    font-size: 0.82rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #374151;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   .month-day-cell.today .month-day-num {
     background: #083464;
     color: white;
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
   }
 
   .month-event-chip {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-size: 0.82rem;
+    padding: 4px 8px;
+    border-radius: 5px;
     color: white;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
+    line-height: 1.25;
   }
 
   /* Vista semana/dia — timeline */
@@ -867,6 +868,10 @@
       <div class="modal-footer" style="border-top:1px solid #e2e8f0;padding:12px 20px;">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
         {% if is_desembargador or is_chefe %}
+        <button class="btn btn-sm fw-bold" id="agendaViewBtnCancelar"
+          style="background:#dc2626;color:white;" onclick="agendaViewCancelarAtual()">
+          <i class="bi bi-x-circle me-1"></i> Cancelar
+        </button>
         <button class="btn btn-sm fw-bold" id="agendaViewBtnEditar"
           style="background:#083464;color:white;" onclick="agendaViewEditarAtual()">
           <i class="bi bi-pencil me-1"></i> Editar
@@ -1040,13 +1045,18 @@
         const pill = document.createElement('div');
         pill.className = 'day-event-pill';
         pill.style.borderLeftColor = e.cor;
+        const cancelOp = e.cancelado ? 'opacity:0.6;' : '';
+        const titleStyle = e.cancelado ? 'text-decoration:line-through;color:#9ca3af;' : '';
+        const cancelBadge = e.cancelado ? '<span style="background:#ef4444;color:white;font-size:0.65rem;padding:1px 5px;border-radius:10px;">❌ Cancelado</span>' : '';
         const presLabel = e.presencial ? '<span style="background:#2e7d32;color:white;font-size:0.65rem;padding:1px 5px;border-radius:10px;">🏢 Presencial</span>'
           : '<span style="background:#0078d4;color:white;font-size:0.65rem;padding:1px 5px;border-radius:10px;">💻 Virtual</span>';
+        pill.style.cssText += cancelOp;
         pill.innerHTML = `
       <div>
         <div class="pill-time">${e.hora_inicio}${e.hora_fim ? ' ‑ ' + e.hora_fim : ''}</div>
-        <div class="pill-title">${escHtml(e.titulo)}</div>
+        <div class="pill-title" style="${titleStyle}">${escHtml(e.titulo)}</div>
         <div style="margin-top:3px;display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          ${cancelBadge}
           ${presLabel}
           ${e.numero_processo ? `<span style="font-size:0.7rem;color:#6b7280;">📋 <b>${escHtml(e.numero_processo)}</b></span>` : ''}
         </div>
@@ -1086,12 +1096,13 @@
         html += isSameDay(dia, hoje)
           ? `<div class="month-day-num"><span>${dia.getDate()}</span></div>`
           : `<div class="month-day-num">${dia.getDate()}</div>`;
-        const max = 3;
+        const max = 4;
         dayEvts.slice(0, max).forEach(e => {
-          const mod = e.presencial ? '🏢' : '💻';
-          html += `<div class="month-event-chip" style="background:${e.cor};" onclick="event.stopPropagation();agendaAbrirEvento(${e.id})">${e.hora_inicio} ${mod} ${escHtml(e.titulo)}</div>`;
+          const dec = e.cancelado ? 'text-decoration:line-through;opacity:0.75;' : '';
+          const icn = e.cancelado ? '❌' : (e.presencial ? '🏢' : '💻');
+          html += `<div class="month-event-chip" style="background:${e.cor};${dec}" onclick="event.stopPropagation();agendaAbrirEvento(${e.id})">${e.hora_inicio} ${icn} ${escHtml(e.titulo)}</div>`;
         });
-        if (dayEvts.length > max) html += `<div style="font-size:0.7rem;color:#6b7280;">+${dayEvts.length - max} mais</div>`;
+        if (dayEvts.length > max) html += `<div style="font-size:0.8rem;color:#6b7280;margin-top:2px;">+${dayEvts.length - max} mais</div>`;
         html += '</div>';
 
         dia.setDate(dia.getDate() + 1);
@@ -1123,10 +1134,23 @@
 
       // Tipo badge
       document.getElementById('agendaViewTipo').textContent =
-        e.tipo === 'atendimento' ? '🤝 Atendimento' : '📅 Agenda Geral';
+        (e.cancelado ? '❌ CANCELADO | ' : '') + (e.tipo === 'atendimento' ? '🤝 Atendimento' : '📅 Agenda Geral');
 
       // Título
-      document.getElementById('agendaViewTitulo').textContent = e.titulo;
+      document.getElementById('agendaViewTitulo').innerHTML =
+        e.cancelado ? `<s style="opacity:0.8">${escHtml(e.titulo)}</s>` : escHtml(e.titulo);
+
+      // Botão cancelar/restaurar
+      const btnCancelar = document.getElementById('agendaViewBtnCancelar');
+      if (btnCancelar) {
+        if (e.cancelado) {
+          btnCancelar.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> Restaurar';
+          btnCancelar.style.background = '#059669'; // verde
+        } else {
+          btnCancelar.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancelar';
+          btnCancelar.style.background = '#dc2626'; // vermelho
+        }
+      }
 
       // Body com as infos
       const [y, m, d] = e.data.split('-');
@@ -1167,6 +1191,28 @@
       if (viewModal) viewModal.hide();
       if (AG._viewingEvento) {
         setTimeout(() => abrirFormEditarCompromisso(AG._viewingEvento), 200);
+      }
+    };
+
+    window.agendaViewCancelarAtual = async function() {
+      if (!AG._viewingEvento) return;
+      const acao = AG._viewingEvento.cancelado ? "restaurar" : "cancelar";
+      if (!confirm(`Tem certeza que deseja ${acao} este compromisso?`)) return;
+      try {
+        const res = await fetch(`/agenda/cancelar/${AG._viewingEvento.id}/`, {
+          method: 'POST',
+          headers: {'X-CSRFToken': CSRF()}
+        });
+        const data = await res.json();
+        if (data.ok) {
+          const viewModal = bootstrap.Modal.getInstance(document.getElementById('agendaViewModal'));
+          if (viewModal) viewModal.hide();
+          carregarEventos().then(() => renderizarTudo());
+        } else {
+          alert(data.error || 'Erro ao cancelar.');
+        }
+      } catch (err) {
+        alert("Erro de rede ao cancelar.");
       }
     };
 
@@ -1222,8 +1268,10 @@
           const topPct = ((hI - 7) * 60 + mI) / (16 * 60) * 100;
           const heightPct = ((hF - hI) * 60 + (mF - mI)) / (16 * 60) * 100;
           const minH = Math.max(heightPct, 2.5);
-          html += `<div class="agenda-event-block" style="background:${e.cor};top:${topPct}%;height:${minH}%;" onclick="agendaAbrirEvento(${e.id})">
-        <div class="event-block-title">${escHtml(e.titulo)}</div>
+          const opacStyle = e.cancelado ? 'opacity:0.6;' : '';
+          const titleStr = e.cancelado ? `❌ <s style="opacity:0.8">${escHtml(e.titulo)}</s>` : escHtml(e.titulo);
+          html += `<div class="agenda-event-block" style="background:${e.cor};top:${topPct}%;height:${minH}%;${opacStyle}" onclick="agendaAbrirEvento(${e.id})">
+        <div class="event-block-title">${titleStr}</div>
         <div class="event-block-sub">${e.hora_inicio}${e.hora_fim ? ' – ' + e.hora_fim : ''} ${e.presencial ? '🏢 Presencial' : '💻 Virtual'}</div>
         ${e.numero_processo ? `<div class="event-block-sub">📋 Proc: <b>${escHtml(e.numero_processo)}</b></div>` : ''}
       </div>`;
