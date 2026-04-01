@@ -1061,8 +1061,28 @@ def agenda_eventos_json(request):
         except ValueError:
             pass
 
+    # Busca processos que correspondam aos números informados para gerar os links
+    numeros_processo = [c.numero_processo for c in qs if c.numero_processo]
+    from processos.models import Processo
+    # Prefetch andamentos para otimizar a busca do link do documento
+    processos_qs = Processo.objects.filter(numero_processo__in=numeros_processo).prefetch_related('andamentos')
+    
+    processos_dict = {}
+    for p in processos_qs:
+        link = f'/processos/{p.id}/'
+        # Emula o comportamento da pauta: tenta pegar o link_doc do último andamento
+        andamento_atual = p.andamentos.order_by('-dt_criacao').first()
+        if andamento_atual and getattr(andamento_atual, 'link_doc', None):
+            link = andamento_atual.link_doc
+        
+        processos_dict[p.numero_processo] = {
+            'id': p.id,
+            'link': link
+        }
+
     eventos = []
     for c in qs:
+        p_data = processos_dict.get(c.numero_processo)
         eventos.append({
             'id': c.pk,
             'titulo': c.titulo,
@@ -1075,6 +1095,9 @@ def agenda_eventos_json(request):
             'cor': c.cor,
             'presencial': c.presencial,
             'numero_processo': c.numero_processo,
+            'processo_id': p_data['id'] if p_data else None,
+            'processo_link': p_data['link'] if p_data else None,
+            'link_reuniao': c.link_reuniao,
             'cancelado': c.cancelado,
             'criado_por': c.criado_por.get_full_name() if c.criado_por else '',
         })
@@ -1106,6 +1129,7 @@ def agenda_criar(request):
             cor=data.get('cor', '#083464'),
             presencial=data.get('presencial', True),
             numero_processo=data.get('numero_processo', ''),
+            link_reuniao=data.get('link_reuniao', ''),
             criado_por=request.user,
         )
         return JsonResponse({'ok': True, 'id': c.pk})
@@ -1141,6 +1165,7 @@ def agenda_editar(request, pk):
     c.cor = data.get('cor', c.cor)
     c.presencial = data.get('presencial', c.presencial)
     c.numero_processo = data.get('numero_processo', c.numero_processo)
+    c.link_reuniao = data.get('link_reuniao', c.link_reuniao)
     c.save()
     return JsonResponse({'ok': True})
 

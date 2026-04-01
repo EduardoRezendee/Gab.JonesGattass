@@ -288,6 +288,7 @@ class Compromisso(models.Model):
     cor = models.CharField(max_length=10, default='#083464', verbose_name='Cor')
     presencial = models.BooleanField(default=True, verbose_name='Presencial?')
     numero_processo = models.CharField(max_length=100, blank=True, verbose_name='Número do Processo')
+    link_reuniao = models.URLField(blank=True, null=True, verbose_name='Link da Reunião (Teams/Zoom)')
     cancelado = models.BooleanField(default=False, verbose_name='Cancelado?')
     criado_por = models.ForeignKey(
         User,
