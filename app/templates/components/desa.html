@@ -289,6 +289,9 @@
                   <i class="bi bi-file-earmark-text me-2"></i>
                   <strong>Processo:</strong>
                   <span id="numeroProcesso-{{ andamento.processo_pk }}" class="ms-1 fw-bold">{{ andamento.numero_processo }}</span>
+                  {% if andamento.tags_materia %}
+                  <span class="ms-2" style="background:#353535;color:#ffffff;border-radius:4px;padding:1px 8px;font-size:0.78rem;font-weight:600;">{{ andamento.tags_materia }}</span>
+                  {% endif %}
 
                   {% if andamento.tem_comentario %}
                   <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm"

@@ -114,6 +114,7 @@ class Processo(models.Model):
     # Novos campos
     despacho = models.BooleanField(default=False, verbose_name='É despacho?')
     prioridade_urgente = models.BooleanField(default=False, verbose_name='Prioridade Urgente?')
+    tags_materia = models.CharField(max_length=500, blank=True, null=True, verbose_name='Tags de Matéria')
 
     def dias_no_gabinete(self):
         """Calcula quantos dias o processo está no gabinete"""

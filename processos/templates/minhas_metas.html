@@ -1,264 +1,474 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<div class="container mt-4">
-  <!-- Card Principal -->
-  <div class="card shadow-sm mb-4" style="border-radius: 12px; background: #fff;">
-    <div class="card-header" style="background: linear-gradient(90deg, #e7e7e7, #2f2f2f); border-bottom: none; border-radius: 12px 12px 0 0;">
-      <h2 class="mb-0 text-primary fw-bold">
-        <i class="bi bi-person-check me-2"></i> Minhas Metas
-      </h2>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  .metas-wrapper { font-family: 'Inter', sans-serif; }
+
+  .metas-header {
+    background: linear-gradient(135deg, #083464 0%, #1E3A8A 60%, #16a085 100%);
+    border-radius: 16px 16px 0 0;
+    padding: 1.25rem 1.75rem;
+    color: white;
+  }
+
+  /* KPIs */
+  .kpi-card {
+    border-radius: 12px; padding: 1rem 0.75rem; text-align: center;
+    border: none; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important; }
+  .kpi-number { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+  .kpi-label  { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+  /* Grupo de prioridade */
+  .priority-group { border-radius: 12px; overflow: hidden; margin-bottom: 0.75rem; border: 1px solid #e5e7eb; }
+
+  .priority-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1rem; cursor: pointer; user-select: none;
+    font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;
+    border: none; width: 100%; text-align: left;
+    transition: filter 0.15s;
+  }
+  .priority-header:hover { filter: brightness(0.95); }
+
+  .group-edciv   .priority-header { background: #fef2f2; color: #991b1b; border-bottom: 2px solid #fca5a5; }
+  .group-urgente .priority-header { background: #fff7ed; color: #9a3412; border-bottom: 2px solid #fdba74; }
+  .group-alta    .priority-header { background: #fefce8; color: #854d0e; border-bottom: 2px solid #fde047; }
+  .group-normal  .priority-header { background: #eff6ff; color: #1e40af; border-bottom: 2px solid #93c5fd; }
+  .group-concluido .priority-header { background: #f0fdf4; color: #166534; border-bottom: 2px solid #86efac; }
+
+  /* Indicador dot */
+  .prio-dot {
+    width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+    flex-shrink: 0; margin-right: 7px;
+  }
+  .dot-edciv   { background: #dc2626; }
+  .dot-urgente { background: #f97316; }
+  .dot-alta    { background: #eab308; }
+  .dot-normal  { background: #3b82f6; }
+  .dot-concluido { background: #22c55e; }
+
+  /* Tabela compacta */
+  .compact-table { font-size: 0.82rem; margin-bottom: 0; }
+  .compact-table thead th {
+    background: #f9fafb; color: #6b7280; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;
+    padding: 0.45rem 0.75rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap;
+  }
+  .compact-table tbody tr { transition: background 0.15s; }
+  .compact-table tbody tr:hover { background: #f8fafc; }
+  .compact-table tbody td {
+    padding: 0.55rem 0.75rem; border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle; color: #374151;
+  }
+  .compact-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Row prio strip */
+  .row-edciv td:first-child   { border-left: 3px solid #dc2626; }
+  .row-urgente td:first-child { border-left: 3px solid #f97316; }
+  .row-alta td:first-child    { border-left: 3px solid #eab308; }
+  .row-normal td:first-child  { border-left: 3px solid #3b82f6; }
+
+  /* Fase chips */
+  .fase-chip {
+    display: inline-block; font-size: 0.7rem; padding: 2px 7px;
+    border-radius: 20px; font-weight: 500; white-space: nowrap;
+  }
+  .fase-elab { background: #dbeafe; color: #1d4ed8; }
+  .fase-rev  { background: #fef3c7; color: #92400e; }
+  .fase-dev  { background: #fee2e2; color: #b91c1c; }
+  .fase-conc { background: #d1fae5; color: #065f46; }
+  .fase-out  { background: #e0e7ff; color: #3730a3; }
+
+  /* Status */
+  .status-pend { background: #fef3c7; color: #92400e; border-radius: 20px; padding: 2px 10px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+  .status-conc { background: #d1fae5; color: #065f46; border-radius: 20px; padding: 2px 10px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+
+  /* Linha concluída - verde claro */
+  .compact-table tbody tr.row-concluido,
+  .compact-table tbody tr.row-concluido:hover {
+    --bs-table-bg: #dcfce7;
+    --bs-table-hover-bg: #bbf7d0;
+    background-color: #dcfce7 !important;
+  }
+
+  /* Tag de Matéria */
+  .tag-materia {
+    display: inline-block; max-width: 200px;
+    background: #ede9fe; color: #5b21b6;
+    border-radius: 4px; padding: 1px 7px;
+    font-size: 0.68rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; vertical-align: middle;
+    margin-top: 2px;
+  }
+
+  /* Dias */
+  .dias-ok   { color: #6b7280; font-weight: 500; }
+  .dias-warn { color: #d97706; font-weight: 700; }
+  .dias-crit { color: #dc2626; font-weight: 700; }
+
+  /* Progress bar */
+  .meta-progress { height: 24px; border-radius: 12px; background: #e5e7eb; overflow: hidden; }
+  .meta-progress-bar {
+    height: 100%; border-radius: 12px;
+    background: linear-gradient(90deg, #10b981, #059669);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: white; transition: width 1s ease;
+  }
+
+  /* Contagem badge no grupo */
+  .group-count {
+    background: rgba(0,0,0,0.08); border-radius: 20px;
+    padding: 1px 8px; font-size: 0.75rem; font-weight: 700;
+  }
+
+  .chevron-icon { transition: transform 0.25s ease; }
+  .collapsed .chevron-icon { transform: rotate(-90deg); }
+</style>
+
+<div class="metas-wrapper container-fluid px-0">
+<div class="shadow-sm" style="border-radius: 16px; overflow: hidden; background: #f8fafc;">
+
+  <!-- HEADER -->
+  <div class="metas-header d-flex align-items-center gap-3">
+    <div style="background:rgba(255,255,255,0.15); border-radius:11px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <i class="bi bi-trophy-fill fs-5"></i>
     </div>
-    <div class="card-body p-4">
-      <!-- Foto e Nome -->
-      <div class="text-center mb-4">
-        <img
-          src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}https://www.gravatar.com/avatar/{{ request.user.email|default:'000' }}?d=mp&s=80{% endif %}"
-          class="rounded-circle border border-3 border-primary mb-2"
-          width="80" height="80"
-          alt="Avatar"
-        >
-        <h4 class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</h4>
-      </div>
-
+    <div class="flex-grow-1">
+      <h5 class="mb-0 fw-bold">Minhas Metas</h5>
       {% if meta %}
-      <!-- Resumo Quantitativo -->
-      <div class="row text-center g-4 mb-4">
-        <div class="col-md-4">
-          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
-            <h6 class="text-muted mb-2">Total de Processos</h6>
-            <p class="h3 mb-0">{{ total_meta }}</p>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
-            <h6 class="text-warning mb-2">Pendentes</h6>
-            <p class="h3 mb-0">{{ metas_pendentes }}</p>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="p-3 bg-light rounded shadow-sm transition-shadow">
-            <h6 class="text-success mb-2">Concluídos</h6>
-            <p class="h3 mb-0">{{ metas_concluidas }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Meta da Semana -->
-      <h5 class="mb-3 fw-semibold">
-        Meta da Semana
-        ({{ meta.semana_inicio|date:"d/m/Y" }} – {{ meta.semana_fim|date:"d/m/Y" }})
-      </h5>
-      <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
-        <table class="table table-hover align-middle">
-          <thead style="background: linear-gradient(135deg, #083464, #1d4979); color: #ffffff;">
-            <tr>
-              <th class="text-center">Nº Processo</th>
-              <th class="text-center">Data Entrada</th>
-              <th class="text-center">Dias Gabinete</th>
-              <th class="text-center">Fase</th>
-              <th class="text-center">Espécie</th>
-              <th class="text-center">Tipo</th>
-              <th class="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in processos_com_status %}
-            <tr class="transition-row">
-              <td class="text-center">{{ p.numero_processo }}</td>
-              <td class="text-center">{{ p.data_entrada|date:"d/m/Y"|default:"-" }}</td>
-              <td class="text-center">
-                {% if p.dias_no_gabinete is not None %}
-                  <span class="badge bg-light text-dark">{{ p.dias_no_gabinete }} dias</span>
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td class="text-center">{{ p.fase_atual|default:"-" }}</td>
-              <td class="text-center">{{ p.especie|default:"-" }}</td>
-              <td class="text-center">{{ p.tipo|default:"-" }}</td>
-              <td class="text-center">
-                {% if p.concluido %}
-                  <span class="badge bg-success">Concluído</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">Pendente</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="7" class="text-center text-muted">Nenhum processo na meta.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Progresso da Meta -->
-      <div class="mb-4">
-        <h6 class="fw-medium">Progresso da Meta</h6>
-        <div class="progress" style="height: 24px; border-radius: 12px; background-color: #e9ecef;">
-          <div class="progress-bar bg-success transition-width"
-               role="progressbar"
-               style="width: {{ progresso|slugify }}%; min-width: 40px; transition: width 0.6s ease;"
-               aria-valuenow="{{ progresso|stringformat:"0.1f"|cut:"," }}"
-               aria-valuemin="0"
-               aria-valuemax="100">
-            {{ progresso|stringformat:"0.1f"|cut:"," }}%
-          </div>
-        </div>
-      </div>
-
-      <!-- Processos Fora da Meta (Opcional - Manter ou Remover) -->
-      <h5 class="mb-3 fw-semibold">Processos Enviados para Revisão Des (Fora da Meta)</h5>
-      <div class="table-responsive shadow-sm rounded p-3 bg-white" style="border-radius: 12px;">
-        <table class="table table-hover align-middle">
-          <thead style="background: linear-gradient(135deg, #1a3c6b, #2e5b8a); color: #ffffff;">
-            <tr>
-              <th class="text-center">Nº Processo</th>
-              <th class="text-center">Data Entrada</th>
-              <th class="text-center">Dias Gabinete</th>
-              <th class="text-center">Fase</th>
-              <th class="text-center">Espécie</th>
-              <th class="text-center">Tipo</th>
-              <th class="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in processos_fora_meta %}
-            <tr class="transition-row">
-              <td class="text-center">{{ p.numero_processo }}</td>
-              <td class="text-center">{{ p.data_entrada|date:"d/m/Y"|default:"-" }}</td>
-              <td class="text-center">
-                {% if p.dias_no_gabinete is not None %}
-                  <span class="badge bg-light text-dark">{{ p.dias_no_gabinete }} dias</span>
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td class="text-center">{{ p.fase_atual|default:"-" }}</td>
-              <td class="text-center">{{ p.especie|default:"-" }}</td>
-              <td class="text-center">{{ p.tipo|default:"-" }}</td>
-              <td class="text-center">
-                <span class="badge bg-success">Concluído</span>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="7" class="text-center text-muted">Nenhum processo fora da meta enviado para Revisão Des.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div style="margin-top:2px; font-size:0.82rem; font-weight:500; color:rgba(255,255,255,0.9);">
+        <i class="bi bi-calendar-week me-1"></i>{{ meta.semana_inicio|date:"d/m/Y" }} — {{ meta.semana_fim|date:"d/m/Y" }}
       </div>
       {% endif %}
     </div>
+    <div class="d-flex align-items-center gap-2">
+      <img src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}https://www.gravatar.com/avatar/{{ request.user.email|default:'000' }}?d=mp&s=80{% endif %}"
+        class="rounded-circle border border-2" style="border-color:rgba(255,255,255,0.4)!important;" width="44" height="44" alt="Avatar">
+      <div>
+        <div class="fw-semibold" style="font-size:0.85rem; line-height:1.2;">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <small style="opacity:0.7; font-size:0.72rem;">{{ request.user.profile.funcao|default:"Assessor" }}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-3 p-md-4">
+  {% if meta %}
+
+    <!-- KPIs -->
+    <div class="row g-2 mb-3">
+      <div class="col-4">
+        <div class="kpi-card shadow-sm" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">
+          <div class="kpi-number" style="color:#1d4ed8;">{{ total_meta }}</div>
+          <div class="kpi-label" style="color:#3b82f6;">Total</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="kpi-card shadow-sm" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+          <div class="kpi-number" style="color:#d97706;">{{ metas_pendentes }}</div>
+          <div class="kpi-label" style="color:#f59e0b;">Pendentes</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="kpi-card shadow-sm" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+          <div class="kpi-number" style="color:#16a34a;">{{ metas_concluidas }}</div>
+          <div class="kpi-label" style="color:#22c55e;">Concluídos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESSO -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between mb-1">
+        <small class="fw-600 text-muted" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px;">Progresso da Semana</small>
+        <small class="fw-bold" style="color:#10b981;">{{ progresso|stringformat:"0.1f"|cut:"," }}%</small>
+      </div>
+      <div class="meta-progress">
+        <div class="meta-progress-bar" style="width:{{ progresso|slugify }}%;">
+          {% if progresso > 12 %}{{ progresso|stringformat:"0.0f"|cut:"," }}%{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== GRUPOS POR PRIORIDADE ====== -->
+    {% if processos_com_status %}
+
+    <!-- GRUPO CRÍTICOS (EDCIV / Voto Vista) -->
+    <div class="priority-group group-edciv">
+      <button class="priority-header" data-bs-toggle="collapse" data-bs-target="#grpEdciv" aria-expanded="true">
+        <span class="d-flex align-items-center">
+          🔴 Críticos — EDCIV / Voto Vista / Divergência
+        </span>
+        <span class="d-flex align-items-center gap-2">
+          <span class="group-count">
+            {% for p in processos_com_status %}{% if p.especie == 'EDCIV' or p.especie == 'Voto Vista' or p.especie == 'Revisitado' or p.especie == 'Voto de Divergência' %}·{% endif %}{% endfor %}
+          </span>
+          <i class="bi bi-chevron-down chevron-icon"></i>
+        </span>
+      </button>
+      <div class="collapse show" id="grpEdciv">
+        <div class="table-responsive">
+          <table class="compact-table table table-borderless">
+            <thead><tr>
+              <th>Nº Processo</th><th>Fase</th><th>Espécie</th><th>Dias</th><th>Entrada</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              {% for p in processos_com_status %}
+              {% if p.especie == 'EDCIV' or p.especie == 'Voto Vista' or p.especie == 'Revisitado' or p.especie == 'Voto de Divergência' %}
+              <tr class="row-edciv {% if p.concluido %}row-concluido{% endif %}">
+                <td class="fw-semibold" style="color:#111827;">{{ p.numero_processo }}</td>
+                <td>
+                  <span class="fase-chip {% if 'Elaboração' in p.fase_atual|default:'' %}fase-elab{% elif 'Revisão' in p.fase_atual|default:'' %}fase-rev{% elif 'Devolvido' in p.fase_atual|default:'' %}fase-dev{% elif 'Concluído' in p.fase_atual|default:'' %}fase-conc{% else %}fase-out{% endif %}">
+                    {{ p.fase_atual|default:"—" }}
+                  </span>
+                </td>
+                <td><span class="fw-semibold" style="color:#dc2626;">{{ p.especie|default:"—" }}</span></td>
+                <td class="{% if p.dias_no_gabinete >= 30 %}dias-crit{% elif p.dias_no_gabinete >= 15 %}dias-warn{% else %}dias-ok{% endif %}">
+                  {% if p.dias_no_gabinete is not None %}{{ p.dias_no_gabinete }}d{% else %}—{% endif %}
+                </td>
+                <td>{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                <td>{% if p.concluido %}<span class="status-conc">✓ Concluído</span>{% else %}<span class="status-pend">⏳ Pendente</span>{% endif %}</td>
+              </tr>
+              {% endif %}
+              {% empty %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO URGENTÍSSIMO -->
+    <div class="priority-group group-urgente">
+      <button class="priority-header" data-bs-toggle="collapse" data-bs-target="#grpUrgente" aria-expanded="true">
+        <span class="d-flex align-items-center">
+          🟠 Urgentíssimo
+        </span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </button>
+      <div class="collapse show" id="grpUrgente">
+        <div class="table-responsive">
+          <table class="compact-table table table-borderless">
+            <thead><tr>
+              <th>Nº Processo</th><th>Fase</th><th>Espécie</th><th>Dias</th><th>Entrada</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              {% for p in processos_com_status %}
+              {% if p.tipo == 'Urgentíssimo' and p.especie != 'EDCIV' and p.especie != 'Voto Vista' and p.especie != 'Revisitado' and p.especie != 'Voto de Divergência' %}
+              <tr class="row-urgente {% if p.concluido %}row-concluido{% endif %}">
+                <td class="fw-semibold" style="color:#111827;">{{ p.numero_processo }}</td>
+                <td><span class="fase-chip {% if 'Elaboração' in p.fase_atual|default:'' %}fase-elab{% elif 'Revisão' in p.fase_atual|default:'' %}fase-rev{% elif 'Devolvido' in p.fase_atual|default:'' %}fase-dev{% elif 'Concluído' in p.fase_atual|default:'' %}fase-conc{% else %}fase-out{% endif %}">{{ p.fase_atual|default:"—" }}</span></td>
+                <td>{{ p.especie|default:"—" }}</td>
+                <td class="{% if p.dias_no_gabinete >= 30 %}dias-crit{% elif p.dias_no_gabinete >= 15 %}dias-warn{% else %}dias-ok{% endif %}">
+                  {% if p.dias_no_gabinete is not None %}{{ p.dias_no_gabinete }}d{% else %}—{% endif %}
+                </td>
+                <td>{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                <td>{% if p.concluido %}<span class="status-conc">✓ Concluído</span>{% else %}<span class="status-pend">⏳ Pendente</span>{% endif %}</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO PRIORIDADE -->
+    <div class="priority-group group-alta">
+      <button class="priority-header" data-bs-toggle="collapse" data-bs-target="#grpAlta" aria-expanded="true">
+        <span class="d-flex align-items-center">
+          🟡 Prioridade
+        </span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </button>
+      <div class="collapse show" id="grpAlta">
+        <div class="table-responsive">
+          <table class="compact-table table table-borderless">
+            <thead><tr>
+              <th>Nº Processo</th><th>Fase</th><th>Espécie</th><th>Dias</th><th>Entrada</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              {% for p in processos_com_status %}
+              {% if p.tipo == 'Prioridade' and p.tipo != 'Urgentíssimo' and p.especie != 'EDCIV' and p.especie != 'Voto Vista' and p.especie != 'Revisitado' and p.especie != 'Voto de Divergência' %}
+              <tr class="row-alta {% if p.concluido %}row-concluido{% endif %}">
+                <td class="fw-semibold" style="color:#111827;">{{ p.numero_processo }}</td>
+                <td><span class="fase-chip {% if 'Elaboração' in p.fase_atual|default:'' %}fase-elab{% elif 'Revisão' in p.fase_atual|default:'' %}fase-rev{% elif 'Devolvido' in p.fase_atual|default:'' %}fase-dev{% elif 'Concluído' in p.fase_atual|default:'' %}fase-conc{% else %}fase-out{% endif %}">{{ p.fase_atual|default:"—" }}</span></td>
+                <td>{{ p.especie|default:"—" }}</td>
+                <td class="{% if p.dias_no_gabinete >= 30 %}dias-crit{% elif p.dias_no_gabinete >= 15 %}dias-warn{% else %}dias-ok{% endif %}">
+                  {% if p.dias_no_gabinete is not None %}{{ p.dias_no_gabinete }}d{% else %}—{% endif %}
+                </td>
+                <td>{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                <td>{% if p.concluido %}<span class="status-conc">✓ Concluído</span>{% else %}<span class="status-pend">⏳ Pendente</span>{% endif %}</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRUPO DEMAIS -->
+    <div class="priority-group group-normal">
+      <button class="priority-header collapsed" data-bs-toggle="collapse" data-bs-target="#grpNormal" aria-expanded="false">
+        <span class="d-flex align-items-center">
+          🔵 Demais Processos
+        </span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </button>
+      <div class="collapse" id="grpNormal">
+        <div class="table-responsive">
+          <table class="compact-table table table-borderless">
+            <thead><tr>
+              <th>Nº Processo</th><th>Fase</th><th>Espécie</th><th>Tipo</th><th>Dias</th><th>Entrada</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              {% for p in processos_com_status %}
+              {% if p.tipo != 'Urgentíssimo' and p.tipo != 'Prioridade' and p.especie != 'EDCIV' and p.especie != 'Voto Vista' and p.especie != 'Revisitado' and p.especie != 'Voto de Divergência' %}
+              <tr class="row-normal {% if p.concluido %}row-concluido{% endif %}">
+                <td class="fw-semibold" style="color:#111827;">{{ p.numero_processo }}</td>
+                <td><span class="fase-chip {% if 'Elaboração' in p.fase_atual|default:'' %}fase-elab{% elif 'Revisão' in p.fase_atual|default:'' %}fase-rev{% elif 'Devolvido' in p.fase_atual|default:'' %}fase-dev{% elif 'Concluído' in p.fase_atual|default:'' %}fase-conc{% else %}fase-out{% endif %}">{{ p.fase_atual|default:"—" }}</span></td>
+                <td>{{ p.especie|default:"—" }}</td>
+                <td>{{ p.tipo|default:"—" }}</td>
+                <td class="{% if p.dias_no_gabinete >= 30 %}dias-crit{% elif p.dias_no_gabinete >= 15 %}dias-warn{% else %}dias-ok{% endif %}">
+                  {% if p.dias_no_gabinete is not None %}{{ p.dias_no_gabinete }}d{% else %}—{% endif %}
+                </td>
+                <td>{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                <td>{% if p.concluido %}<span class="status-conc">✓ Concluído</span>{% else %}<span class="status-pend">⏳ Pendente</span>{% endif %}</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+    <!-- FORA DA META -->
+    {% if processos_fora_meta %}
+    <div class="mt-3 priority-group group-concluido">
+      <button class="priority-header collapsed" data-bs-toggle="collapse" data-bs-target="#grpForaMeta" aria-expanded="false">
+        <span class="d-flex align-items-center">
+          ✅ Enviados para Revisão Des (Fora da Meta)
+        </span>
+        <i class="bi bi-chevron-down chevron-icon"></i>
+      </button>
+      <div class="collapse" id="grpForaMeta">
+        <div class="table-responsive">
+          <table class="compact-table table table-borderless">
+            <thead><tr>
+              <th>Nº Processo</th><th>Fase</th><th>Espécie</th><th>Tipo</th><th>Dias</th><th>Entrada</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              {% for p in processos_fora_meta %}
+              <tr>
+                <td class="fw-semibold">
+                  {{ p.numero_processo }}
+                  {% if p.tags_materia %}<br><span class="tag-materia" title="{{ p.tags_materia }}">{{ p.tags_materia }}</span>{% endif %}
+                </td>
+                <td><span class="fase-chip fase-conc">{{ p.fase_atual|default:"Concluído" }}</span></td>
+                <td>{{ p.especie|default:"—" }}</td>
+                <td>{{ p.tipo|default:"—" }}</td>
+                <td class="{% if p.dias_no_gabinete >= 30 %}dias-crit{% elif p.dias_no_gabinete >= 15 %}dias-warn{% else %}dias-ok{% endif %}">
+                  {% if p.dias_no_gabinete is not None %}{{ p.dias_no_gabinete }}d{% else %}—{% endif %}
+                </td>
+                <td>{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                <td><span class="status-conc">✓ Concluído</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  {% else %}
+  <div class="text-center py-5" style="color:#9ca3af;">
+    <i class="bi bi-trophy" style="font-size:3rem; opacity:0.2;"></i>
+    <p class="mt-3 mb-0 fw-semibold">Nenhuma meta cadastrada para esta semana.</p>
+    <small>Entre em contato com o Chefe de Gabinete para definir sua meta.</small>
+  </div>
+  {% endif %}
   </div>
 </div>
-
-<style>
-.table td, .table th {
-  vertical-align: middle;
-}
-.progress-bar {
-  line-height: 24px;
-  font-weight: 500;
-  transition: width 0.5s ease-in-out;
-}
-.transition-shadow {
-  transition: box-shadow 0.3s ease;
-}
-.transition-shadow:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-}
-.transition-row:hover {
-  background-color: #f8f9fa;
-}
-@media (max-width: 576px) {
-  .row.text-center .col-md-4 {
-    margin-bottom: 1rem;
-  }
-  .progress {
-    height: 20px !important;
-  }
-  .table {
-    font-size: 0.9rem;
-  }
-}
-</style>
+</div>
 
 <script>
+// Chevron toggle animation
+document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(btn => {
+  const target = document.querySelector(btn.getAttribute('data-bs-target'));
+  if (!target) return;
+  target.addEventListener('show.bs.collapse', () => btn.classList.remove('collapsed'));
+  target.addEventListener('hide.bs.collapse', () => btn.classList.add('collapsed'));
+});
+
+// Ocultar grupos sem linhas + forçar verde nas linhas concluídas
+document.addEventListener('DOMContentLoaded', () => {
+  // Ocultar grupos vazios
+  document.querySelectorAll('.priority-group').forEach(group => {
+    const rows = group.querySelectorAll('tbody tr');
+    if (rows.length === 0) group.style.display = 'none';
+  });
+  // Força verde nas linhas concluídas (bypass Bootstrap CSS vars)
+  document.querySelectorAll('tr.row-concluido').forEach(tr => {
+    tr.style.setProperty('background-color', '#dcfce7', 'important');
+    tr.querySelectorAll('td').forEach(td => {
+      td.style.setProperty('background-color', '#dcfce7', 'important');
+    });
+  });
+});
+
+// Scripts existentes mantidos
 const processosPorUsuario = {{ processos_por_usuario|default:"{}"|safe }};
 let currentMeta = null;
 
 async function carregarMeta(metaId) {
   try {
     const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
-      method: 'GET',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+      method: 'GET', headers: { 'X-CSRFToken': '{{ csrf_token }}' }
     });
     const meta = await response.json();
     currentMeta = meta;
-
     document.getElementById('meta_id').value = meta.id;
     document.getElementById('meta_qtd').value = meta.meta_qtd;
-
     const usuarioId = meta.usuario_id;
     const container = document.getElementById('processosContainer');
     container.innerHTML = '';
-
     if (!usuarioId || !processosPorUsuario[usuarioId]?.length) {
       container.innerHTML = '<p class="text-muted">Nenhum processo disponível para este usuário.</p>';
       return;
     }
-
     const processosOrdenados = processosPorUsuario[usuarioId].sort((a, b) => b.dias_no_gabinete - a.dias_no_gabinete);
     processosOrdenados.forEach(proc => {
       const isChecked = meta.processo_ids.includes(proc.id) ? 'checked' : '';
       const label = document.createElement('label');
-      label.innerHTML = `
-        <input type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()">
-        ${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)
-      `;
+      label.innerHTML = `<input type="checkbox" name="processo_ids[]" value="${proc.id}" ${isChecked} onchange="atualizarMetaQtd()"> ${proc.numero_processo} - ${proc.especie} (${proc.dias_no_gabinete} dias no gabinete)`;
       container.appendChild(label);
     });
     document.getElementById('loadingMessage').style.display = 'none';
-  } catch (error) {
-    showMessage('Erro ao carregar meta.', true);
-  }
-}
-
-async function mostrarTodosProcessos(metaId) {
-  try {
-    const response = await fetch(`{% url 'editar_meta_semanal' %}?meta_id=${metaId}`, {
-      method: 'GET',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-    });
-    const meta = await response.json();
-    const processos = meta.processos.map(p => `${p.numero_processo} (${p.especie})`).join('<br>');
-    const modalBody = document.getElementById('allProcessosBody');
-    modalBody.innerHTML = processos || '<p>Nenhum processo adicional.</p>';
-    new bootstrap.Modal(document.getElementById('allProcessosModal')).show();
-  } catch (error) {
-    showMessage('Erro ao carregar processos.', true);
-  }
+  } catch (error) { showMessage('Erro ao carregar meta.', true); }
 }
 
 function atualizarMetaQtd() {
-  const checkboxes = document.querySelectorAll('input[name="processo_ids[]"]:checked');
-  document.getElementById('meta_qtd').value = checkboxes.length;
+  document.getElementById('meta_qtd').value = document.querySelectorAll('input[name="processo_ids[]"]:checked').length;
 }
 
 function showMessage(message, isError = false) {
-  const messageDiv = document.getElementById('resultMessage');
-  messageDiv.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'}" role="alert">${message}</div>`;
-  setTimeout(() => messageDiv.innerHTML = '', 5000);
+  const d = document.getElementById('resultMessage');
+  d.innerHTML = `<div class="alert ${isError ? 'alert-danger' : 'alert-success'}">${message}</div>`;
+  setTimeout(() => d.innerHTML = '', 5000);
 }
 
 function resetForm() {
   const form = document.getElementById('editMetaForm');
-  form.reset();
-  form.classList.remove('was-validated');
+  form.reset(); form.classList.remove('was-validated');
   document.getElementById('processosContainer').innerHTML = '<p class="text-muted" id="loadingMessage">Carregando processos...</p>';
   document.getElementById('meta_qtd').value = 0;
 }
@@ -266,70 +476,26 @@ function resetForm() {
 async function excluirMeta(metaId) {
   if (confirm('Tem certeza que deseja excluir esta meta?')) {
     try {
-      const response = await fetch(`{% url 'excluir_meta_semanal' %}?meta_id=${metaId}`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-      });
-      const data = await response.json();
+      const r = await fetch(`{% url 'excluir_meta_semanal' %}?meta_id=${metaId}`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+      const data = await r.json();
       showMessage(data.message);
-      if (data.success) {
-        setTimeout(() => window.location.reload(), 1000);
-      }
-    } catch (error) {
-      showMessage('Erro ao excluir meta.', true);
-    }
+      if (data.success) setTimeout(() => window.location.reload(), 1000);
+    } catch (e) { showMessage('Erro ao excluir meta.', true); }
   }
 }
 
 document.getElementById('editMetaForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const form = this;
   const submitBtn = document.getElementById('submitBtn');
   const spinner = document.getElementById('spinner');
-  submitBtn.disabled = true;
-  spinner.classList.remove('d-none');
-
-  if (!form.checkValidity()) {
-    form.classList.add('was-validated');
-    submitBtn.disabled = false;
-    spinner.classList.add('d-none');
-    return;
-  }
-
+  submitBtn.disabled = true; spinner.classList.remove('d-none');
+  if (!this.checkValidity()) { this.classList.add('was-validated'); submitBtn.disabled = false; spinner.classList.add('d-none'); return; }
   try {
-    const response = await fetch("{% url 'editar_meta_semanal' %}", {
-      method: 'POST',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-      body: new FormData(form)
-    });
-    const data = await response.json();
-    if (data.success) {
-      showMessage(data.message);
-      resetForm();
-      setTimeout(() => window.location.reload(), 1000);
-    } else {
-      showMessage(data.message || 'Erro ao salvar meta.', true);
-    }
-  } catch (error) {
-    showMessage('Erro ao salvar meta.', true);
-  } finally {
-    submitBtn.disabled = false;
-    spinner.classList.add('d-none');
-  }
+    const r = await fetch("{% url 'editar_meta_semanal' %}", { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' }, body: new FormData(this) });
+    const data = await r.json();
+    if (data.success) { showMessage(data.message); resetForm(); setTimeout(() => window.location.reload(), 1000); }
+    else showMessage(data.message || 'Erro ao salvar meta.', true);
+  } catch (e) { showMessage('Erro ao salvar meta.', true); }
+  finally { submitBtn.disabled = false; spinner.classList.add('d-none'); }
 });
-
-// Bootstrap form validation
-(() => {
-  'use strict';
-  const forms = document.querySelectorAll('.needs-validation');
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      form.classList.add('was-validated');
-    }, false);
-  });
-})();
 </script>

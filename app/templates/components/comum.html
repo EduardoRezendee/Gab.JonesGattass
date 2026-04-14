@@ -282,10 +282,13 @@
                 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <!-- Informações à esquerda -->
                   <div class="flex-grow-1">
-                     <p class="mb-1 d-flex align-items-center" style="color: #1F2937;">
+                     <p class="mb-1 d-flex align-items-center flex-wrap gap-1" style="color: #1F2937;">
                     <i class="bi bi-file-earmark-text me-2" style="color: #7e0d09;"></i>
                     <strong style="color: #1F2937;">Processo:</strong>
                     <span id="numeroProcesso-{{ processo.pk }}" class="ms-1 fw-bold" style="color: #1F2937;">{{ processo.numero_processo }}</span>
+                    {% if processo.tags_materia %}
+                    <span class="ms-1" style="background:#353535;color:#ffffff;border-radius:4px;padding:1px 8px;font-size:0.78rem;font-weight:600;">{{ processo.tags_materia }}</span>
+                    {% endif %}
                     {% if processo.tem_comentario %}
                     <span class="ms-3 badge d-flex align-items-center justify-content-center shadow-sm"
                       title="{{ processo.total_comentarios }} lembretes registrados"

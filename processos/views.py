@@ -509,18 +509,21 @@ def importar_processos_view(request):
                     # Processar o Tipo (Monocrática) (usando a mesma variável limpa)
                     tipo_processo = None  # Inicia como nulo por padrão
                     if nome_tarefa_limpo == "Minutar decisão monocrática":
-                        tipo_processo = tipo_monocratica 
+                        tipo_processo = tipo_monocratica
 
-
-                    # Processar usuário a partir das tags
+                    # Processar usuário e tags de matéria a partir das tags
                     usuario = None
+                    tags_materia = None
                     if pd.notna(row.get('tagsProcessoList')) and row['tagsProcessoList'].strip():
-                        tags = [tag.strip() for tag in str(row['tagsProcessoList']).split(',') if tag.strip() and tag.strip().startswith('Ass-')]
+                        todas_tags = [tag.strip() for tag in str(row['tagsProcessoList']).split(',') if tag.strip()]
+                        # Tags Ass- para usuário
+                        tags_ass = [t for t in todas_tags if t.startswith('Ass-')]
+                        # Tags de matéria: ignorar Ass-, Minutado, Resumo Feito
+                        tags_mat = [t for t in todas_tags if not t.startswith('Ass-') and t not in ('Minutado', 'Resumo Feito')]
+                        if tags_mat:
+                            tags_materia = ', '.join(tags_mat)
                         usuario_encontrado = False
-                        for tag in tags:
-                            if not tag.startswith('Ass-'):
-                                print(f"Tag ignorada (não começa com 'Ass-'): {tag} para processo {numero_processo}")
-                                continue
+                        for tag in tags_ass:
                             username_mapeado = MAPEAMENTO_TAG_USUARIO.get(tag)
                             if username_mapeado:
                                 usuario = usuarios.get(username_mapeado)
@@ -533,7 +536,7 @@ def importar_processos_view(request):
                                 print(f"Tag não mapeada: {tag} para processo {numero_processo}")
                         if not usuario_encontrado:
                             usuario = None
-                            print(f"Processo {numero_processo} sem usuário mapeado, nenhum usuário atribuído.")
+                            print(f"Processo {numero_processo} sem usuário mapeado, nenhum usuário atribuído.")
                     else:
                         print(f"Processo {numero_processo} sem tags válidas ou tagsProcessoList vazio, usando usuário padrão {usuario_default}")
                         usuario = usuarios.get(usuario_default, User.objects.filter(username=usuario_default).first())
@@ -562,6 +565,7 @@ def importar_processos_view(request):
                         'prioridade_urgente': prioridade_urgente,
                         'dt_atualizacao': timezone.now(),
                         'despacho': despacho,
+                        'tags_materia': tags_materia,
                     }
 
                     processo, created = Processo.objects.get_or_create(
@@ -2423,7 +2427,8 @@ def minhas_metas(request):
                 'fase_atual': fases_atuais.get(p.id, 'Não especificado'),
                 'especie': p.especie.especie if p.especie else 'Não especificado',
                 'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
-                'concluido': bool(status_concluido) # Força ser booleano
+                'concluido': bool(status_concluido), # Força ser booleano
+                'tags_materia': p.tags_materia or '',
             })
 
         # ORDENAÇÃO BLINDADA: Garante que os valores comparados nunca sejam None
@@ -2460,7 +2465,8 @@ def minhas_metas(request):
                     'fase_atual': p.fase_atual or 'Não especificado',
                     'especie': p.especie.especie if p.especie else 'Não especificado',
                     'tipo': p.tipo.tipo if p.tipo else 'Não especificado',
-                    'concluido': True
+                    'concluido': True,
+                    'tags_materia': p.tags_materia or '',
                 })
 
     return render(request, 'minhas_metas.html', {
