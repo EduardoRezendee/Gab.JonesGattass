@@ -34,6 +34,7 @@ urlpatterns = [
     path('exportar-excel/', export_processos_xlsx, name='exportar_excel'),
 
     path("adicionar-comentario/<int:processo_id>/", adicionar_comentario, name="adicionar_comentario"),
+    path("analisar-minuta-ia/<int:processo_id>/", views.analisar_minuta_ia, name="analisar_minuta_ia"),
     path('api/v1/processos/', views.ProcessosCreateListAPIView.as_view(), name='processos-create-list-api-view'),
     path('importar-processos/', importar_processos_view, name='importar_processos'),
     

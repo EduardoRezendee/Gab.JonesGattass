@@ -156,8 +156,10 @@ def home(request):
                     'data_envio_revisao': ultimo_andamento.dt_criacao,
                     'tema': processo.tema.nome if processo.tema else None,
                     'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios],
-                    'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
-                    'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
+                    'tem_comentario': total_comentarios > 0,
+                    'total_comentarios': total_comentarios,
+                    'tem_analise_ia': any('**Análise Prévia da IA:**' in c.texto for c in comentarios),
+                    'analise_ia_texto': next((c.texto for c in comentarios if '**Análise Prévia da IA:**' in c.texto), None),
 
                 })
         andamento_metrics.sort(
@@ -254,8 +256,10 @@ def home(request):
                     'data_envio_revisao_des': ultimo_andamento.dt_criacao,
                     'tema': processo.tema.nome if processo.tema else None,
                     'camara': processo.camara.camara if getattr(processo, 'camara', None) else "Sem câmara",
-                    'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
-                    'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
+                    'tem_comentario': total_comentarios > 0,
+                    'total_comentarios': total_comentarios,
+                    'tem_analise_ia': any('**Análise Prévia da IA:**' in c.texto for c in comentarios),
+                    'analise_ia_texto': next((c.texto for c in comentarios if '**Análise Prévia da IA:**' in c.texto), None),
                 })
 
         # Ordenação: Plantão primeiro, depois Liminar, depois mais tempo no gabinete
@@ -472,8 +476,10 @@ def home(request):
                         'comentarios': [
                             {'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()}
                             for c in comentarios_dict.get(processo.pk, [])],
-                        'tem_comentario': total_comentarios > 0, # <-- ADICIONE ESTA LINHA
-                        'total_comentarios': total_comentarios,   # <-- ADICIONE ESTA LINHA
+                        'tem_comentario': total_comentarios > 0,
+                        'total_comentarios': total_comentarios,
+                        'tem_analise_ia': any('**Análise Prévia da IA:**' in c.texto for c in comentarios_dict.get(processo.pk, [])),
+                        'analise_ia_texto': next((c.texto for c in comentarios_dict.get(processo.pk, []) if '**Análise Prévia da IA:**' in c.texto), None),
                         
                     })
             processos_detalhados.sort(

@@ -608,15 +608,16 @@
           .then(data => {
             if (data.texto) {
               const novoComentario = document.createElement("div");
-              novoComentario.classList.add("d-flex", "align-items-start", "border-bottom", "pb-2", "mb-2");
+              novoComentario.classList.add("d-flex", "justify-content-end", "mb-3", "position-relative", "animate__animated", "animate__fadeIn");
+              let textoFormatado = data.texto.replace(/\n/g, '<br>');
               novoComentario.innerHTML = `
-                <img src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-                <div class="w-100">
-                  <strong>${data.usuario}</strong>
-                  <span class="text-muted small d-block">${data.data_criacao}</span>
-                  <p class="mb-0 small bg-light p-2 rounded">${data.texto}</p>
-                </div>
+                  <div class="p-3 shadow-sm" style="background-color: #dcf8c6; border-radius: 15px 0px 15px 15px; border: 1px solid #c2e2ab; max-width: 90%; min-width: 40%;">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                          <strong style="color: #075E54; font-size: 0.95rem;">Você</strong>
+                      </div>
+                      <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">${textoFormatado}</p>
+                      <div class="text-end text-muted" style="font-size: 0.85rem;">${data.data_criacao}</div>
+                  </div>
               `;
               comentariosDiv.appendChild(novoComentario);
 
@@ -736,7 +737,7 @@
     }
 
     .chat-container {
-      max-height: 70vh;
+      min-height: 0;
     }
 
     .copiar-icon {

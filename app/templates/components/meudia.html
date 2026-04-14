@@ -21,6 +21,7 @@
           <li
             class="list-group-item shadow-sm p-3 mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center"
             style="border-radius: 10px; background: white;">
+            {% load app_filters %}
             <!-- Listras verticais para destaque -->
             <span style="
                     position: absolute;
@@ -222,7 +223,7 @@
           <!-- Caixa de Comentários Flutuante -->
           <div id="comment-box-{{ tarefa.processo.id }}"
             class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-            style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
+            style="width: 700px; max-width: 95vw; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
             <!-- Cabeçalho -->
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="fw-bold m-0" style="color: #1F2937;">
@@ -239,19 +240,38 @@
               class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
               style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #6B7280;">
               {% for comentario in tarefa.processo.comentarios.all %}
-              <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #6B7280;">
-                <img
-                  src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                  alt="Foto" class="rounded-circle me-3" width="40" height="40"
-                  style="object-fit: cover; border: 2px solid #083464;">
-                <div class="w-100">
-                  <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
-                  <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y
-                    H:i" }}</span>
-                  <p class="mb-0 small bg-light p-2 rounded"
-                    style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
-                </div>
-              </div>
+                  {% if request.user == comentario.usuario %}
+                  <div class="d-flex justify-content-end mb-3 position-relative">
+                      <div class="p-3 shadow-sm" style="background-color: #dcf8c6; border-radius: 15px 0px 15px 15px; border: 1px solid #c2e2ab; max-width: 90%; min-width: 40%;">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                              <strong style="color: #075E54; font-size: 0.95rem;">Você</strong>
+                              {% if request.user.profile.funcao == "Desembargador" %}
+                              <button class="btn btn-link text-danger p-0 ms-3 btn-excluir-comentario" data-id="{{ comentario.id }}" title="Apagar">
+                                  <i class="bi bi-trash-fill"></i>
+                              </button>
+                              {% endif %}
+                          </div>
+                          <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                          <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
+                      </div>
+                  </div>
+                  {% else %}
+                  <div class="d-flex align-items-start mb-3 position-relative">
+                      <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" alt="Foto" class="rounded-circle me-2 shadow-sm" width="35" height="35" style="object-fit: cover; flex-shrink: 0;">
+                      <div class="p-3 shadow-sm" style="background-color: #ffffff; border-radius: 0px 15px 15px 15px; border: 1px solid #e0e0e0; max-width: 90%; min-width: 40%;">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                              <div class="d-flex align-items-center gap-2">
+                                  <strong style="color: #075E54; font-size: 0.95rem;">{{ comentario.usuario.get_full_name|default:comentario.usuario }}</strong>
+                                  {% if comentario.usuario.profile.funcao == "revisor(a)" %}
+                                  <span class="badge shadow-sm" style="background-color: #000; color: #fff; font-size: 0.6rem; padding: 2px 5px;"><i class="bi bi-lock-fill"></i> PRIVADO</span>
+                                  {% endif %}
+                              </div>
+                          </div>
+                          <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                          <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
+                      </div>
+                  </div>
+                  {% endif %}
               {% empty %}
               <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
               {% endfor %}
@@ -261,9 +281,9 @@
             <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ tarefa.processo.id }}"
               style="border-color: #6B7280;">
               {% csrf_token %}
-              <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
+              <textarea name="texto" class="form-control me-2 border rounded small" rows="2"
                 placeholder="Escreva seu comentário..."
-                style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937;"></textarea>
+                style="border-radius: 10px; border-color: #083464; background-color: #F9FAFB; color: #1F2937; resize: none;"></textarea>
               <button type="submit" class="btn btn-sm shadow-sm"
                 style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
             </form>

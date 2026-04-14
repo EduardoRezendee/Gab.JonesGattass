@@ -1,3 +1,4 @@
+{% load app_filters %}
 <!-- Visão do Revisor(a) -->
 
 <div class="accordion mx-auto mt-4 shadow-sm" id="accordionDetalhes" style="max-width: 100%;">
@@ -133,6 +134,14 @@
                                   {{ andamento.total_comentarios }}
                               </span>
                           {% endif %}
+                      {% if andamento.tem_analise_ia %}
+                          <span class="ms-2 badge d-flex align-items-center justify-content-center shadow-sm"
+                                title="Visualizar Revisão da IA"
+                                style="background: linear-gradient(135deg, #005ce6, #16a085); color: white; height: 32px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; padding: 0 10px; cursor: pointer;"
+                                data-bs-toggle="modal" data-bs-target="#aiAnalysisModal{{ andamento.pk }}">
+                            🤖 Ver Revisão IA
+                          </span>
+                      {% endif %}
                       <i class="bi bi-clipboard ms-2 text-secondary copiar-icon"
                          onclick="copiarNumero('{{ andamento.processo_pk }}')"
                          title="Copiar Número" style="cursor: pointer;"></i>
@@ -206,10 +215,32 @@
               </div>
             </div>
 
+              <!-- Modal Revisão IA -->
+              {% if andamento.tem_analise_ia %}
+              <div class="modal fade" id="aiAnalysisModal{{ andamento.pk }}" tabindex="-1" aria-labelledby="aiAnalysisModalLabel{{ andamento.pk }}" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                      <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                          <div class="modal-header shadow-sm" style="background: linear-gradient(135deg, #005ce6, #16a085); color: white; border-radius: 12px 12px 0 0;">
+                              <h5 class="modal-title fw-bold" id="aiAnalysisModalLabel{{ andamento.pk }}">
+                                  <i class="bi bi-robot me-2"></i> Revisão da Inteligência Artificial
+                              </h5>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body" style="background-color: #f9fafb; font-size: 1.05rem; line-height: 1.6; color: #333;">
+                              <div style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ andamento.analise_ia_texto|render_markdown_bold }}</div>
+                          </div>
+                          <div class="modal-footer" style="border-top: none;">
+                              <button type="button" class="btn btn-secondary shadow-sm" data-bs-dismiss="modal" style="border-radius: 20px;">Fechar</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              {% endif %}
+
               <!-- Caixa de Comentários Flutuante -->
               <div id="comment-box-{{ andamento.pk }}"
                    class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-                   style="width: 450px; height: 80vh; max-height: 80vh; bottom: 100px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #808000; background-color: rgba(0, 0, 0, 0.05);">
+                   style="width: 800px; max-width: 95vw; height: 90vh; max-height: 90vh; bottom: 40px; z-index: 1050; overflow: hidden; display: flex; flex-direction: column; border-top: 4px solid #6B7280; background-color: rgba(0, 0, 0, 0.05);">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h6 class="fw-bold m-0" style="color: #1F2937;">
                     <i class="bi bi-chat-dots me-2" style="color: #CFE2FF;"></i>
@@ -223,23 +254,46 @@
                      class="chat-container flex-grow-1 overflow-auto border rounded p-3 mb-3"
                      style="max-width: 100%; min-height: 65vh; background-color: #F9FAFB; border-color: #808000;">
                   {% for comentario in andamento.comentarios %}
-                    <div class="d-flex align-items-start border-bottom pb-2 mb-2" style="border-color: #808000;">
-                      <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}"
-                           alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; border: 2px solid #808000;">
-                      <div class="w-100">
-                        <strong style="color: #1F2937;">{{ comentario.usuario }}</strong>
-                        <span class="text-muted small d-block" style="color: #4B5563;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                        <p class="mb-0 small bg-light p-2 rounded" style="background-color: rgba(0, 0, 0, 0.05); color: #1F2937;">{{ comentario.texto }}</p>
+                  {% if request.user == comentario.usuario %}
+                  <div class="d-flex justify-content-end mb-3 position-relative">
+                      <div class="p-3 shadow-sm" style="background-color: #dcf8c6; border-radius: 15px 0px 15px 15px; border: 1px solid #c2e2ab; max-width: 90%; min-width: 40%;">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                              <strong style="color: #075E54; font-size: 0.95rem;">Você</strong>
+                              {% if request.user.profile.funcao == "Desembargador" %}
+                              <button class="btn btn-link text-danger p-0 ms-3 btn-excluir-comentario" data-id="{{ comentario.id }}" title="Apagar">
+                                  <i class="bi bi-trash-fill"></i>
+                              </button>
+                              {% endif %}
+                          </div>
+                          <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                          <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
                       </div>
-                    </div>
+                  </div>
+                  {% else %}
+                  <div class="d-flex align-items-start mb-3 position-relative">
+                      <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" alt="Foto" class="rounded-circle me-2 shadow-sm" width="35" height="35" style="object-fit: cover; flex-shrink: 0;">
+                      <div class="p-3 shadow-sm" style="background-color: #ffffff; border-radius: 0px 15px 15px 15px; border: 1px solid #e0e0e0; max-width: 90%; min-width: 40%;">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                              <div class="d-flex align-items-center gap-2">
+                                  <strong style="color: #075E54; font-size: 0.95rem;">{{ comentario.usuario.get_full_name|default:comentario.usuario }}</strong>
+                                  {% if comentario.usuario.profile.funcao == "revisor(a)" %}
+                                  <span class="badge shadow-sm" style="background-color: #000; color: #fff; font-size: 0.6rem; padding: 2px 5px;"><i class="bi bi-lock-fill"></i> PRIVADO</span>
+                                  {% endif %}
+                              </div>
+                          </div>
+                          <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                          <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
+                      </div>
+                  </div>
+                  {% endif %}
                   {% empty %}
                     <p class="text-muted text-center py-2" style="color: #4B5563;">Nenhum comentário ainda.</p>
                   {% endfor %}
                 </div>
                 <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ andamento.pk }}" style="border-color: #808000;">
                   {% csrf_token %}
-                  <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                          placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #808000; background-color: #F9FAFB; color: #1F2937;" required></textarea>
+                  <textarea name="texto" class="form-control me-2 border rounded small" rows="2"
+                          placeholder="Escreva seu comentário..." style="border-radius: 10px; border-color: #808000; background-color: #F9FAFB; color: #1F2937; resize: none;" required></textarea>
                   <button type="submit" class="btn btn-sm shadow-sm" style="background-color: #083464; color: white; border: none; border-radius: 20px;">Enviar</button>
                 </form>
               </div>

@@ -5,380 +5,521 @@
 <div class="container-fluid mt-4">
     <!-- Informações do Processo -->
     <div class="bg-white p-4 rounded shadow-sm mb-4 border-start border-4 d-flex flex-wrap align-items-center justify-content-between"
-     style="border-color: #2f2f2f; min-height: 75px; border-radius: 12px;">  
+        style="border-color: #2f2f2f; min-height: 75px; border-radius: 12px;">
 
-    <div class="d-flex flex-wrap align-items-center gap-5">
-        
-        <div class="d-flex align-items-center">
-            <i class="bi bi-folder-fill me-3 fs-3" style="color: #083464;"></i>
-            <div>
-                <h6 id="numero_processo" class="fw-bold mb-1" style="color: #083464; font-size: 1.2rem;">
-                    {{ processo.numero_processo }}
-                </h6>
-                <p class="mb-0 text-muted d-flex align-items-center" style="font-size: 0.9rem;">
-                    <i class="bi bi-clock-history me-1"></i> Última atualização: {{ processo.dt_atualizacao|date:"d/m/Y H:i" }}
-                </p>
+        <div class="d-flex flex-wrap align-items-center gap-5">
+
+            <div class="d-flex align-items-center">
+                <i class="bi bi-folder-fill me-3 fs-3" style="color: #083464;"></i>
+                <div>
+                    <h6 id="numero_processo" class="fw-bold mb-1" style="color: #083464; font-size: 1.2rem;">
+                        {{ processo.numero_processo }}
+                    </h6>
+                    <p class="mb-0 text-muted d-flex align-items-center" style="font-size: 0.9rem;">
+                        <i class="bi bi-clock-history me-1"></i> Última atualização: {{ processo.dt_atualizacao|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-3">
+
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm"
+                    style="background-color: #ffffff;">
+                    <div class="d-flex align-items-center justify-content-center rounded me-2"
+                        style="width: 32px; height: 32px; background-color: rgba(13, 110, 253, 0.1);">
+                        <i class="bi bi-person-fill text-primary fs-5"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                        <span class="text-muted"
+                            style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Responsável</span>
+                        <span class="fw-bold" style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2;">
+                            {% if processo.usuario %}
+                            {{ processo.usuario.first_name }} {{ processo.usuario.last_name }}
+                            {% else %}
+                            <span class="text-danger">Não atribuído</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm"
+                    style="background-color: #ffffff;">
+                    <div class="d-flex align-items-center justify-content-center rounded me-2"
+                        style="width: 32px; height: 32px; background-color: rgba(108, 117, 125, 0.1);">
+                        <i class="bi bi-file-earmark-text-fill text-secondary fs-5"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                        <span class="text-muted"
+                            style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Espécie</span>
+                        <span class="fw-bold" style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2;">
+                            {{ processo.especie.especie|default:"-" }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm"
+                    style="background-color: #ffffff;">
+                    <div class="d-flex align-items-center justify-content-center rounded me-2 flex-shrink-0"
+                        style="width: 32px; height: 32px; background-color: rgba(255, 193, 7, 0.1);">
+                        <i class="bi bi-bookmark-fill text-warning fs-5"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                        <span class="text-muted"
+                            style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tema</span>
+                        <span class="fw-bold"
+                            style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2; white-space: nowrap;"
+                            title="{{ processo.tema.nome|default:'-' }}">
+                            {{ processo.tema.nome|default:"-" }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm"
+                    style="background-color: #ffffff;">
+                    <div class="d-flex align-items-center justify-content-center rounded me-2"
+                        style="width: 32px; height: 32px; background-color: {% if processo.dias_no_gabinete > 30 %}rgba(220, 53, 69, 0.1){% else %}rgba(25, 135, 84, 0.1){% endif %};">
+                        <i
+                            class="bi bi-clock-fill {% if processo.dias_no_gabinete > 30 %}text-danger{% else %}text-success{% endif %} fs-5"></i>
+                    </div>
+                    <div class="d-flex flex-column justify-content-center">
+                        <span class="text-muted"
+                            style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tempo
+                            no Gabinete</span>
+                        <span
+                            class="fw-bold {% if processo.dias_no_gabinete > 30 %}text-danger{% else %}text-success{% endif %}"
+                            style="font-size: 0.95rem; line-height: 1.2;">
+                            {{ processo.dias_no_gabinete }} dias
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex flex-wrap align-items-center gap-3">
-    
-    <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm" style="background-color: #ffffff;">
-        <div class="d-flex align-items-center justify-content-center rounded me-2" style="width: 32px; height: 32px; background-color: rgba(13, 110, 253, 0.1);">
-            <i class="bi bi-person-fill text-primary fs-5"></i>
-        </div>
-        <div class="d-flex flex-column justify-content-center">
-            <span class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Responsável</span>
-            <span class="fw-bold" style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2;">
-                {% if processo.usuario %}
-                    {{ processo.usuario.first_name }} {{ processo.usuario.last_name }}
-                {% else %}
-                    <span class="text-danger">Não atribuído</span>
-                {% endif %}
-            </span>
-        </div>
-    </div>
-        
-    <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm" style="background-color: #ffffff;">
-        <div class="d-flex align-items-center justify-content-center rounded me-2" style="width: 32px; height: 32px; background-color: rgba(108, 117, 125, 0.1);">
-            <i class="bi bi-file-earmark-text-fill text-secondary fs-5"></i>
-        </div>
-        <div class="d-flex flex-column justify-content-center">
-            <span class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Espécie</span>
-            <span class="fw-bold" style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2;">
-                {{ processo.especie.especie|default:"-" }}
-            </span>
-        </div>
-    </div>
+        <div class="d-flex flex-column gap-2 border-start ps-4">
 
-    <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm" style="background-color: #ffffff;">
-    <div class="d-flex align-items-center justify-content-center rounded me-2 flex-shrink-0" style="width: 32px; height: 32px; background-color: rgba(255, 193, 7, 0.1);">
-        <i class="bi bi-bookmark-fill text-warning fs-5"></i>
-    </div>
-    <div class="d-flex flex-column justify-content-center">
-        <span class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tema</span>
-        <span class="fw-bold" style="color: #2f2f2f; font-size: 0.95rem; line-height: 1.2; white-space: nowrap;" title="{{ processo.tema.nome|default:'-' }}">
-            {{ processo.tema.nome|default:"-" }}
-        </span>
-    </div>
-</div>
-
-    <div class="d-flex align-items-center px-3 py-2 rounded-3 border shadow-sm" style="background-color: #ffffff;">
-        <div class="d-flex align-items-center justify-content-center rounded me-2" 
-             style="width: 32px; height: 32px; background-color: {% if processo.dias_no_gabinete > 30 %}rgba(220, 53, 69, 0.1){% else %}rgba(25, 135, 84, 0.1){% endif %};">
-            <i class="bi bi-clock-fill {% if processo.dias_no_gabinete > 30 %}text-danger{% else %}text-success{% endif %} fs-5"></i>
-        </div>
-        <div class="d-flex flex-column justify-content-center">
-            <span class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tempo no Gabinete</span>
-            <span class="fw-bold {% if processo.dias_no_gabinete > 30 %}text-danger{% else %}text-success{% endif %}" style="font-size: 0.95rem; line-height: 1.2;">
-                {{ processo.dias_no_gabinete }} dias
-            </span>
-        </div>
-    </div>
-</div>
-        </div>
-
-    <div class="d-flex flex-column gap-2 border-start ps-4">
-        
-        <form method="POST" action="{% url 'processo_partial_update' processo.id %}" class="m-0">
-            {% csrf_token %}
-            <button type="submit" class="btn shadow-sm px-4 w-100" 
+            <form method="POST" action="{% url 'processo_partial_update' processo.id %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn shadow-sm px-4 w-100"
                     style="background: linear-gradient(135deg, #065b14, #0fca1b); color: white; border: none; height: 38px; border-radius: 20px; transition: transform 0.2s ease;">
-                <i class="bi bi-save me-2"></i> Salvar
-            </button>
-        </form>
+                    <i class="bi bi-save me-2"></i> Salvar
+                </button>
+            </form>
 
-        <button type="button" class="btn shadow-sm px-4 w-100" data-bs-toggle="modal" data-bs-target="#historicoModal"
+            <button type="button" class="btn shadow-sm px-4 w-100" data-bs-toggle="modal"
+                data-bs-target="#historicoModal"
                 style="background: linear-gradient(135deg, #2f2f2f, #979797); color: white; border: none; height: 38px; border-radius: 20px; transition: transform 0.2s ease;">
-            <i class="bi bi-clock-history me-2"></i> Histórico
-        </button>
-        
-    </div>
+                <i class="bi bi-clock-history me-2"></i> Histórico
+            </button>
 
-</div>
+        </div>
+
+    </div>
 
     <!-- Kanban de Fases -->
     <div class="row g-4">
         {% with fases_orderadas="Elaboração|Revisão|Revisão Des|Devolvido|L. PJE" %}
-            {% for fase_nome in fases_orderadas|split:"|" %}
-                {% for item in andamentos_por_fase %}
-                    {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
-                        <div class="col-kanban">
-                            <div class="card shadow-sm border-0 h-100" 
-                                 style="border-radius: 12px; overflow: hidden; border-top: 4px solid #2f2f2f;">
-                                <!-- Cabeçalho da Fase -->
-                                <div class="card-header text-center" 
-                                     style="background: linear-gradient(135deg, #535746, #6f745d); color: #ffffff; padding: 15px;">
-                                    <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
-                                </div>
-                                <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
-                                    <div class="accordion" id="accordionFase{{ item.fase.id }}">
-                                        <!-- Não Iniciado + Em Andamento -->
-                                        <div class="accordion-item border-0 mb-3" style="border-radius: 8px; overflow: hidden;">
-                                            <h2 class="accordion-header" id="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
-                                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
-                                                        data-bs-target="#collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
-                                                        aria-expanded="true" aria-controls="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
-                                                        style="background: linear-gradient(135deg, #e9ecef, #f1f3f5); font-size: 0.95rem; color: #002855; font-weight: 600;">
-                                                    Não Iniciado e Em Andamento
+        {% for fase_nome in fases_orderadas|split:"|" %}
+        {% for item in andamentos_por_fase %}
+        {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
+        <div class="col-kanban">
+            <div class="card shadow-sm border-0 h-100"
+                style="border-radius: 12px; overflow: hidden; border-top: 4px solid #2f2f2f;">
+                <!-- Cabeçalho da Fase -->
+                <div class="card-header text-center"
+                    style="background: linear-gradient(135deg, #535746, #6f745d); color: #ffffff; padding: 15px;">
+                    <h5 class="mb-0" style="font-size: 1.1rem; font-weight: bold;">{{ item.fase.fase }}</h5>
+                </div>
+                <div class="card-body" style="background-color: #f8f9fa; padding: 20px;">
+                    <div class="accordion" id="accordionFase{{ item.fase.id }}">
+                        <!-- Não Iniciado + Em Andamento -->
+                        <div class="accordion-item border-0 mb-3" style="border-radius: 8px; overflow: hidden;">
+                            <h2 class="accordion-header" id="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseNaoIniciadoEmAndamento{{ item.fase.id }}"
+                                    aria-expanded="true"
+                                    aria-controls="collapseNaoIniciadoEmAndamento{{ item.fase.id }}"
+                                    style="background: linear-gradient(135deg, #e9ecef, #f1f3f5); font-size: 0.95rem; color: #002855; font-weight: 600;">
+                                    Não Iniciado e Em Andamento
+                                </button>
+                            </h2>
+                            <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}"
+                                class="accordion-collapse collapse show"
+                                aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
+                                <div class="accordion-body" style="padding: 15px;">
+                                    {% for andamento in item.nao_iniciado_em_andamento %}
+                                    <div class="card mb-3 shadow-sm border-0"
+                                        style="border-radius: 8px; border-left: 5px solid #000000;">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title mb-2"
+                                                style="font-size: 1rem; font-weight: bold; color: #083464;">
+                                                {{ andamento.andamento }}
+                                            </h6>
+                                            <p class="card-text mb-2 small">
+                                                <strong>Status:</strong>
+                                                <span
+                                                    class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                    {{ andamento.status }}
+                                                </span>
+                                                {% for comentario in andamento.processo.comentarios.all %}{% if '**Análise Prévia da IA:**' in comentario.texto %}{% if forloop.first %}<span class="badge ms-1" style="background: linear-gradient(135deg, #005ce6, #16a085); color: white;" title="Este processo possui análise da IA">🤖 IA</span>{% endif %}{% endif %}{% endfor %}
+                                            </p>
+                                            <p class="card-text mb-2 small">
+                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                            </p>
+                                            {% if andamento.link_doc %}
+                                            <a href="{{ andamento.link_doc }}" target="_blank"
+                                                class="btn btn-outline-info btn-sm d-flex align-items-center gap-1 px-3 mb-2"
+                                                style="border-radius: 20px;">
+                                                <i class="bi bi-link-45deg"></i> Abrir Documento
+                                            </a>
+                                            {% endif %}
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% if not andamento.dt_inicio %}
+                                                <form id="startAndamentoForm-{{ andamento.pk }}" method="post"
+                                                    action="{% url 'andamento_iniciar' andamento.pk %}"
+                                                    class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="button" class="btn btn-sm btn-success shadow-sm"
+                                                        onclick="startAndamento('{{ andamento.pk }}')" title="Iniciar"
+                                                        style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                        <i class="bi bi-play-fill"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                                <!-- Botão IA -->
+                                                <button type="button" class="btn btn-info btn-sm shadow-sm" 
+                                                    data-bs-toggle="modal" data-bs-target="#iaModal{{ andamento.pk }}"
+                                                    title="Analisar Minuta com IA" style="border-radius: 20px; padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #005ce6, #16a085); color: white; border: none;">
+                                                    <i class="bi bi-magic"></i>
                                                 </button>
-                                            </h2>
-                                            <div id="collapseNaoIniciadoEmAndamento{{ item.fase.id }}" 
-                                                 class="accordion-collapse collapse show" 
-                                                 aria-labelledby="headingNaoIniciadoEmAndamento{{ item.fase.id }}">
-                                                <div class="accordion-body" style="padding: 15px;">
-                                                    {% for andamento in item.nao_iniciado_em_andamento %}
-                                                    <div class="card mb-3 shadow-sm border-0" 
-                                                         style="border-radius: 8px; border-left: 5px solid #000000;">
-                                                        <div class="card-body p-3">
-                                                            <h6 class="card-title mb-2" style="font-size: 1rem; font-weight: bold; color: #083464;">
-                                                                {{ andamento.andamento }}
-                                                            </h6>
-                                                            <p class="card-text mb-2 small">
-                                                                <strong>Status:</strong>
-                                                                <span class="badge {% if andamento.status.status == 'Em andamento' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                                                                    {{ andamento.status }}
-                                                                </span>
-                                                            </p>
-                                                            <p class="card-text mb-2 small">
-                                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
-                                                            </p>
-                                                            {% if andamento.link_doc %}
-                                                            <a href="{{ andamento.link_doc }}" target="_blank" 
-                                                               class="btn btn-outline-info btn-sm d-flex align-items-center gap-1 px-3 mb-2" 
-                                                               style="border-radius: 20px;">
-                                                                <i class="bi bi-link-45deg"></i> Abrir Documento
-                                                            </a>
-                                                            {% endif %}
-                                                            <div class="d-flex flex-wrap gap-2">
-                                                                {% if not andamento.dt_inicio %}
-                                                                <form id="startAndamentoForm-{{ andamento.pk }}" method="post" 
-                                                                      action="{% url 'andamento_iniciar' andamento.pk %}" class="d-inline">
-                                                                    {% csrf_token %}
-                                                                    <button type="button" class="btn btn-sm btn-success shadow-sm" 
-                                                                            onclick="startAndamento('{{ andamento.pk }}')" 
-                                                                            title="Iniciar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                                                        <i class="bi bi-play-fill"></i>
-                                                                    </button>
-                                                                </form>
-                                                                {% endif %}
-                                                                <!-- Botão Editar que abre o modal -->
-                                                                {% if request.user == andamento.usuario %}
-                                                                <button type="button" class="btn btn-warning btn-sm shadow-sm" 
-                                                                        data-bs-toggle="modal" data-bs-target="#editAndamentoModal{{ andamento.pk }}"
-                                                                        title="Editar" style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                                                    <i class="bi bi-pencil"></i>
+
+                                                <!-- Botão Editar que abre o modal -->
+                                                {% if request.user == andamento.usuario %}
+                                                <button type="button" class="btn btn-warning btn-sm shadow-sm"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editAndamentoModal{{ andamento.pk }}"
+                                                    title="Editar"
+                                                    style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                {% endif %}
+                                                <!-- Dropdown -->
+                                                {% if request.user == andamento.usuario %}
+                                                <div class="dropdown">
+                                                    <button class="btn btn-secondary btn-sm shadow-sm dropdown-toggle"
+                                                        type="button" id="dropdownActions{{ andamento.pk }}"
+                                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                                        style="border-radius: 20px; padding: 0.25rem 0.75rem;">
+                                                        Ações
+                                                    </button>
+                                                    <ul class="dropdown-menu"
+                                                        aria-labelledby="dropdownActions{{ andamento.pk }}">
+                                                        {% if andamento.fase.fase == "Elaboração" %}
+
+                                                        {% if andamento.processo.tipo and "Monocrática" in andamento.processo.tipo.tipo %}
+                                                        <li>
+                                                            <form action="{% url 'andamento_concluir' andamento.pk %}"
+                                                                method="post">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button type="submit"
+                                                                    class="dropdown-item text-success fw-bold">
+                                                                    <i class="bi bi-check-circle me-1"></i> Concluir
+                                                                    Processo
                                                                 </button>
-                                                                {% endif %}
-                                                                <!-- Dropdown -->
-                                                                {% if request.user == andamento.usuario %}
-                                                                <div class="dropdown">
-                                                                    <button class="btn btn-secondary btn-sm shadow-sm dropdown-toggle" 
-                                                                            type="button" id="dropdownActions{{ andamento.pk }}" 
-                                                                            data-bs-toggle="dropdown" aria-expanded="false"
-                                                                            style="border-radius: 20px; padding: 0.25rem 0.75rem;">
-                                                                        Ações
-                                                                    </button>
-                                                                    <ul class="dropdown-menu" aria-labelledby="dropdownActions{{ andamento.pk }}">
-                                                                        {% if andamento.fase.fase == "Elaboração" %}
-    
-                                                                            {% if andamento.processo.tipo and "Monocrática" in andamento.processo.tipo.tipo %}
-                                                                                <li>
-                                                                                    <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
-                                                                                        {% csrf_token %}
-                                                                                        <input type="hidden" name="origem" value="andamento_list">
-                                                                                        <button type="submit" class="dropdown-item text-success fw-bold">
-                                                                                            <i class="bi bi-check-circle me-1"></i> Concluir Processo
-                                                                                        </button>
-                                                                                    </form>
-                                                                                </li>
-                                                                            {% else %}
-                                                                                <li>
-                                                                                    <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                        {% csrf_token %}
-                                                                                        <input type="hidden" name="nova_fase" value="Revisão">
-                                                                                        <input type="hidden" name="origem" value="andamento_list">
-                                                                                        <button class="dropdown-item" type="submit">Enviar para Revisão</button>
-                                                                                    </form>
-                                                                                </li>
-                                                                            {% endif %}
+                                                            </form>
+                                                        </li>
+                                                        {% else %}
+                                                        <li>
+                                                            <form method="post"
+                                                                action="{% url 'andamento_enviar' andamento.pk %}"
+                                                                id="formEnviarRevisaoList{{ andamento.pk }}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="Revisão">
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button class="dropdown-item" type="button"
+                                                                    {% if andamento.tem_analise_ia %}
+                                                                    onclick="document.getElementById('formEnviarRevisaoList{{ andamento.pk }}').submit();"
+                                                                    {% else %}
+                                                                    onclick="abrirModalSugestaoIAList('{{ andamento.pk }}')"
+                                                                    {% endif %}>Enviar para
+                                                                    Revisão</button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
 
-                                                                        {% endif %}
+                                                        {% endif %}
 
-                                                                        {% if andamento.fase.fase == "Revisão" %}
-                                                                            <!--<li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Correção">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Correção</button>
-                                                                                </form>
-                                                                            </li>-->
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}
+                                                        {% if andamento.fase.fase == "Revisão" %}
+                                                        <!--
+                                                        <li>
+                                                            <form method="post" action="">
+                                                                <button class="dropdown-item" type="submit">Enviar para Correção</button>
+                                                            </form>
+                                                        </li>
+                                                        -->
 
-                                                                        <!--{% if andamento.fase.fase == "Correção" %}
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão</button>
-                                                                                </form>
-                                                                            </li>
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}-->
+                                                        <li>
+                                                            <form method="post"
+                                                                action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase"
+                                                                    value="Revisão Des">
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para
+                                                                    Revisão Des</button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
 
-                                                                        {% if andamento.fase.fase == "Revisão Des" %}
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Devolvido">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Devolvido</button>
-                                                                                </form>
-                                                                            </li>
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="L. PJE">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para L. PJE</button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}
+                                                        <!--
+                                                        se precisar habilitar Correção no futuro, descomentar abaixo
+                                                        -->
 
-                                                                        {% if andamento.fase.fase == "Devolvido" %}
-                                                                            <li>
-                                                                                <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="nova_fase" value="Revisão Des">
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}
 
-                                                                        {% if andamento.fase.fase == "L. PJE" %}
-                                                                            <li>
-                                                                                <form action="{% url 'andamento_concluir' andamento.pk %}" method="post">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="origem" value="andamento_list">
-                                                                                    <button type="submit" class="dropdown-item text-success">
-                                                                                        <i class="bi bi-check-circle me-1"></i> Concluir Processo
-                                                                                    </button>
-                                                                                </form>
-                                                                            </li>
-                                                                        {% endif %}
-                                                                    </ul>
-                                                                </div>
-                                                                {% endif %}
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                        {% if andamento.fase.fase == "Revisão Des" %}
+                                                        <li>
+                                                            <form method="post"
+                                                                action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="Devolvido">
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para
+                                                                    Devolvido</button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <form method="post"
+                                                                action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="L. PJE">
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para
+                                                                    L. PJE</button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
 
-                                                    <!-- Modal de Edição para este Andamento -->
-                                                    <div class="modal fade" id="editAndamentoModal{{ andamento.pk }}" tabindex="-1" aria-labelledby="editAndamentoModalLabel{{ andamento.pk }}" aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header" style="background: linear-gradient(135deg, #2f2f2f, #7a7878); color: white;">
-                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <form method="POST" action="{% url 'andamento_update' andamento.pk %}">
-                                                                        {% csrf_token %}
-                                                                        <div class="mb-3">
-                                                                            <label for="link_doc_{{ andamento.pk }}" class="form-label fw-semibold" style="color: #2f2f2f;">Link do Documento</label>
-                                                                            <input type="url" id="link_doc_{{ andamento.pk }}" name="link_doc" class="form-control shadow-sm" 
-                                                                                value="{{ andamento.link_doc }}" style="border-radius: 10px;">
-                                                                        </div>
-                                                                        <div class="modal-footer">
-                                                                            <button type="button" class="btn btn-outline-secondary shadow-sm" 
-                                                                                    data-bs-dismiss="modal" style="border-radius: 20px;">Cancelar</button>
-                                                                            <button type="submit" class="btn shadow-sm" 
-                                                                                    style="background: linear-gradient(135deg, #065b14, #0fca1b); color: white; border: none; border-radius: 20px;">
-                                                                                <i class="bi bi-save me-2"></i> Salvar
-                                                                            </button>
-                                                                        </div>
-                                                                    </form>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {% empty %}
-                                                    <p class="text-muted text-center py-3">
-                                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento registrado.
-                                                    </p>
-                                                    {% endfor %}
+                                                        {% if andamento.fase.fase == "Devolvido" %}
+                                                        <li>
+                                                            <form method="post"
+                                                                action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase"
+                                                                    value="Revisão Des">
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para
+                                                                    Revisão Des</button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
+
+                                                        {% if andamento.fase.fase == "L. PJE" %}
+                                                        <li>
+                                                            <form action="{% url 'andamento_concluir' andamento.pk %}"
+                                                                method="post">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="origem"
+                                                                    value="andamento_list">
+                                                                <button type="submit"
+                                                                    class="dropdown-item text-success">
+                                                                    <i class="bi bi-check-circle me-1"></i> Concluir
+                                                                    Processo
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
+                                                    </ul>
                                                 </div>
+                                                {% endif %}
                                             </div>
                                         </div>
-                                        <!-- Concluídos -->
-                                        <div class="accordion-item border-0">
-                                            <h2 class="accordion-header" id="headingConcluidos{{ item.fase.id }}">
-                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
-                                                        data-bs-target="#collapseConcluidos{{ item.fase.id }}" 
-                                                        aria-expanded="false" aria-controls="collapseConcluidos{{ item.fase.id }}" 
-                                                        style="background: linear-gradient(135deg, #e9f5e9, #f0f9f0); font-size: 0.95rem; color: #198754; font-weight: 600;">
-                                                    Concluídos
-                                                </button>
-                                            </h2>
-                                            <div id="collapseConcluidos{{ item.fase.id }}" 
-                                                class="accordion-collapse collapse" 
-                                                aria-labelledby="headingConcluidos{{ item.fase.id }}">
-                                                <div class="accordion-body" style="padding: 15px;">
-                                                    {% for andamento in item.concluidos %}
-                                                    <div class="card mb-3 shadow-sm border-0" 
-                                                        style="border-radius: 8px; border-left: 5px solid #198754;">
-                                                        <div class="card-body p-3">
-                                                            <h6 class="card-title text-success mb-2" style="font-size: 1rem; font-weight: bold;">
-                                                                {{ andamento.andamento }}
-                                                            </h6>
-                                                            <p class="card-text mb-2 small">
-                                                                <strong>Status:</strong>
-                                                                <span class="badge bg-success">Concluído</span>
-                                                            </p>
-                                                            <p class="card-text mb-2 small">
-                                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
-                                                            </p>
+                                    </div>
+
+                                    <!-- Modal Sugestão IA (andamento_list) -->
+                                    <div class="modal fade" id="modalSugestaoIAList{{ andamento.pk }}" tabindex="-1" aria-labelledby="modalSugestaoIAListLabel{{ andamento.pk }}" aria-hidden="true">
+                                      <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden;">
+                                          <div class="modal-header" style="background: linear-gradient(135deg, #005ce6, #16a085); color: white; border-bottom: none; padding: 1.25rem 1.5rem;">
+                                            <div class="d-flex align-items-center gap-2">
+                                              <span style="font-size: 1.6rem;">🤖</span>
+                                              <div>
+                                                <h5 class="modal-title fw-bold mb-0" id="modalSugestaoIAListLabel{{ andamento.pk }}" style="font-size: 1.05rem;">Deseja analisar com IA antes de enviar?</h5>
+                                                <small style="opacity: 0.85; font-size: 0.8rem;">Recomendado para auxiliar o revisor</small>
+                                              </div>
+                                            </div>
+                                            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                          </div>
+                                          <div class="modal-body" style="background-color: #f8fafc; padding: 1.5rem;">
+                                            <p class="mb-3" style="color: #1F2937; font-size: 0.97rem; line-height: 1.6;">
+                                              Antes de enviar para revisão, você pode gerar uma <strong>análise automática da IA</strong> sobre o voto redigido.
+                                              Ela será adicionada nos <strong>comentários do processo</strong> e servirá como auxílio ao revisor.
+                                            </p>
+                                            <div class="rounded p-3 mb-3" style="background: linear-gradient(135deg, #e8f4fd, #e6faf5); border-left: 4px solid #005ce6;">
+                                              <p class="mb-1 fw-bold" style="color: #005ce6; font-size: 0.9rem;">Como usar:</p>
+                                              <ol class="mb-0 ps-3" style="color: #374151; font-size: 0.88rem; line-height: 1.8;">
+                                                <li>Clique no botão <strong>🤖 (IA)</strong> no card do andamento</li>
+                                                <li>Cole o texto do voto no campo indicado</li>
+                                                <li>Importe o arquivo do recurso (PDF)</li>
+                                                <li>Aguarde — a análise aparecerá nos comentários</li>
+                                              </ol>
+                                            </div>
+                                            <p class="mb-0" style="color: #6B7280; font-size: 0.82rem;">
+                                              <i class="bi bi-info-circle me-1"></i> Você pode enviar para revisão agora e usar a IA depois, se preferir.
+                                            </p>
+                                          </div>
+                                          <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f8fafc; padding: 1rem 1.5rem; gap: 0.5rem;">
+                                            <button type="button" class="btn btn-sm shadow-sm" data-bs-dismiss="modal"
+                                              onclick="abrirIAModalList('{{ andamento.pk }}')"
+                                              style="border-radius: 20px; padding: 0.35rem 1rem; background: linear-gradient(135deg, #005ce6, #16a085); color: white; border: none;">
+                                              🤖 Analisar IA
+                                            </button>
+                                            <button type="button" class="btn btn-sm shadow-sm" data-bs-dismiss="modal"
+                                              onclick="document.getElementById('formEnviarRevisaoList{{ andamento.pk }}').submit();"
+                                              style="border-radius: 20px; padding: 0.35rem 1rem; background-color: #3b82f6; color: white; border: none;">
+                                              <i class="bi bi-arrow-right me-1"></i> Enviar assim mesmo
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <!-- Modal de Edição para este Andamento -->
+                                    <div class="modal fade" id="editAndamentoModal{{ andamento.pk }}" tabindex="-1"
+                                        aria-labelledby="editAndamentoModalLabel{{ andamento.pk }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header"
+                                                    style="background: linear-gradient(135deg, #2f2f2f, #7a7878); color: white;">
+                                                    <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form method="POST"
+                                                        action="{% url 'andamento_update' andamento.pk %}">
+                                                        {% csrf_token %}
+                                                        <div class="mb-3">
+                                                            <label for="link_doc_{{ andamento.pk }}"
+                                                                class="form-label fw-semibold"
+                                                                style="color: #2f2f2f;">Link do Documento</label>
+                                                            <input type="url" id="link_doc_{{ andamento.pk }}"
+                                                                name="link_doc" class="form-control shadow-sm"
+                                                                value="{{ andamento.link_doc }}"
+                                                                style="border-radius: 10px;">
                                                         </div>
-                                                    </div>
-                                                    {% empty %}
-                                                    <p class="text-muted text-center py-3">
-                                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento concluído.
-                                                    </p>
-                                                    {% endfor %}
+                                                        <div class="modal-footer">
+                                                            <button type="button"
+                                                                class="btn btn-outline-secondary shadow-sm"
+                                                                data-bs-dismiss="modal"
+                                                                style="border-radius: 20px;">Cancelar</button>
+                                                            <button type="submit" class="btn shadow-sm"
+                                                                style="background: linear-gradient(135deg, #065b14, #0fca1b); color: white; border: none; border-radius: 20px;">
+                                                                <i class="bi bi-save me-2"></i> Salvar
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Modal de IA para este Andamento -->
+                                    <div class="modal fade" id="iaModal{{ andamento.pk }}" tabindex="-1" aria-labelledby="iaModalLabel{{ andamento.pk }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #005ce6, #16a085); color: white;">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <i class="bi bi-robot fs-4"></i>
+                                                        <h5 class="modal-title m-0 fw-bold">Análise prévia com IA</h5>
+                                                    </div>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p class="text-muted small mb-3">Cole o texto da minuta abaixo e anexe obrigatoriamente o arquivo do recurso. A inteligência artificial fará uma leitura prévia comparando os documentos para resumir os pontos principais e sugerir correções. O resultado será salvo nos comentários.</p>
+                                                    <form id="iaForm{{ andamento.pk }}" onsubmit="submitFormIA(event, '{{ processo.id }}', '{{ andamento.pk }}')">
+                                                        <div class="mb-3">
+                                                            <textarea id="texto_minuta_{{ andamento.pk }}" name="texto_minuta" class="form-control shadow-sm" rows="10" style="border-radius: 10px; font-size: 0.95rem; background-color: #f8f9fa;" placeholder="Cole o conteúdo da minuta aqui..." required></textarea>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="arquivo_recurso_{{ andamento.pk }}" class="form-label text-muted small fw-bold">Arquivo do Recurso (obrigatório):</label>
+                                                            <input type="file" id="arquivo_recurso_{{ andamento.pk }}" name="arquivo_recurso" accept=".pdf,.doc,.docx,.txt" class="form-control form-control-sm shadow-sm" style="border-radius: 10px;" required>
+                                                        </div>
+                                                        <div class="modal-footer px-0 pb-0 border-0">
+                                                            <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-dismiss="modal" style="border-radius: 20px;">Cancelar</button>
+                                                            <button type="submit" id="btnSubmitIA{{ andamento.pk }}" class="btn shadow-sm d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #005ce6, #16a085); color: white; border: none; border-radius: 20px; transition: all 0.3s ease;">
+                                                                <i class="bi bi-stars"></i> Analisar Minuta
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted text-center py-3">
+                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento registrado.
+                                    </p>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
+                        <!-- Concluídos -->
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header" id="headingConcluidos{{ item.fase.id }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseConcluidos{{ item.fase.id }}" aria-expanded="false"
+                                    aria-controls="collapseConcluidos{{ item.fase.id }}"
+                                    style="background: linear-gradient(135deg, #e9f5e9, #f0f9f0); font-size: 0.95rem; color: #198754; font-weight: 600;">
+                                    Concluídos
+                                </button>
+                            </h2>
+                            <div id="collapseConcluidos{{ item.fase.id }}" class="accordion-collapse collapse"
+                                aria-labelledby="headingConcluidos{{ item.fase.id }}">
+                                <div class="accordion-body" style="padding: 15px;">
+                                    {% for andamento in item.concluidos %}
+                                    <div class="card mb-3 shadow-sm border-0"
+                                        style="border-radius: 8px; border-left: 5px solid #198754;">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title text-success mb-2"
+                                                style="font-size: 1rem; font-weight: bold;">
+                                                {{ andamento.andamento }}
+                                            </h6>
+                                            <p class="card-text mb-2 small">
+                                                <strong>Status:</strong>
+                                                <span class="badge bg-success">Concluído</span>
+                                            </p>
+                                            <p class="card-text mb-2 small">
+                                                <strong>Usuário:</strong> {{ andamento.usuario.first_name }} {{ andamento.usuario.last_name }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted text-center py-3">
+                                        <i class="bi bi-info-circle me-2"></i> Nenhum andamento concluído.
+                                    </p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
         {% endwith %}
     </div>
 
     <!-- Botão Voltar -->
     <div class="container mt-5">
         <a href="{% url 'processo_list' %}" class="btn btn-outline-secondary shadow-sm d-flex align-items-center gap-2"
-           style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
+            style="border-radius: 20px; padding: 0.5rem 1.5rem; transition: transform 0.2s ease;">
             <i class="bi bi-arrow-left"></i> Voltar para Processos
         </a>
     </div>
@@ -386,72 +527,170 @@
 
 <!-- Modal para Histórico de Andamentos -->
 <div class="modal fade" id="historicoModal" tabindex="-1" aria-labelledby="historicoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border: none; border-radius: 8px;">
-            <!-- Cabeçalho do Modal -->
-            <div class="modal-header" style="background-color: #f5f5f5; border-bottom: 1px solid #ddd; border-radius: 8px 8px 0 0; padding: 12px 20px;">
-                <h5 class="modal-title" id="historicoModalLabel" style="font-size: 1.1rem; font-weight: bold; color: #333;">Histórico de Movimentações</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <!-- Corpo do Modal -->
-            <div class="modal-body" style="padding: 20px;">
-                <div class="table-responsive">
-                    <table class="table" style="font-size: 0.9rem; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Fase</th>
-                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Status</th>
-                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Usuário</th>
-                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Data de Início</th>
-                                <th scope="col" style="padding: 10px 15px; font-weight: bold; color: #333; text-transform: uppercase; font-size: 0.8rem; border-bottom: 1px solid #ddd;">Data de Conclusão</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for andamento in andamentos %}
-                                <tr>
-                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.fase.fase }}</td>
-                                    <td style="padding: 10px 15px;">
-                                        <span class="badge" style="background-color: {% if andamento.status.status == 'Concluído' %}#28a745{% else %}#003087{% endif %}; color: white; padding: 4px 10px; font-size: 0.75rem; border-radius: 12px;">
-                                            {{ andamento.status.status }}
-                                        </span>
-                                    </td>
-                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.usuario.username|default:"-" }}</td>
-                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.dt_inicio|date:"d/m/Y H:i"|default:"-" }}</td>
-                                    <td style="padding: 10px 15px; color: #333;">{{ andamento.dt_conclusao|date:"d/m/Y H:i"|default:"-" }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted" style="padding: 20px;">
-                                        Nenhum andamento registrado.
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15); overflow: hidden;">
+
+            <!-- Header -->
+            <div class="modal-header" style="background: linear-gradient(135deg, #083464, #1E3A8A); color: white; padding: 1.25rem 1.5rem; border-bottom: none;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 10px; width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="historicoModalLabel">Linha do Tempo do Processo</h5>
+                        <small style="opacity: 0.8; font-size: 0.8rem;">{{ processo.numero_processo }}</small>
+                    </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
-            <!-- Rodapé do Modal -->
-            <div class="modal-footer" style="border-top: 1px solid #ddd; padding: 10px 20px;">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" style="background-color: #003087; border: none; border-radius: 4px; padding: 6px 20px; font-size: 0.9rem;">
+
+            <!-- Body -->
+            <div class="modal-body" style="background: #f8fafc; padding: 1.5rem 2rem;">
+
+                {% if andamentos %}
+                <div class="timeline-container" style="position: relative;">
+
+                    <!-- Linha vertical central -->
+                    <div style="position: absolute; left: 22px; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, #083464, #16a085); border-radius: 4px; opacity: 0.25;"></div>
+
+                    {% for andamento in andamentos %}
+                    <div class="timeline-item d-flex gap-3 mb-4" style="position: relative;">
+
+                        <!-- Ícone da fase -->
+                        <div class="timeline-icon flex-shrink-0" style="
+                            width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+                            justify-content: center; font-size: 1.1rem; z-index: 1; border: 3px solid white;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                            background:
+                                {% if andamento.fase.fase == 'Elaboração' %}linear-gradient(135deg, #3b82f6, #1d4ed8)
+                                {% elif andamento.fase.fase == 'Revisão' %}linear-gradient(135deg, #f59e0b, #d97706)
+                                {% elif andamento.fase.fase == 'Revisão Des' %}linear-gradient(135deg, #8b5cf6, #6d28d9)
+                                {% elif andamento.fase.fase == 'Devolvido' %}linear-gradient(135deg, #ef4444, #b91c1c)
+                                {% elif andamento.fase.fase == 'L. PJE' %}linear-gradient(135deg, #06b6d4, #0284c7)
+                                {% elif andamento.fase.fase == 'Processo Concluído' %}linear-gradient(135deg, #10b981, #059669)
+                                {% else %}linear-gradient(135deg, #6b7280, #374151){% endif %};
+                            color: white;">
+                            <i class="bi
+                                {% if andamento.fase.fase == 'Elaboração' %}bi-pencil-fill
+                                {% elif andamento.fase.fase == 'Revisão' %}bi-search
+                                {% elif andamento.fase.fase == 'Revisão Des' %}bi-person-badge-fill
+                                {% elif andamento.fase.fase == 'Devolvido' %}bi-arrow-return-left
+                                {% elif andamento.fase.fase == 'L. PJE' %}bi-send-fill
+                                {% elif andamento.fase.fase == 'Processo Concluído' %}bi-check-circle-fill
+                                {% else %}bi-circle{% endif %}">
+                            </i>
+                        </div>
+
+                        <!-- Card da movimentação -->
+                        <div class="flex-grow-1 rounded-3 p-3 shadow-sm" style="background: white; border: 1px solid #e5e7eb; border-left: 4px solid
+                            {% if andamento.fase.fase == 'Elaboração' %}#3b82f6
+                            {% elif andamento.fase.fase == 'Revisão' %}#f59e0b
+                            {% elif andamento.fase.fase == 'Revisão Des' %}#8b5cf6
+                            {% elif andamento.fase.fase == 'Devolvido' %}#ef4444
+                            {% elif andamento.fase.fase == 'L. PJE' %}#06b6d4
+                            {% elif andamento.fase.fase == 'Processo Concluído' %}#10b981
+                            {% else %}#6b7280{% endif %};">
+
+                            <!-- Linha superior: fase + status -->
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                <div>
+                                    <span class="fw-bold" style="font-size: 0.95rem; color: #1f2937;">{{ andamento.fase.fase }}</span>
+                                    {% if andamento.andamento %}
+                                    <span class="ms-2 text-muted" style="font-size: 0.8rem;">— {{ andamento.andamento }}</span>
+                                    {% endif %}
+                                </div>
+                                <span class="badge rounded-pill px-3" style="font-size: 0.75rem;
+                                    background: {% if andamento.status.status == 'Concluído' %}#d1fae5; color: #065f46;
+                                    {% elif andamento.status.status == 'Em andamento' %}#fef3c7; color: #92400e;
+                                    {% else %}#e0e7ff; color: #3730a3;{% endif %}">
+                                    {% if andamento.status.status == 'Concluído' %}<i class="bi bi-check2 me-1"></i>
+                                    {% elif andamento.status.status == 'Em andamento' %}<i class="bi bi-hourglass-split me-1"></i>
+                                    {% else %}<i class="bi bi-dash-circle me-1"></i>{% endif %}
+                                    {{ andamento.status.status }}
+                                </span>
+                            </div>
+
+                            <!-- Linha inferior: usuário + datas -->
+                            <div class="d-flex flex-wrap gap-3" style="font-size: 0.82rem; color: #6b7280;">
+                                <span>
+                                    <i class="bi bi-person-fill me-1" style="color: #083464;"></i>
+                                    <strong style="color: #374151;">{{ andamento.usuario.get_full_name|default:andamento.usuario.username|default:"—" }}</strong>
+                                </span>
+
+                                <!-- Início da Fase -->
+                                {% if andamento.fase.fase == 'Processo Concluído' %}
+                                    {% for a in andamentos %}
+                                        {% if a.fase.fase == 'Elaboração' and a.dt_conclusao %}
+                                        <span>
+                                            <i class="bi bi-play-fill me-1" style="color: #10b981;"></i>
+                                            Início: <strong style="color: #374151;">{{ a.dt_conclusao|date:"d/m/Y H:i" }}</strong>
+                                        </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif andamento.dt_inicio %}
+                                <span>
+                                    <i class="bi bi-play-fill me-1" style="color: #10b981;"></i>
+                                    Início: <strong style="color: #374151;">{{ andamento.dt_inicio|date:"d/m/Y H:i" }}</strong>
+                                </span>
+                                {% endif %}
+
+                                <!-- Data de Distribuição (apenas na Elaboração) -->
+                                {% if andamento.fase.fase == 'Elaboração' and processo.data_dist %}
+                                <span>
+                                    <i class="bi bi-calendar-event me-1" style="color: #0d6efd;"></i>
+                                    Distribuição: <strong style="color: #374151;">{{ processo.data_dist|date:"d/m/Y H:i" }}</strong>
+                                </span>
+                                {% endif %}
+
+                                <!-- Conclusão da Fase -->
+                                {% if andamento.dt_conclusao %}
+                                <span>
+                                    <i class="bi bi-flag-fill me-1" style="color: #ef4444;"></i>
+                                    Conclusão: <strong style="color: #374151;">{{ andamento.dt_conclusao|date:"d/m/Y H:i" }}</strong>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                </div>
+                {% else %}
+                <div class="text-center py-5" style="color: #9ca3af;">
+                    <i class="bi bi-clock-history" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3 mb-0">Nenhuma movimentação registrada yet.</p>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f8fafc; padding: 0.75rem 1.5rem;">
+                <small class="text-muted me-auto"><i class="bi bi-info-circle me-1"></i>{{ andamentos|length }} movimentação(ões) registrada(s)</small>
+                <button type="button" class="btn btn-primary btn-sm shadow-sm" data-bs-dismiss="modal"
+                    style="background: linear-gradient(135deg, #083464, #1E3A8A); border: none; border-radius: 20px; padding: 0.35rem 1.25rem;">
                     Fechar
                 </button>
             </div>
+
         </div>
     </div>
 </div>
 
+
 <!-- Botão para abrir/fechar comentários -->
 <button id="toggle-comments" class="btn btn-light d-flex align-items-center gap-2 position-fixed shadow-sm"
-        style="right: 20px; bottom: 20px; z-index: 1050; border-radius: 20px; padding: 8px 12px; background: linear-gradient(135deg, #f1f7ff, #e9f1ff);">
-    <i class="bi bi-chat-dots"></i> Comentários 
-    <span id="comment-notification" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
+    style="right: 20px; bottom: 20px; z-index: 1050; border-radius: 20px; padding: 8px 12px; background: linear-gradient(135deg, #f1f7ff, #e9f1ff);">
+    <i class="bi bi-chat-dots"></i> Comentários
+    <span id="comment-notification" class="badge bg-danger position-absolute top-0 start-100 translate-middle"
+        style="display: none;">0</span>
 </button>
 
 <!-- Caixa de Comentários -->
 <div id="comment-box"
-     class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
-     style="width: 450px; top: 50%; transform: translateY(-50%); bottom: auto; z-index: 1050; display: flex; flex-direction: column; border-top: 4px solid #2f2f2f;">
-     
+    class="position-fixed end-0 bg-white shadow-lg p-4 rounded-start d-none animate__animated animate__fadeIn"
+    style="width: 800px; max-width: 95vw; top: 50%; transform: translateY(-50%); height: 95vh; z-index: 1050; display: flex; flex-direction: column; border-top: 4px solid #2f2f2f;">
+
     <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="fw-bold m-0" style="color: #2f2f2f;">
@@ -463,53 +702,62 @@
     </div>
 
     <!-- Histórico de Comentários -->
-    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3" style="background-color: #f8f9fa;">
-    {% for comentario in processo.comentarios.all|dictsort:"data_criacao" %}
-        
+    <div id="comentarios-{{ processo.id }}" class="flex-grow-1 overflow-auto border rounded p-3 mb-3"
+        style="background-color: #f8f9fa;">
+        {% for comentario in processo.comentarios.all|dictsort:"data_criacao" %}
+
         {% if comentario.usuario.profile.funcao != "revisor(a)" or request.user.profile.funcao == "Desembargador" or request.user == comentario.usuario %}
-            
-            <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start border-bottom pb-2 mb-2 position-relative">
-                <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" 
-                     alt="Foto" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-                <div class="w-100">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-2">
-                            <strong>{{ comentario.usuario.get_full_name }}</strong>
-                            
-                            {# Etiqueta Privada para comentários de revisor(a) #}
-                            {% if comentario.usuario.profile.funcao == "revisor(a)" %}
-                                <span class="badge d-flex align-items-center gap-1 shadow-sm" 
-                                      style="background-color: #000000; color: #ffffff; border-radius: 6px; padding: 4px 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="bi bi-lock-fill" style="font-size: 0.75rem;"></i> PRIVADO
-                                </span>
-                            {% endif %}
-                        </div>
-                        
-                        {% if request.user.profile.funcao == "Desembargador" %}
-                            <button class="btn btn-danger btn-sm shadow-sm btn-excluir-comentario rounded-pill px-3" 
-                                    data-id="{{ comentario.id }}"
-                                    style="font-size: 0.7rem; background-color: #dc3545; border: none;">
-                                <i class="bi bi-trash-fill me-1"></i> Apagar
-                            </button>
+
+        {% if request.user == comentario.usuario %}
+        <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex justify-content-end mb-3 position-relative">
+            <div class="p-3 shadow-sm" style="background-color: #dcf8c6; border-radius: 15px 0px 15px 15px; border: 1px solid #c2e2ab; max-width: 90%; min-width: 40%;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong style="color: #075E54; font-size: 0.95rem;">Você</strong>
+                    {% if request.user.profile.funcao == "Desembargador" %}
+                    <button class="btn btn-link text-danger p-0 ms-3 btn-excluir-comentario" data-id="{{ comentario.id }}" title="Apagar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                    {% endif %}
+                </div>
+                <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+        {% else %}
+        <div id="comentario-wrapper-{{ comentario.id }}" class="d-flex align-items-start mb-3 position-relative">
+            <img src="{% if comentario.usuario.profile.photo %}{{ comentario.usuario.profile.photo.url }}{% else %}https://via.placeholder.com/40{% endif %}" alt="Foto" class="rounded-circle me-2 shadow-sm" width="35" height="35" style="object-fit: cover; flex-shrink: 0;">
+            <div class="p-3 shadow-sm" style="background-color: #ffffff; border-radius: 0px 15px 15px 15px; border: 1px solid #e0e0e0; max-width: 90%; min-width: 40%;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <strong style="color: #075E54; font-size: 0.95rem;">{{ comentario.usuario.get_full_name }}</strong>
+                        {% if comentario.usuario.profile.funcao == "revisor(a)" %}
+                        <span class="badge shadow-sm" style="background-color: #000; color: #fff; font-size: 0.6rem; padding: 2px 5px;"><i class="bi bi-lock-fill"></i> PRIVADO</span>
                         {% endif %}
                     </div>
-                    <span class="text-muted small d-block">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</span>
-                    <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ comentario.texto }}</p>
+                    {% if request.user.profile.funcao == "Desembargador" %}
+                    <button class="btn btn-link text-danger p-0 ms-3 btn-excluir-comentario" data-id="{{ comentario.id }}" title="Apagar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                    {% endif %}
                 </div>
+                <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">{{ comentario.texto|render_markdown_bold }}</p>
+                <div class="text-end text-muted" style="font-size: 0.85rem;">{{ comentario.data_criacao|date:"d/m/Y H:i" }}</div>
             </div>
+        </div>
+        {% endif %}
 
         {% endif %}
 
-    {% empty %}
+        {% empty %}
         <p class="text-muted text-center py-2">Nenhum comentário ainda.</p>
-    {% endfor %}
-</div>
+        {% endfor %}
+    </div>
 
     <!-- Formulário de Novo Comentário -->
     <form class="comentario-form mt-2 d-flex border-top pt-2" data-processo-id="{{ processo.id }}">
         {% csrf_token %}
-        <textarea name="texto" class="form-control me-2 border rounded small" rows="1"
-                  placeholder="Escreva seu comentário..." style="border-radius: 10px;"></textarea>
+        <textarea name="texto" class="form-control me-2 border rounded small" rows="2"
+            placeholder="Escreva seu comentário..." style="border-radius: 10px; resize: none;"></textarea>
         <button type="submit" class="btn btn-outline-primary shadow-sm" style="border-radius: 20px;">
             Enviar
         </button>
@@ -540,346 +788,406 @@
 </div>
 
 <style>
-/* Ajustes para o Kanban */
-.col-kanban {
-    flex: 0 0 20%;
-    max-width: 20%;
-}
-
-/* Ajustes para a Caixa de Comentários */
-#comment-box {
-    width: 450px;
-    max-height: 80vh;
-    top: 50%;
-    transform: translateY(-50%);
-    bottom: auto;
-    z-index: 1050;
-    display: flex;
-    flex-direction: column;
-    border-top: 4px solid #2f2f2f;
-}
-
-#comment-box .overflow-auto {
-    max-height: 50vh;
-}
-
-/* Ajustes para Responsividade */
-@media (max-width: 767px) {
-    .form-select, .btn {
-        font-size: 0.85rem;
-        padding: 0.5rem !important;
-        height: 34px !important;
-    }
-    .modal-body {
-        padding: 1rem !important;
-    }
-    .modal-body .d-flex {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem !important;
-    }
-    .modal-body i.bi-arrow-right {
-        transform: rotate(90deg);
-        margin: 0.5rem 0 !important;
-    }
-    #comment-box {
-        width: 100%;
-        max-height: 60vh;
-        top: 50%;
-        transform: translateY(-50%);
-        right: 0;
-        left: 0;
-        margin: 0;
-        border-radius: 0;
-    }
-    #comment-box .overflow-auto {
-        max-height: 40vh;
-    }
+    /* Ajustes para o Kanban */
     .col-kanban {
-        flex: 0 0 100%;
-        max-width: 100%;
+        flex: 0 0 20%;
+        max-width: 20%;
     }
-}
 
-/* Estilo para o Modal */
-.modal-content {
-    border-radius: 12px;
-    border: none;
-}
 
-/* Estilos para o Chat */
-.chat-container {
-    max-height: 250px;
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-}
 
-.chat-message {
-    background: #ffffff;
-    border-left: 5px solid #08720f;
-    padding: 10px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    animation: fadeIn 0.3s ease-in-out;
-}
+    /* Ajustes para Responsividade */
+    @media (max-width: 767px) {
+        .col-kanban {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
 
-.chat-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: #08720f;
-    margin-bottom: 5px;
-}
+    /* Estilo para o Modal */
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+    }
 
-.chat-avatar {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    object-fit: cover;
-}
+    /* Estilos para o Chat */
+    .chat-container {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+    }
 
-.chat-text {
-    font-size: 0.95rem;
-    margin: 0;
-}
+    .chat-message {
+        background: #ffffff;
+        border-left: 5px solid #08720f;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        animation: fadeIn 0.3s ease-in-out;
+    }
 
-.chat-input {
-    resize: none;
-    font-size: 0.95rem;
-    padding: 8px;
-    border-radius: 5px;
-}
+    .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: #08720f;
+        margin-bottom: 5px;
+    }
 
-.input-group button {
-    border-radius: 0 6px 6px 0;
-    padding: 10px 15px;
-}
+    .chat-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
 
-/* Efeito de Fade-In para novos comentários */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    .chat-text {
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .chat-input {
+        resize: none;
+        font-size: 0.95rem;
+        padding: 8px;
+        border-radius: 5px;
+    }
+
+    .input-group button {
+        border-radius: 0 6px 6px 0;
+        padding: 10px 15px;
+    }
+
+    /* Efeito de Fade-In para novos comentários */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <!-- Incluindo Animate.css para animações -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    let commentBox = document.getElementById("comment-box");
-    let toggleButton = document.getElementById("toggle-comments");
-    let closeButton = document.getElementById("close-comments");
-    let notification = document.getElementById("comment-notification");
-    let chatContainer = document.getElementById("comentarios-{{ processo.id }}");
+    document.addEventListener("DOMContentLoaded", function () {
+        let commentBox = document.getElementById("comment-box");
+        let toggleButton = document.getElementById("toggle-comments");
+        let closeButton = document.getElementById("close-comments");
+        let notification = document.getElementById("comment-notification");
+        let chatContainer = document.getElementById("comentarios-{{ processo.id }}");
 
-    // Exibe ou oculta a caixa de comentários ao clicar no botão
-    toggleButton.addEventListener("click", function () {
-        commentBox.classList.toggle("d-none");
-        setTimeout(() => chatContainer.scrollTop = chatContainer.scrollHeight, 100); // Rola para o último comentário
-    });
+        // Exibe ou oculta a caixa de comentários ao clicar no botão
+        toggleButton.addEventListener("click", function () {
+            commentBox.classList.toggle("d-none");
+            setTimeout(() => chatContainer.scrollTop = chatContainer.scrollHeight, 100); // Rola para o último comentário
+        });
 
-    // Fecha a caixa de comentários
-    closeButton.addEventListener("click", function () {
-        commentBox.classList.add("d-none");
-    });
+        // Fecha a caixa de comentários
+        closeButton.addEventListener("click", function () {
+            commentBox.classList.add("d-none");
+        });
 
-    // Atualiza o número de novos comentários
-    function atualizarNotificacao(novosComentarios) {
-        if (novosComentarios > 0) {
-            notification.textContent = novosComentarios;
-            notification.style.display = "inline-block";
-        } else {
-            notification.style.display = "none";
+        // Atualiza o número de novos comentários
+        function atualizarNotificacao(novosComentarios) {
+            if (novosComentarios > 0) {
+                notification.textContent = novosComentarios;
+                notification.style.display = "inline-block";
+            } else {
+                notification.style.display = "none";
+            }
         }
-    }
 
-    // Simulação: Verifica se há novos comentários
-    let novosComentarios = {{ processo.comentarios.count }};
+        // Simulação: Verifica se há novos comentários
+        let novosComentarios = Number("{{ processo.comentarios.count|default:'0' }}");
     atualizarNotificacao(novosComentarios);
 });
 </script>
 
 <!-- Script para iniciar andamento via AJAX -->
 <script>
-function startAndamento(andamentoId) {
-    const form = document.getElementById(`startAndamentoForm-${andamentoId}`);
-    const formData = new FormData(form);
+    function startAndamento(andamentoId) {
+        const form = document.getElementById(`startAndamentoForm-${andamentoId}`);
+        const formData = new FormData(form);
 
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-    })
-    .then(response => {
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert('Erro ao iniciar o andamento.');
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao processar a solicitação.');
-    });
-}
-</script>
-
-<script>
-function toggleButton(textarea) {
-    let botao = textarea.closest("form").querySelector("button");
-    botao.disabled = !textarea.value.trim();
-}
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".comentario-form").forEach(form => {
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-
-            let processoId = form.getAttribute("data-processo-id");
-            let comentarioInput = form.querySelector("textarea");
-            let comentariosDiv = document.getElementById("comentarios-" + processoId);
-            let btnEnviar = form.querySelector("button");
-
-            // Bloqueia o botão para evitar cliques duplos
-            btnEnviar.disabled = true;
-
-            fetch(`/adicionar-comentario/${processoId}/`, {
-                method: "POST",
-                body: new FormData(form),
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Erro ao iniciar o andamento.');
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    // Remove a mensagem de "Nenhum comentário ainda" se ela existir
-                    const noCommentsMsg = comentariosDiv.querySelector(".text-center.py-2");
-                    if (noCommentsMsg) noCommentsMsg.remove();
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao processar a solicitação.');
+            });
+    }
+</script>
 
-                    // Cria o novo comentário seguindo o layout exato do seu Django Template
-                    let fotoUrl = data.photo_url ? data.photo_url : "https://via.placeholder.com/40";
-                    
-                    let seloPrivado = '';
+<script>
+    function toggleButton(textarea) {
+        let botao = textarea.closest("form").querySelector("button");
+        botao.disabled = !textarea.value.trim();
+    }
+</script>
 
-// 2. Se a função retornada for revisor(a), preenchemos com o HTML da etiqueta preta
-                    if (data.funcao === "revisor(a)") {
-                        seloPrivado = `
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".comentario-form").forEach(form => {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                let processoId = form.getAttribute("data-processo-id");
+                let comentarioInput = form.querySelector("textarea");
+                let comentariosDiv = document.getElementById("comentarios-" + processoId);
+                let btnEnviar = form.querySelector("button");
+
+                // Bloqueia o botão para evitar cliques duplos
+                btnEnviar.disabled = true;
+
+                fetch(`/adicionar-comentario/${processoId}/`, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            // Remove a mensagem de "Nenhum comentário ainda" se ela existir
+                            const noCommentsMsg = comentariosDiv.querySelector(".text-center.py-2");
+                            if (noCommentsMsg) noCommentsMsg.remove();
+
+                            // Cria o novo comentário seguindo o layout exato do seu Django Template
+                            let fotoUrl = data.photo_url ? data.photo_url : "https://via.placeholder.com/40";
+
+                            let seloPrivado = '';
+
+                            // 2. Se a função retornada for revisor(a), preenchemos com o HTML da etiqueta preta
+                            if (data.funcao === "revisor(a)") {
+                                seloPrivado = `
                             <span class="badge d-flex align-items-center gap-1 shadow-sm" 
                                 style="background-color: #000000; color: #ffffff; border-radius: 6px; padding: 4px 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
                                 <i class="bi bi-lock-fill" style="font-size: 0.75rem;"></i> PRIVADO
                             </span>`;
-                    }
+                            }
 
-// 3. Agora insira a variável ${seloPrivado} ao lado do nome do usuário na sua string:
-                    let novoComentarioHTML = `
-                        <div class="d-flex align-items-start border-bottom pb-2 mb-2 animate__animated animate__fadeIn">
-                            <img src="${fotoUrl}" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover; flex-shrink: 0;">
-                            <div class="w-100">
-                                <div class="d-flex justify-content-between align-items-center">
+                            let textoSeguro = data.texto.replace(/[&<>'"]/g, 
+                                tag => ({
+                                    '&': '&amp;',
+                                    '<': '&lt;',
+                                    '>': '&gt;',
+                                    "'": '&#39;',
+                                    '"': '&quot;'
+                                }[tag] || tag)
+                            );
+                            let textoFormatado = textoSeguro.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            textoFormatado = textoFormatado.replace(/\n/g, '<br>');
+
+                            // 3. Agora insira a variável ${seloPrivado} ao lado do nome do usuário na sua string:
+                            let htmlBalon = ``;
+                            // Como é você criando o comentário via JS (o usuário atual)
+                            htmlBalon = `
+                        <div class="d-flex justify-content-end mb-3 position-relative animate__animated animate__fadeIn">
+                            <div class="p-3 shadow-sm" style="background-color: #dcf8c6; border-radius: 15px 0px 15px 15px; border: 1px solid #c2e2ab; max-width: 90%; min-width: 40%;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
                                     <div class="d-flex align-items-center gap-2">
-                                        <strong>${data.usuario}</strong>
-                                        ${seloPrivado}  </div>
+                                        <strong style="color: #075E54; font-size: 0.85rem;">Você</strong>
+                                        ${seloPrivado}
+                                    </div>
+                                    <!-- Apenas um placeholder se fosse apagável aqui -->
                                 </div>
-                                <span class="text-muted small d-block">${data.data_criacao}</span>
-                                <p class="mb-0 small bg-light p-2 rounded mt-1" style="white-space: pre-wrap; overflow-wrap: anywhere;">${data.texto}</p>
+                                <p class="mb-1" style="white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.5; color: #303030;">${textoFormatado}</p>
+                                <div class="text-end text-muted" style="font-size: 0.85rem;">${data.data_criacao}</div>
                             </div>
                         </div>`;
+                            let novoComentarioHTML = htmlBalon;
 
-                    comentariosDiv.insertAdjacentHTML('beforeend', novoComentarioHTML);
+                            comentariosDiv.insertAdjacentHTML('beforeend', novoComentarioHTML);
 
-                    // Limpa o campo e rola para baixo
-                    comentarioInput.value = "";
-                    comentariosDiv.scrollTop = comentariosDiv.scrollHeight;
-                }
-            })
-            .catch(error => console.error("❌ Erro:", error))
-            .finally(() => {
-                btnEnviar.disabled = false;
+                            // Limpa o campo e rola para baixo
+                            comentarioInput.value = "";
+                            comentariosDiv.scrollTop = comentariosDiv.scrollHeight;
+                        }
+                    })
+                    .catch(error => console.error("❌ Erro:", error))
+                    .finally(() => {
+                        btnEnviar.disabled = false;
+                    });
             });
         });
     });
-});
 </script>
 
 <!-- Script para o Modal de Exclusão -->
 <script>
-const deleteModal = document.getElementById('deleteModal');
-deleteModal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const id = button.getAttribute('data-id');
-    const name = button.getAttribute('data-name');
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
 
-    // Atualiza o nome do andamento no modal
-    document.getElementById('andamentoName').textContent = name;
+        // Atualiza o nome do andamento no modal
+        document.getElementById('andamentoName').textContent = name;
 
-    // Atualiza a URL do formulário de exclusão
-    const form = document.getElementById('deleteForm');
-    form.action = `/andamentos/${id}/deletar/`;
-});
+        // Atualiza a URL do formulário de exclusão
+        const form = document.getElementById('deleteForm');
+        form.action = `/andamentos/${id}/deletar/`;
+    });
 </script>
 
 <script>
-document.addEventListener("click", function (e) {
-    // Verifica se o elemento clicado é o botão de excluir
-    if (e.target.closest(".btn-excluir-comentario")) {
-        const btn = e.target.closest(".btn-excluir-comentario");
-        const comentarioId = btn.getAttribute("data-id");
-        const wrapper = document.getElementById(`comentario-wrapper-${comentarioId}`);
+    document.addEventListener("click", function (e) {
+        // Verifica se o elemento clicado é o botão de excluir
+        if (e.target.closest(".btn-excluir-comentario")) {
+            const btn = e.target.closest(".btn-excluir-comentario");
+            const comentarioId = btn.getAttribute("data-id");
+            const wrapper = document.getElementById(`comentario-wrapper-${comentarioId}`);
 
-        if (confirm("Deseja realmente apagar este comentário?")) {
-            fetch(`/excluir-comentario/${comentarioId}/`, {
-                method: "POST",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Adiciona uma animação de saída antes de remover do HTML
-                    wrapper.classList.add("animate__animated", "animate__fadeOutRight");
-                    setTimeout(() => wrapper.remove(), 500);
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error("Erro ao excluir:", error));
-        }
-    }
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Localiza o textarea dentro do formulário de comentário
-    const commentForm = document.querySelector(".comentario-form");
-    const textarea = commentForm.querySelector("textarea[name='texto']");
-
-    textarea.addEventListener("keydown", function (e) {
-        // Verifica se a tecla pressionada é Enter
-        if (e.key === "Enter") {
-            if (e.shiftKey) {
-                // Se Shift estiver pressionado, permite o comportamento padrão (quebra de linha)
-                return;
-            } else {
-                // Se apenas Enter for pressionado:
-                e.preventDefault(); // Evita a quebra de linha física no campo
-                
-                // Dispara o evento de submit do formulário
-                // Isso vai acionar o seu listener fetch() que já está configurado no template
-                commentForm.requestSubmit(); 
+            if (confirm("Deseja realmente apagar este comentário?")) {
+                fetch(`/excluir-comentario/${comentarioId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Adiciona uma animação de saída antes de remover do HTML
+                            wrapper.classList.add("animate__animated", "animate__fadeOutRight");
+                            setTimeout(() => wrapper.remove(), 500);
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error("Erro ao excluir:", error));
             }
         }
     });
-});
 </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Localiza o textarea dentro do formulário de comentário
+        const commentForm = document.querySelector(".comentario-form");
+        const textarea = commentForm.querySelector("textarea[name='texto']");
+
+        textarea.addEventListener("keydown", function (e) {
+            // Verifica se a tecla pressionada é Enter
+            if (e.key === "Enter") {
+                if (e.shiftKey) {
+                    // Se Shift estiver pressionado, permite o comportamento padrão (quebra de linha)
+                    return;
+                } else {
+                    // Se apenas Enter for pressionado:
+                    e.preventDefault(); // Evita a quebra de linha física no campo
+
+                    // Dispara o evento de submit do formulário
+                    // Isso vai acionar o seu listener fetch() que já está configurado no template
+                    commentForm.requestSubmit();
+                }
+            }
+        });
+    });
+
+</script>
+
+<script>
+function submitFormIA(event, processoId, andamentoId) {
+    event.preventDefault();
+    
+    let baseBtnClass;
+    const btnSubmit = document.getElementById(`btnSubmitIA${andamentoId}`);
+    const originalText = btnSubmit.innerHTML;
+    baseBtnClass = btnSubmit.className;
+
+    btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Analisando...`;
+    btnSubmit.disabled = true;
+
+    const textarea = document.getElementById(`texto_minuta_${andamentoId}`);
+    const textoMinuta = textarea.value;
+
+    const fileInput = document.getElementById(`arquivo_recurso_${andamentoId}`);
+
+    const formData = new FormData();
+    formData.append("texto_minuta", textoMinuta);
+    
+    if (fileInput && fileInput.files.length > 0) {
+        formData.append("arquivo_recurso", fileInput.files[0]);
+    }
+
+    fetch(`/analisar-minuta-ia/${processoId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert("A Inteligência Artificial concluiu a análise. O resumo e a revisão foram adicionados aos comentários desse processo!");
+            const modalElement = document.getElementById(`iaModal${andamentoId}`);
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            // Recarrega a página para exibir o comentário novo
+            window.location.reload();
+        } else {
+            alert(`Erro na IA: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error("Erro:", error);
+        alert("Erro inesperado ao conectar à Inteligência Artificial.");
+    })
+    .finally(() => {
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+        btnSubmit.className = baseBtnClass;
+    });
+}
+
+function abrirModalSugestaoIAList(andamentoId) {
+    const modalEl = document.getElementById(`modalSugestaoIAList${andamentoId}`);
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        if (confirm('Tem certeza que deseja enviar para Revisão?')) {
+            document.getElementById(`formEnviarRevisaoList${andamentoId}`).submit();
+        }
+    }
+}
+
+function abrirIAModalList(andamentoId) {
+    setTimeout(function() {
+        const iaModalEl = document.getElementById(`iaModal${andamentoId}`);
+        if (iaModalEl) {
+            const iaModal = new bootstrap.Modal(iaModalEl);
+            iaModal.show();
+        }
+    }, 300);
+}
+</script>
+
 {% endblock %}

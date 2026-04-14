@@ -932,9 +932,19 @@
       return el ? el.value : '';
     };
 
-    // ── Abertura ─────────────────────────────────────────
+    // ── Abertura / Toggle ────────────────────────────────
     window.abrirAgenda = function () {
-      const modal = new bootstrap.Modal(document.getElementById('agendaModal'));
+      const el = document.getElementById('agendaModal');
+      const instancia = bootstrap.Modal.getInstance(el);
+
+      // Se o modal já está aberto, fecha
+      if (el.classList.contains('show')) {
+        if (instancia) instancia.hide();
+        return;
+      }
+
+      // Caso contrário, abre
+      const modal = instancia || new bootstrap.Modal(el);
       modal.show();
       AG.viewDate = new Date();
       AG.selectedDate = new Date();

@@ -2925,3 +2925,106 @@ def aviso_deletar(request, pk):
     aviso.save()
     return JsonResponse({'success': True})
 
+import json
+from openai import OpenAI
+from decouple import config
+
+@login_required
+def analisar_minuta_ia(request, processo_id):
+    if request.method == 'POST':
+        try:
+            processo = get_object_or_404(Processo, id=processo_id)
+            texto_minuta = request.POST.get('texto_minuta', '').strip()
+            arquivo_recurso = request.FILES.get('arquivo_recurso')
+            
+            if not texto_minuta:
+                return JsonResponse({'status': 'error', 'message': 'O texto da minuta não pode estar vazio.'}, status=400)
+                
+            if not arquivo_recurso:
+                return JsonResponse({'status': 'error', 'message': 'O envio do arquivo do recurso é obrigatório para a análise da IA.'}, status=400)
+
+            # Conectar à API da OpenAI
+            api_key = config('OPENAI_API_KEY', default='')
+            if not api_key or 'sk-cole' in api_key:
+                return JsonResponse({'status': 'error', 'message': 'A chave OPENAI_API_KEY não foi configurada corretamente.'}, status=400)
+
+            client = OpenAI(api_key=api_key)
+
+            uploaded_file_id = None
+            if arquivo_recurso:
+                # Realiza o upload do arquivo para a OpenAI antes da chamada de IA
+                response_file = client.files.create(
+                    file=(arquivo_recurso.name, arquivo_recurso.read()),
+                    purpose="assistants"
+                )
+                uploaded_file_id = response_file.id
+
+            # Mensagem enviada ao Assistente: somente o texto da minuta.
+            # O prompt/instruções vem exclusivamente do Assistente configurado na OpenAI.
+            conteudo_final = f"Abaixo segue a minuta para análise:\n\n{texto_minuta}"
+
+
+            # 1. Criar uma Thread
+            thread = client.beta.threads.create()
+
+            # 2. Adicionar a mensagem à Thread
+            msg_params = {
+                "thread_id": thread.id,
+                "role": "user",
+                "content": conteudo_final
+            }
+            if uploaded_file_id:
+                msg_params["attachments"] = [
+                    {
+                        "file_id": uploaded_file_id,
+                        "tools": [{"type": "file_search"}]
+                    }
+                ]
+            
+            client.beta.threads.messages.create(**msg_params)
+
+            # 3. Executar o Assistente
+            try:
+                import time
+                run = client.beta.threads.runs.create(
+                    thread_id=thread.id,
+                    assistant_id="asst_YgwStqtIr9VrXrXeVl6QiWFc"
+                )
+
+                # 4. Aguardar a conclusão (Polling)
+                while run.status in ['queued', 'in_progress', 'cancelling']:
+                    time.sleep(1.5)
+                    run = client.beta.threads.runs.retrieve(
+                        thread_id=thread.id,
+                        run_id=run.id
+                    )
+
+                if run.status == 'completed':
+                    # 5. Resgatar a resposta final
+                    messages = client.beta.threads.messages.list(
+                        thread_id=thread.id
+                    )
+                    resposta_ia = messages.data[0].content[0].text.value
+                else:
+                    raise Exception(f"A execução do assistente falhou ou não foi finalizada corretamente. Status: {run.status}")
+            finally:
+                # Exclui o arquivo do Storage da OpenAI para economizar espaço
+                if uploaded_file_id:
+                    try:
+                        client.files.delete(uploaded_file_id)
+                    except Exception:
+                        pass
+
+            texto_formatado = f"🤖 **Análise Prévia da IA:**\n\n{resposta_ia}"
+            ComentarioProcesso.objects.create(
+                processo=processo,
+                usuario=request.user,
+                texto=texto_formatado
+            )
+            
+            return JsonResponse({'status': 'success', 'message': 'Análise concluída e adicionada aos comentários.'})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Erro na IA: {str(e)}'}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
