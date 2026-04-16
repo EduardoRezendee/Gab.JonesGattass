@@ -188,8 +188,8 @@
         <small class="fw-bold" style="color:#10b981;">{{ progresso|stringformat:"0.1f"|cut:"," }}%</small>
       </div>
       <div class="meta-progress">
-        <div class="meta-progress-bar" style="width:{{ progresso|slugify }}%;">
-          {% if progresso > 12 %}{{ progresso|stringformat:"0.0f"|cut:"," }}%{% endif %}
+        <div class="meta-progress-bar" style="width: {{ progresso|stringformat:'0.0f' }}%;">
+          {% if progresso > 12 %}{{ progresso|stringformat:"0.0f" }}%{% endif %}
         </div>
       </div>
     </div>
