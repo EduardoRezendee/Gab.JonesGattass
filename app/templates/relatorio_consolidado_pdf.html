@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #1e293b;
+            line-height: 1.4;
+            background-color: #ffffff;
+        }
+        
+        /* Cabeçalho */
+        .header {
+            text-align: center;
+            border-bottom: 2pt solid #083464;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-width: 100px;
+            max-height: 100px;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 18pt;
+            color: #083464;
+            margin: 0;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .subtitle {
+            font-size: 10pt;
+            color: #475569;
+            margin-top: 5px;
+        }
+
+        /* Badge do Período */
+        .period-container {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #f1f5f9;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 10pt;
+            color: #0f172a;
+        }
+
+        /* Seção do Assessor */
+        .assessor-section {
+            page-break-inside: avoid;
+            border: 1px solid #94a3b8; /* Borda externa única que envolve o nome e as tabelas */
+            margin-bottom: 0px; 
+        }
+        
+        .assessor-header {
+            background-color: #083464;
+            color: #ffffff;
+            padding: 8px 15px;
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: left;
+            border-bottom: 1px solid #083464;
+        }
+
+        /* Tabelas Unificadas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-bottom: 0;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            text-align: left;
+            padding: 8px 15px;
+            font-size: 9pt;
+            font-weight: bold;
+            border-bottom: 1px solid #94a3b8;
+            border-right: 1px solid #cbd5e1;
+        }
+        th:last-child {
+            border-right: none;
+        }
+        td {
+            padding: 8px 15px;
+            font-size: 9.5pt;
+            border-bottom: 1px solid #cbd5e1;
+            border-right: 1px solid #cbd5e1;
+            color: #1e293b;
+        }
+        td:last-child {
+            border-right: none;
+        }
+        
+        /* Larguras */
+        .col-desc { width: 85%; }
+        .col-num { width: 15%; text-align: center; font-weight: bold; }
+
+        /* Zebra e Totais */
+        tbody tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        
+        .row-total td {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #0f172a;
+            border-top: 1.5pt solid #64748b;
+        }
+        .row-grand-total td {
+            background-color: #083464;
+            color: #ffffff;
+            font-weight: bold;
+            border-bottom: none;
+        }
+        .row-grand-total .col-num {
+            color: #ffffff;
+            font-size: 11pt;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #64748b;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        {% if logo_path %}
+            <img src="{{ logo_path }}" width="120" class="logo">
+        {% endif %}
+        <h1 class="title">Relatório Gabinete</h1>
+        <p class="subtitle">Gabinete Desembargador Jones Gattass Dias</p>
+    </div>
+
+    <div class="period-container">
+        <strong>Período:</strong> {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
+    </div>
+
+    {% for item in dados_assessores %}
+    <div class="assessor-section">
+        
+        <div class="assessor-header">
+            {{ item.nome }}
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-desc">Indicadores de Acervo</th>
+                    <th class="col-num">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="row-total">
+                    <td>Total de Processos Pendentes (Acervo Atual)</td>
+                    <td class="col-num">{{ item.total_pendentes }}</td>
+                </tr>
+                <tr>
+                    <td>Processos em Elaboração</td>
+                    <td class="col-num">{{ item.em_elaboracao }}</td>
+                </tr>
+                <tr>
+                    <td>Processos em Revisão (Assessor)</td>
+                    <td class="col-num">{{ item.em_revisao }}</td>
+                </tr>
+                <tr>
+                    <td>Processos em Revisão Des. (Gabinete)</td>
+                    <td class="col-num">{{ item.em_revisao_des }}</td>
+                </tr>
+                <tr>
+                    <td>Processos em Devolvido</td>
+                    <td class="col-num">{{ item.em_devolvido }}</td>
+                </tr>
+                <tr>
+                    <td>Processos em L. PJE</td>
+                    <td class="col-num">{{ item.em_l_pje }}</td>
+                </tr>
+            </tbody>
+            
+            <tbody>
+                <tr>
+                    <th class="col-desc" style="border-top: 2px solid #083464;">Indicadores de Desempenho</th>
+                    <th class="col-num" style="border-top: 2px solid #083464;">Quantidade</th>
+                </tr>
+                <tr>
+                    <td>Total de Processos Vinculados à Meta</td>
+                    <td class="col-num">{{ item.total_processos_meta }}</td>
+                </tr>
+                <tr>
+                    <td>Concluídos vinculados à Meta Semanal</td>
+                    <td class="col-num">{{ item.concluidos_na_meta }}</td>
+                </tr>
+                <tr>
+                    <td>Concluídos Extras (Fora da Meta)</td>
+                    <td class="col-num">{{ item.concluidos_fora_meta }}</td>
+                </tr>
+                <tr class="row-grand-total">
+                    <td style="text-transform: uppercase;">Concluídos Total (Período)</td>
+                    <td class="col-num">{{ item.concluidos_periodo }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Espaço forçado para garantir a distância real (3 enters) -->
+    <br><br><br>
+    {% endfor %}
+
+    <div class="footer">
+        Emitido em: {{ today|date:"d/m/Y H:i" }} | Documento Gerado Eletronicamente — Sistema Gabinete v2.0
+    </div>
+</body>
+</html>

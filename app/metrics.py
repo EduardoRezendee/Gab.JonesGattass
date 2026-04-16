@@ -3,9 +3,10 @@ from processos.models import Processo
 from django.utils.timezone import now
 from django.db.models import Count
 from datetime import date, datetime
+from django.core.cache import cache
 
 def get_process_metrics(user):
-    processos_nao_concluidos = Processo.objects.filter(usuario=user, concluido=False).select_related('especie')
+    processos_nao_concluidos = Processo.objects.filter(usuario=user, concluido=False).select_related('especie').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
 
     contagem_por_especie = (
         processos_nao_concluidos
@@ -17,7 +18,8 @@ def get_process_metrics(user):
     processos_detalhados = []
     hoje = date.today()
     for processo in processos_nao_concluidos:
-        ultimo_andamento = processo.andamentos.order_by('-dt_criacao').select_related('fase', 'status').first()
+        andamentos_lista = list(processo.andamentos.all())
+        ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
         prazo_status = "Sem prazo"
         dias_diferenca = None
         if processo.dt_prazo:
@@ -81,6 +83,11 @@ def get_process_gamification_metrics(user):
 User = get_user_model()
 
 def get_top_users_by_xp():
+    cache_key = 'top_users_gamification'
+    top_users = cache.get(cache_key)
+    if top_users is not None:
+        return top_users
+
     species_weights = {"LIM": 1, "OUTROS": 1, "RED": 1, "RCL": 1, "RAI": 1, "RAC": 1, "QN": 1, "PV": 1, "PET": 1, "MS": 1, "HC": 1, "CC": 1, "AR": 1, "ADI": 1, "AGR I": 1}
     penalties = {("AGR I", "PROVIDO"): -2, ("AGR I", "PARCIALMENTE PROVIDO"): -1, ("RED", "ACOLHIDO"): -2, ("RED", "PARCIALMENTE ACOLHIDO"): -1}
 
@@ -106,7 +113,9 @@ def get_top_users_by_xp():
             'species_count': species_count,
         })
 
-    return sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
+    result = sorted(all_users_data, key=lambda x: x['points'], reverse=True)[:3]
+    cache.set(cache_key, result, timeout=3600)
+    return result
 
 
 from django.db.models import Count, Q

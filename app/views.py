@@ -7,17 +7,23 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.db.models.functions import Left
 # MODELS
-from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo, Aviso
+from processos.models import Processo, TarefaDoDia, ComentarioProcesso, ProcessoAndamento, Tema, Tipo, Aviso, MetaSemanal
 from accounts.models import UserProfile
 from django.utils import timezone
 from django.http import JsonResponse
 from django.db.models import Count
 from datetime import datetime, timedelta, timezone as dt_timezone
 from processos.models import ProcessoAndamento, User
-from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value, Max
+from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value, Max, OuterRef, Subquery
 from django.db.models.functions import Cast
 from collections import defaultdict
 from processos.models import ProcessoAndamento
+from django.conf import settings
+import os
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.template.loader import get_template
+from django.http import HttpResponse
 
 
 def home3(request):
@@ -123,17 +129,17 @@ def home(request):
         if numero_processo:
             processos_em_revisao = processos_em_revisao.filter(numero_processo__icontains=numero_processo)
         
-        comentarios_dict = {
-            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
-            for p in processos_em_revisao
-        }
+        comentarios_all = ComentarioProcesso.objects.filter(processo__in=processos_em_revisao).select_related('usuario')
+        comentarios_dict = {}
+        for c in comentarios_all:
+            comentarios_dict.setdefault(c.processo_id, []).append(c)
+
         for processo in processos_em_revisao:
-            total_comentarios = processo.comentarios.count()
-            ultimo_andamento = processo.andamentos.filter(
-                fase__fase="Revisão",
-                usuario=user,
-                status__status__in=["Não iniciado", "Em andamento"]
-            ).order_by('-dt_criacao').first()
+            comentarios = comentarios_dict.get(processo.pk, [])
+            total_comentarios = len(comentarios)
+            andamentos_lista = list(processo.andamentos.all())
+            filtrados = [a for a in andamentos_lista if a.fase and a.fase.fase == "Revisão" and getattr(a.usuario, 'id', a.usuario_id) == user.id and a.status and a.status.status in ["Não iniciado", "Em andamento"]]
+            ultimo_andamento = max(filtrados, key=lambda a: a.dt_criacao) if filtrados else None
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
                 comentarios = comentarios_dict.get(processo.pk, [])
@@ -211,27 +217,26 @@ def home(request):
 
         numero_de_processos_em_revisao_des = processos_em_revisao_des.count()
 
-        comentarios_dict = {
-            p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
-            for p in processos_em_revisao_des
-        }
+        comentarios_all = ComentarioProcesso.objects.filter(processo__in=processos_em_revisao_des).select_related('usuario')
+        comentarios_dict = {}
+        for c in comentarios_all:
+            comentarios_dict.setdefault(c.processo_id, []).append(c)
 
         andamento_metrics = []
         for processo in processos_em_revisao_des:
-            # Último andamento em Revisão Des desta desembargadora (em aberto)
-            total_comentarios = processo.comentarios.count()
-            # último andamento na fase filtrada (em aberto)
-            filt_andamento = Q(fase__fase=fase_filtro, status__status__in=["Não iniciado", "Em andamento"])
+            comentarios = comentarios_dict.get(processo.pk, [])
+            total_comentarios = len(comentarios)
+            andamentos_lista = list(processo.andamentos.all())
+            filtrados = [a for a in andamentos_lista if a.fase and a.fase.fase == fase_filtro and a.status and a.status.status in ["Não iniciado", "Em andamento"]]
             if fase_filtro not in ['Devolvido', 'Revisão']:
-                filt_andamento &= Q(usuario=user)
-
-            ultimo_andamento = processo.andamentos.filter(filt_andamento).order_by('-dt_criacao').first()
+                filtrados = [a for a in filtrados if getattr(a.usuario, 'id', a.usuario_id) == user.id]
+            ultimo_andamento = max(filtrados, key=lambda a: a.dt_criacao) if filtrados else None
 
             if ultimo_andamento:
                 especie_nome = processo.especie.especie if processo.especie else "Sem espécie"
                 tipo_nome = processo.tipo.tipo if processo.tipo else "Sem tipo"
                 comentarios = comentarios_dict.get(processo.pk, [])
-                revisoes_des_count = processo.andamentos.filter(fase__fase="Revisão Des").count()
+                revisoes_des_count = sum(1 for a in andamentos_lista if a.fase and a.fase.fase == "Revisão Des")
 
                 andamento_metrics.append({
                     'pk': ultimo_andamento.pk,
@@ -340,10 +345,11 @@ def home(request):
         processos_mais_antigos = Processo.objects.filter(
             concluido=False,
             antigo__isnull=False
-        ).select_related('especie', 'usuario').order_by('antigo')[:10]
+        ).select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase').order_by('antigo')[:10]
         processos_antigos_detalhados = []
         for processo in processos_mais_antigos:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             dias_no_gabinete = (hoje - processo.antigo).days if processo.antigo else 0
             processos_antigos_detalhados.append({
                 'numero_processo': processo.numero_processo,
@@ -356,10 +362,11 @@ def home(request):
         processos_liminares = Processo.objects.filter(
             concluido=False,
             especie__especie="Liminar"
-        ).select_related('especie', 'usuario').order_by('antigo')
+        ).select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase').order_by('antigo')
         processos_liminares_detalhados = []
         for processo in processos_liminares:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             dias_no_gabinete = (hoje - processo.data_dist).days if processo.data_dist else 0
             processos_liminares_detalhados.append({
                 'numero_processo': processo.numero_processo,
@@ -419,6 +426,8 @@ def home(request):
 
         # Quantitativo total
         total_atrasados = processos_mais_30.count()
+        
+
 
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
     else:
@@ -450,13 +459,16 @@ def home(request):
             processos_nao_concluidos = processos_nao_concluidos.filter(especie__sigla__iexact=especie)
 
         if not is_revisor and not is_desembargador and not is_chefe:
-            comentarios_dict = {
-                p.pk: list(ComentarioProcesso.objects.filter(processo=p).select_related('usuario'))
-                for p in processos_nao_concluidos
-            }
+            comentarios_all = ComentarioProcesso.objects.filter(processo__in=processos_nao_concluidos).select_related('usuario')
+            comentarios_dict = {}
+            for c in comentarios_all:
+                comentarios_dict.setdefault(c.processo_id, []).append(c)
+
             for processo in processos_nao_concluidos:
-                total_comentarios = processo.comentarios.count()
-                ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+                comentarios = comentarios_dict.get(processo.pk, [])
+                total_comentarios = len(comentarios)
+                andamentos_lista = list(processo.andamentos.all())
+                ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
                 if ultimo_andamento and processo.pk:
                     processos_detalhados.append({
                         'pk': processo.pk,
@@ -517,7 +529,8 @@ def home(request):
             dt_conclusao__date=hoje
         ).select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
         for processo in processos_concluidos:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             if ultimo_andamento and processo.pk:
                 processos_concluidos_detalhados.append({
                     'pk': processo.pk,
@@ -541,11 +554,10 @@ def home(request):
             andamentos__dt_criacao__date=hoje
         ).distinct().select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
         for processo in processos_revisao_des:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
-            andamento_revisao_des = processo.andamentos.filter(
-                fase__fase="Revisão Des",
-                dt_criacao__date=hoje
-            ).order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
+            filtrados_des = [a for a in andamentos_lista if a.fase and a.fase.fase == "Revisão Des" and a.dt_criacao.date() == hoje.date()]
+            andamento_revisao_des = max(filtrados_des, key=lambda a: a.dt_criacao) if filtrados_des else None
             if ultimo_andamento and andamento_revisao_des and processo.pk:
                 processos_revisao_des_detalhados.append({
                     'pk': processo.pk,
@@ -567,18 +579,29 @@ def home(request):
             usuario=user,
             concluido=False
         ).values('especie__sigla').distinct()
-    # Tarefas do Dia (comum a todos os papéis)
     tarefas_do_dia = TarefaDoDia.objects.filter(usuario=user).select_related('processo', 'processo__especie', 'processo__tema').prefetch_related('processo__andamentos', 'processo__andamentos__fase')
+    
+    processos_tarefas = [t.processo for t in tarefas_do_dia if t.processo]
+    comentarios_tarefas_all = ComentarioProcesso.objects.filter(processo__in=processos_tarefas).select_related('usuario')
+    comentarios_tarefas_dict = {}
+    for c in comentarios_tarefas_all:
+        comentarios_tarefas_dict.setdefault(c.processo_id, []).append(c)
+        
     for tarefa in tarefas_do_dia:
-        ultimo_andamento = tarefa.processo.andamentos.order_by('-dt_criacao').first() if tarefa.processo else None
+        if tarefa.processo:
+            andamentos_lista = list(tarefa.processo.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
+            comentarios = comentarios_tarefas_dict.get(tarefa.processo.id, [])
+        else:
+            ultimo_andamento = None
+            comentarios = []
+            
         tarefa_dict = {
             'id': tarefa.id,
             'processo': {
                 'id': tarefa.processo.id if tarefa.processo else None,
                 'numero_processo': tarefa.processo.numero_processo if tarefa.processo else "Sem número",
-                'especie': tarefa.processo.especie.especie if tarefa.processo and tarefa
-
-.processo.especie else "Sem espécie",
+                'especie': tarefa.processo.especie.especie if tarefa.processo and tarefa.processo.especie else "Sem espécie",
                 'fase_atual': ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem fase",
                 'data_dist': tarefa.processo.data_dist if tarefa.processo else None,
                 'tema': tarefa.processo.tema.nome if tarefa.processo and tarefa.processo.tema else "Sem tema",
@@ -587,7 +610,7 @@ def home(request):
                 'andamento_pk': ultimo_andamento.pk if ultimo_andamento else None,
                 'andamento_link_doc': ultimo_andamento.link_doc if ultimo_andamento else None,
                 'andamento': ultimo_andamento,
-                'comentarios': ComentarioProcesso.objects.filter(processo=tarefa.processo).select_related('usuario') if tarefa.processo else []
+                'comentarios': comentarios
             }
         }
         tarefas_detalhadas.append(tarefa_dict)
@@ -659,12 +682,156 @@ def home(request):
         'total_atrasados': total_atrasados,
         'fase_ativa_desa': fase_filtro,
         'avisos_nao_lidos_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
+        'assessores_lista': User.objects.filter(profile__funcao="Assessor(a)").order_by('first_name'),
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:
         context['show_productivity_charts'] = False
 
     return render(request, 'home.html', context)
+
+
+@login_required(login_url='login')
+def gerar_relatorio_consolidado(request):
+    # Verificar permissão (Chefe ou Desembargador)
+    is_chefe = UserProfile.objects.filter(user=request.user, funcao="Chefe de Gabinete").exists()
+    is_desa = UserProfile.objects.filter(user=request.user, funcao="Desembargador").exists()
+    
+    if not (is_chefe or is_desa):
+        return HttpResponse("Acesso negado. Apenas Chefe de Gabinete ou Desembargador podem gerar este relatório.", status=403)
+
+    # Obter parâmetros
+    data_inicio_str = request.GET.get('data_inicio')
+    data_fim_str = request.GET.get('data_fim')
+    assessor_ids = request.GET.getlist('assessores') # Lista de IDs de usuários
+
+    if not data_inicio_str or not data_fim_str:
+        return HttpResponse("As datas de início e fim são obrigatórias.", status=400)
+
+    try:
+        data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+        data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
+        # Ajustar data_fim para o final do dia
+        data_fim = data_fim.replace(hour=23, minute=59, second=59)
+    except ValueError:
+        return HttpResponse("Formato de data inválido. Use AAAA-MM-DD.", status=400)
+
+    # Consultar assessores
+    if not assessor_ids or 'all' in assessor_ids:
+        usuarios_assessores = User.objects.filter(profile__funcao="Assessor(a)").order_by('first_name')
+    else:
+        usuarios_assessores = User.objects.filter(id__in=assessor_ids).order_by('first_name')
+
+    dados_assessores = []
+    
+    # Subquery para pegar a fase atual (último andamento)
+    latest_andamento = ProcessoAndamento.objects.filter(processo=OuterRef('pk')).order_by('-dt_criacao', '-id')
+
+    for assessor in usuarios_assessores:
+        # Processos pendentes com fase atual anotada
+        processos_pendentes = Processo.objects.filter(usuario=assessor, concluido=False).annotate(
+            fase_atual=Subquery(latest_andamento.values('fase__fase')[:1])
+        )
+        
+        total_pendentes = processos_pendentes.count()
+        em_elaboracao = processos_pendentes.filter(fase_atual__in=["Elaboração", "Correção"]).count()
+        em_revisao = processos_pendentes.filter(fase_atual="Revisão").count()
+        em_revisao_des = processos_pendentes.filter(fase_atual="Revisão Des").count()
+        em_devolvido = processos_pendentes.filter(fase_atual="Devolvido").count()
+        em_pje = processos_pendentes.filter(fase_atual="PJE").count()
+        em_l_pje = processos_pendentes.filter(fase_atual="L. PJE").count()
+        
+        # O total exibido agora é a soma exata das categorias detalhadas
+        total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
+        
+        # Concluídos no período (Votando para a lógica do Processo que funciona no dashboard)
+        concluidos_periodo = Processo.objects.filter(
+            usuario=assessor,
+            concluido=True,
+            dt_conclusao__range=(data_inicio, data_fim)
+        ).count()
+        
+        # Total Histórico
+        total_historico = Processo.objects.filter(usuario=assessor, concluido=True).count()
+        
+        # --- MÉTRICAS DE METAS SEMANAIS ---
+        metas_periodo = MetaSemanal.objects.filter(
+            usuario=assessor,
+            semana_fim__gte=data_inicio.date(),
+            semana_inicio__lte=data_fim.date()
+        )
+        
+        total_meta_qtd = 0
+        total_processos_na_meta = 0
+        concluidos_na_meta = 0
+        ids_processos_nas_metas = set()
+
+        for meta in metas_periodo:
+            total_meta_qtd += meta.meta_qtd
+            procs_meta = meta.processos.all()
+            ids_processos_nas_metas.update(procs_meta.values_list('id', flat=True))
+            
+            # Concluídos desta meta (baseado na conclusão do processo)
+            concluidos_nesta_meta_ids = procs_meta.filter(
+                concluido=True,
+                dt_conclusao__range=(data_inicio, data_fim)
+            ).values_list('id', flat=True).distinct()
+            
+            concluidos_na_meta += len(concluidos_nesta_meta_ids)
+
+        total_processos_na_meta = len(ids_processos_nas_metas)
+        concluidos_fora_meta = max(0, concluidos_periodo - concluidos_na_meta)
+
+        dados_assessores.append({
+            'nome': assessor.get_full_name() or assessor.username,
+            'total_pendentes': total_pendentes_exibido,
+            'em_elaboracao': em_elaboracao,
+            'em_revisao': em_revisao,
+            'em_revisao_des': em_revisao_des,
+            'em_devolvido': em_devolvido,
+            'em_pje': em_pje,
+            'em_l_pje': em_l_pje,
+            'concluidos_periodo': concluidos_periodo,
+            'total_historico': total_historico,
+            # Novos campos de Metas
+            'meta_qtd': total_meta_qtd,
+            'total_processos_meta': total_processos_na_meta,
+            'concluidos_na_meta': concluidos_na_meta,
+            'concluidos_fora_meta': concluidos_fora_meta,
+        })
+
+    # Caminho da Logo específica (Logo.jpg em profile_photos)
+    logo_path = os.path.join(settings.MEDIA_ROOT, 'profile_photos', 'Logo.jpg')
+    if not os.path.exists(logo_path):
+        # Fallback se não existir no caminho novo, tenta o antigo ou None
+        logo_path = os.path.join(settings.MEDIA_ROOT, 'banners', 'logo2.png')
+        if not os.path.exists(logo_path):
+            logo_path = None
+
+    # Preparar contexto para o PDF
+    context = {
+        'dados_assessores': dados_assessores,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+        'today': timezone.now(),
+        'logo_path': logo_path,
+    }
+
+    # Renderizar PDF
+    template = get_template('relatorio_consolidado_pdf.html')
+    html = template.render(context)
+    result = BytesIO()
+    
+    pisa_status = pisa.CreatePDF(html, dest=result, encoding='utf-8')
+    
+    if pisa_status.err:
+        return HttpResponse('Erro ao gerar PDF', status=500)
+    
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    filename = f"Relatorio_Reuniao_{data_inicio.strftime('%d%m%Y')}_{data_fim.strftime('%d%m%Y')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
 
 # Endpoints para Chart.js
 def get_pending_concluded_data(request):
@@ -1543,4 +1710,4 @@ def agenda_cancelar(request, pk):
     comp.save()
     status_msg = "cancelado" if comp.cancelado else "restaurado"
     return JsonResponse({'ok': True, 'mensagem': f'Compromisso {status_msg} com sucesso.', 'cancelado': comp.cancelado})
-
+

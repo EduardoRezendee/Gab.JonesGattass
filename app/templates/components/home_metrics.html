@@ -163,6 +163,9 @@
     <h2 class="mb-4 text-center" style="color: #083464; font-weight: 700; position: relative;">
       <i class="bi bi-graph-up me-2" style="color: #083464;"></i>
       Chefe de Gabinete
+      <button type="button" class="btn btn-primary btn-sm ms-3" style="font-size: 0.8rem; vertical-align: middle;" data-bs-toggle="modal" data-bs-target="#modalRelatorioConsolidado">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Relatório Gabinete
+      </button>
       <span style="display: block; width: 60px; height: 4px; background-color: #083464; margin: 8px auto 0; border-radius: 2px;"></span>
     </h2>
 
@@ -1096,4 +1099,88 @@
 
 {% include 'components/agenda_widget.html' %}
 
-{% endif %}
+<!-- Modal Relatório Consolidado -->
+<div class="modal fade" id="modalRelatorioConsolidado" tabindex="-1" aria-labelledby="modalRelatorioConsolidadoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalRelatorioConsolidadoLabel">
+          <i class="bi bi-file-earmark-pdf me-2"></i> Gerar Relatório de Reunião
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'gerar_relatorio_consolidado' %}" method="GET" target="_blank">
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Seleção de Período -->
+            <div class="col-md-6">
+              <label for="data_inicio" class="form-label fw-bold">Data Início</label>
+              <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+            </div>
+            <div class="col-md-6">
+              <label for="data_fim" class="form-label fw-bold">Data Fim</label>
+              <input type="date" class="form-control" id="data_fim" name="data_fim" required>
+            </div>
+
+            <!-- Seleção de Assessores -->
+            <div class="col-12 mt-4">
+              <label class="form-label fw-bold d-block">Selecionar Assessores</label>
+              <div class="card p-3" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                <div class="form-check mb-2 border-bottom pb-2">
+                  <input class="form-check-input" type="checkbox" id="checkAllAssessores" checked>
+                  <label class="form-check-label fw-bold" for="checkAllAssessores">
+                    Selecionar Todos
+                  </label>
+                </div>
+                <div id="assessoresList">
+                  {% for assessor in assessores_lista %}
+                  <div class="form-check">
+                    <input class="form-check-input assessor-check" type="checkbox" name="assessores" value="{{ assessor.id }}" id="assessor-{{ assessor.id }}" checked>
+                    <label class="form-check-label" for="assessor-{{ assessor.id }}">
+                      {{ assessor.get_full_name|default:assessor.username }}
+                    </label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <small class="text-muted">Deixe selecionado apenas os assessores que devem constar no relatório.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-download me-1"></i> Gerar PDF
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const checkAll = document.getElementById('checkAllAssessores');
+    const assessorChecks = document.querySelectorAll('.assessor-check');
+    
+    if (checkAll) {
+      checkAll.addEventListener('change', function() {
+        assessorChecks.forEach(check => {
+          check.checked = checkAll.checked;
+        });
+      });
+    }
+
+    // Set default dates (last month until today)
+    const today = new Date().toISOString().split('T')[0];
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const start = lastMonth.toISOString().split('T')[0];
+    
+    if(document.getElementById('data_inicio')) document.getElementById('data_inicio').value = start;
+    if(document.getElementById('data_fim')) document.getElementById('data_fim').value = today;
+  });
+</script>
+
+
+{% endif %}
