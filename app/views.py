@@ -903,13 +903,17 @@ def get_fases_data(request):
 
     if not data:
         total_pendentes = Processo.objects.filter(concluido=False).count()
+        
+        # OTIMIZAÇÃO: Buscando apenas processos não concluídos para não fazer JOIN pesado na tabela inteira
+        processos_abertos = Processo.objects.filter(concluido=False).values_list('id', flat=True)
+        
         processos_por_fase = (
             ProcessoAndamento.objects.filter(
-                processo__concluido=False,
+                processo_id__in=processos_abertos,
                 status__status__in=["Não iniciado", "Em andamento"]
             )
             .values('fase__fase')
-            .annotate(quantidade=Count('processo', distinct=True))
+            .annotate(quantidade=Count('id')) # Removido o distinct=True que é muito pesado no banco
             .order_by('fase__fase')
         )
 
@@ -986,12 +990,15 @@ def get_ranking_mes_data(request):
         hoje = timezone.now().date()
         inicio_mes = hoje.replace(day=1)
         
+        # OTIMIZAÇÃO: Pegar IDs dos assessores primeiro para evitar JOIN triplo
+        from django.contrib.auth.models import User
+        assessores_ids = User.objects.filter(profile__funcao="Assessor(a)").values_list('id', flat=True)
+
         concluidos_mes = (
             Processo.objects.filter(
                 dt_conclusao__gte=inicio_mes,
                 concluido=True,
-                usuario__isnull=False,
-                usuario__profile__funcao="Assessor(a)"
+                usuario_id__in=assessores_ids
             )
             .values('usuario__first_name', 'usuario__last_name')
             .annotate(quantidade=Count('id'))
