@@ -319,7 +319,7 @@
     
 
     <!-- Seção de Gráficos -->
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
       <!-- Revisões Hoje (Barra simples) -->
       <div class="col-12 col-md-6">
         <div class="card shadow-lg chart-container">
@@ -327,17 +327,19 @@
         </div>
       </div>
 
-      <!-- Entradas e Saídas por Assessor Hoje (Barras agrupadas) -->
+      <!-- Distribuição por Fase Atual (Gráfico de Rosca) -->
       <div class="col-12 col-md-6">
         <div class="card shadow-lg chart-container">
-          <canvas id="esAssessorHojeChart" style="max-height: 250px;"></canvas>
+          <canvas id="fasesChart" style="max-height: 250px;"></canvas>
         </div>
       </div>
+    </div>
 
-      <!-- Entradas vs. Saídas (Últimos 7 Dias) (Barras) -->
+    <div class="row g-4">
+      <!-- Ranking de Conclusões do Mês Atual (Barra) -->
       <div class="col-12">
         <div class="card shadow-lg chart-container">
-          <canvas id="entriesExitsChart" style="max-height: 300px;"></canvas>
+          <canvas id="rankingMesChart" style="max-height: 300px;"></canvas>
         </div>
       </div>
     </div>
@@ -382,42 +384,7 @@
       </div>
     </div>
 
-    <!-- Seção de Todos os Processos Liminares -->
-    <div class="mt-5">
-      <h3 class="text-center" style="color: #083464; font-weight: 700;">Todos os Processos Liminares Não Concluídos</h3>
-      <div class="card shadow-lg mt-3">
-        <div class="card-body">
-          {% if processos_liminares_detalhados %}
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>Número do Processo</th>
-                    <th>Data de Entrada no Gabinete</th>
-                    <th>Dias no Gabinete</th>
-                    <th>Fase Atual</th>
-                    <th>Responsável</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for processo in processos_liminares_detalhados %}
-                    <tr>
-                      <td>{{ processo.numero_processo }}</td>
-                      <td>{{ processo.data_entrada_gabinete|date:"d/m/Y" }}</td>
-                      <td>{{ processo.dias_no_gabinete }}</td>
-                      <td>{{ processo.fase_atual }}</td>
-                      <td>{{ processo.usuario }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <p class="text-muted text-center">Nenhum processo liminar não concluído encontrado.</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+
   </div>
 
   {% else %}
@@ -465,49 +432,61 @@
             });
         });
 
-    // Gráfico Entradas vs. Saídas (Últimos 7 Dias) em Colunas
-    fetch("{% url 'get_entries_exits_data' %}")
+    // Gráfico Distribuição por Fase Atual (Rosca)
+    fetch("{% url 'get_fases_data' %}")
         .then(response => response.json())
         .then(data => {
-            const ctx = document.getElementById('entriesExitsChart').getContext('2d');
+            // Remove o "Total Pendentes" que vem por padrão na última posição para usar no gráfico de rosca
+            const labels = data.labels.slice(0, -1);
+            const datasetData = data.datasets[0].data.slice(0, -1);
+            
+            // Mapeamento de cores solicitado
+            const colorMap = {
+                'Elaboração': '#3B82F6', // Azul
+                'Devolvido': '#EF4444',  // Vermelho
+                'Revisão Des': '#10B981', // Verde
+                'Revisão': '#F59E0B'      // Laranja
+            };
+            const defaultColors = ['#8B5CF6', '#EC4899', '#6B7280', '#06B6D4', '#84CC16'];
+            
+            let defaultIdx = 0;
+            const backgroundColors = labels.map(label => {
+                if (colorMap[label]) {
+                    return colorMap[label];
+                }
+                return defaultColors[(defaultIdx++) % defaultColors.length];
+            });
+            
+            const ctx = document.getElementById('fasesChart').getContext('2d');
             new Chart(ctx, {
-                type: 'bar',
+                type: 'doughnut',
                 data: {
-                    labels: data.labels,
-                    datasets: data.datasets
+                    labels: labels,
+                    datasets: [{
+                        data: datasetData,
+                        backgroundColor: backgroundColors
+                    }]
                 },
                 options: {
                     plugins: {
-                        title: { display: true, text: 'Entradas vs. Saídas (Últimos 7 Dias)' },
-                        legend: { display: true },
+                        title: { display: true, text: 'Distribuição por Fase Atual' },
+                        legend: { position: 'right', labels: { boxWidth: 12 } },
                         datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            color: '#000',
+                            color: '#fff',
                             font: { weight: 'bold' },
-                            formatter: (value) => value || ''
+                            formatter: (value) => value > 0 ? value : ''
                         }
                     },
-                    scales: {
-                        x: { 
-                            title: { display: true, text: 'Data' },
-                            ticks: { maxRotation: 45, minRotation: 45 },
-                            grid: { display: false }
-                        },
-                        y: { 
-                            beginAtZero: true,
-                            grid: { display: false }
-                        }
-                    }
+                    cutout: '60%'
                 }
             });
         });
 
-    // Gráfico Entradas e Saídas por Assessor Hoje (Barras Agrupadas)
-    fetch("{% url 'get_es_assessor_hoje_data' %}")
+    // Gráfico Ranking de Conclusões do Mês Atual (Barras)
+    fetch("{% url 'get_ranking_mes_data' %}")
         .then(response => response.json())
         .then(data => {
-            const ctx = document.getElementById('esAssessorHojeChart').getContext('2d');
+            const ctx = document.getElementById('rankingMesChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -515,12 +494,18 @@
                     datasets: data.datasets
                 },
                 options: {
+                    indexAxis: 'y', // Barras horizontais para melhor visualização do ranking
+                    layout: {
+                        padding: {
+                            right: 30
+                        }
+                    },
                     plugins: {
-                        title: { display: true, text: 'Entradas e Saídas por Assessor Hoje ({{ today|date:"d/m/Y" }})' },
-                        legend: { display: true },
+                        title: { display: true, text: data.datasets[0].label },
+                        legend: { display: false },
                         datalabels: {
                             anchor: 'end',
-                            align: 'top',
+                            align: 'right',
                             color: '#000',
                             font: { weight: 'bold' },
                             formatter: (value) => value || ''
@@ -528,12 +513,10 @@
                     },
                     scales: {
                         x: { 
-                            title: { display: true, text: 'Assessor' },
-                            ticks: { maxRotation: 45, minRotation: 45 },
+                            beginAtZero: true,
                             grid: { display: false }
                         },
-                        y: { 
-                            beginAtZero: true,
+                        y: {
                             grid: { display: false }
                         }
                     }

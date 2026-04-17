@@ -287,11 +287,13 @@ def home(request):
         processos_mais_antigos = (
             Processo.objects.filter(concluido=False, antigo__isnull=False)
             .select_related('especie', 'usuario', 'tipo')
+            .prefetch_related('andamentos', 'andamentos__fase')  # FIX: evita N+1 query por processo
             .order_by('antigo')[:10]
         )
         processos_antigos_detalhados = []
         for processo in processos_mais_antigos:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())  # usa prefetch em memória
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             dias_no_gabinete = (hoje - processo.antigo).days if processo.antigo else 0
             tipo_nome = processo.tipo.tipo if processo.tipo else "Sem tipo"
             processos_antigos_detalhados.append({
@@ -320,11 +322,13 @@ def home(request):
         processos_liminares = (
             Processo.objects.filter(concluido=False, especie__especie="Liminar")
             .select_related('especie', 'usuario', 'tipo')
+            .prefetch_related('andamentos', 'andamentos__fase')  # FIX: evita N+1 query por liminar
             .order_by('antigo')
         )
         processos_liminares_detalhados = []
         for processo in processos_liminares:
-            ultimo_andamento = processo.andamentos.order_by('-dt_criacao').first()
+            andamentos_lista = list(processo.andamentos.all())  # usa prefetch em memória
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             dias_no_gabinete = (hoje - processo.data_dist).days if processo.data_dist else 0
             tipo_nome = processo.tipo.tipo if processo.tipo else "Sem tipo"
             processos_liminares_detalhados.append({
@@ -395,7 +399,9 @@ def home(request):
         atrasados_por_assessor = defaultdict(list)
         for p in processos_mais_30:
             nome_assessor = p.usuario.get_full_name()
-            ultimo_andamento = p.andamentos.order_by('-dt_criacao').first()
+            # FIX: usar list() + max() em memória em vez de .order_by().first() que ignora o prefetch
+            andamentos_lista = list(p.andamentos.all())
+            ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
             atrasados_por_assessor[nome_assessor].append({
                 'numero_processo': p.numero_processo,
                 'dias_no_gabinete': p.dias_no_gabinete.days,
@@ -800,6 +806,9 @@ def gerar_relatorio_consolidado(request):
             'concluidos_fora_meta': concluidos_fora_meta,
         })
 
+    # Ordenar assessores do maior para o menor em processos concluídos
+    dados_assessores.sort(key=lambda x: x['concluidos_periodo'], reverse=True)
+
     # Caminho da Logo específica (Logo.jpg em profile_photos)
     logo_path = os.path.join(settings.MEDIA_ROOT, 'profile_photos', 'Logo.jpg')
     if not os.path.exists(logo_path):
@@ -828,7 +837,7 @@ def gerar_relatorio_consolidado(request):
         return HttpResponse('Erro ao gerar PDF', status=500)
     
     response = HttpResponse(result.getvalue(), content_type='application/pdf')
-    filename = f"Relatorio_Reuniao_{data_inicio.strftime('%d%m%Y')}_{data_fim.strftime('%d%m%Y')}.pdf"
+    filename = f"relatorio_gabgattass_{data_inicio.strftime('%d%m%Y')}_{data_fim.strftime('%d%m%Y')}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
@@ -889,30 +898,37 @@ def get_revisoes_hoje_data(request):
     return JsonResponse(response_data)
 
 def get_fases_data(request):
-    total_pendentes = Processo.objects.filter(concluido=False).count()
-    processos_por_fase = (
-        ProcessoAndamento.objects.filter(
-            processo__concluido=False,
-            status__status__in=["Não iniciado", "Em andamento"]
+    cache_key = 'fases_data_grafico'
+    data = cache.get(cache_key)
+
+    if not data:
+        total_pendentes = Processo.objects.filter(concluido=False).count()
+        processos_por_fase = (
+            ProcessoAndamento.objects.filter(
+                processo__concluido=False,
+                status__status__in=["Não iniciado", "Em andamento"]
+            )
+            .values('fase__fase')
+            .annotate(quantidade=Count('processo', distinct=True))
+            .order_by('fase__fase')
         )
-        .values('fase__fase')
-        .annotate(quantidade=Count('processo', distinct=True))
-        .order_by('fase__fase')
-    )
 
-    fases_nomes = [f['fase__fase'] for f in processos_por_fase]
-    fases_quantidades = [f['quantidade'] for f in processos_por_fase]
+        fases_nomes = [f['fase__fase'] for f in processos_por_fase]
+        fases_quantidades = [f['quantidade'] for f in processos_por_fase]
 
-    data = {
-        'labels': fases_nomes + ['Total Pendentes'],
-        'datasets': [
-            {
-                'label': 'Por Fase',
-                'data': fases_quantidades + [total_pendentes],
-                'backgroundColor': ['#3B82F6'] * len(fases_nomes) + ['#EF4444']
-            }
-        ]
-    }
+        data = {
+            'labels': fases_nomes + ['Total Pendentes'],
+            'datasets': [
+                {
+                    'label': 'Por Fase',
+                    'data': fases_quantidades + [total_pendentes],
+                    'backgroundColor': ['#3B82F6'] * len(fases_nomes) + ['#EF4444']
+                }
+            ]
+        }
+        # Cache por 1 hora
+        cache.set(cache_key, data, 3600)
+        
     return JsonResponse(data)
 
 def get_es_assessor_hoje_data(request):
@@ -954,6 +970,64 @@ def get_es_assessor_hoje_data(request):
             }
         ]
     }
+    return JsonResponse(data)
+
+def get_ranking_mes_data(request):
+    import locale
+    try:
+        locale.setlocale(locale.LC_TIME, 'pt_BR.utf8')
+    except:
+        pass
+    
+    cache_key = 'ranking_mes_data_grafico'
+    data = cache.get(cache_key)
+
+    if not data:
+        hoje = timezone.now().date()
+        inicio_mes = hoje.replace(day=1)
+        
+        concluidos_mes = (
+            Processo.objects.filter(
+                dt_conclusao__gte=inicio_mes,
+                concluido=True,
+                usuario__isnull=False,
+                usuario__profile__funcao="Assessor(a)"
+            )
+            .values('usuario__first_name', 'usuario__last_name')
+            .annotate(quantidade=Count('id'))
+            .order_by('-quantidade')
+        )
+
+        labels = [f"{c['usuario__first_name']} {c['usuario__last_name']}".strip() for c in concluidos_mes]
+        data_vals = [c['quantidade'] for c in concluidos_mes]
+
+        # Gerar cores: primeiro (ouro), segundo (prata), terceiro (bronze), resto (azul padrão)
+        background_colors = []
+        for i in range(len(labels)):
+            if i == 0:
+                background_colors.append('#F59E0B') # Ouro
+            elif i == 1:
+                background_colors.append('#9CA3AF') # Prata
+            elif i == 2:
+                background_colors.append('#B45309') # Bronze
+            else:
+                background_colors.append('#3B82F6') # Azul
+
+        nome_mes = hoje.strftime("%B").capitalize()
+        
+        data = {
+            'labels': labels,
+            'datasets': [
+                {
+                    'label': f'Processos Concluídos em {nome_mes}',
+                    'data': data_vals,
+                    'backgroundColor': background_colors
+                }
+            ]
+        }
+        # Cache por 1 hora
+        cache.set(cache_key, data, 3600)
+
     return JsonResponse(data)
 
 def get_especies_data(request):
