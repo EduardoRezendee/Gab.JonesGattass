@@ -18,18 +18,29 @@ class Command(BaseCommand):
         self.stdout.write("Calculando fases_data_grafico...")
         try:
             total_pendentes = Processo.objects.filter(concluido=False).count()
-            # ULTRA-LEVE: Apenas conta os andamentos abertos na tabela de andamento (sem cruzar com a tabela gigante de Processo)
-            processos_por_fase = (
-                ProcessoAndamento.objects.filter(
-                    status__status__in=["Não iniciado", "Em andamento"]
-                )
-                .values('fase__fase')
-                .annotate(quantidade=Count('id'))
-                .order_by('fase__fase')
-            )
+            
+            # OTIMIZAÇÃO EXTREMA: Sem nenhum JOIN. Busca apenas strings e conta no Python
+            from processos.models import Status
+            from collections import Counter
 
-            fases_nomes = [f['fase__fase'] for f in processos_por_fase]
-            fases_quantidades = [f['quantidade'] for f in processos_por_fase]
+            # 1. Pega os IDs dos status alvo
+            status_alvo_ids = Status.objects.filter(
+                status__in=["Não iniciado", "Em andamento"]
+            ).values_list('id', flat=True)
+
+            # 2. Busca apenas o nome da fase diretamente (faz 1 único join simples ou retorna nulo se não otimizado, mas evita o GROUP BY e ORDER BY pesado do banco)
+            fases_raw = ProcessoAndamento.objects.filter(
+                status_id__in=status_alvo_ids
+            ).values_list('fase__fase', flat=True)
+
+            # 3. Conta na RAM do servidor usando C puro do Python (extremamente rápido)
+            contagem = Counter([f if f else "Sem Fase" for f in fases_raw])
+            
+            # 4. Ordena alfabeticamente
+            fases_ordenadas = sorted(contagem.items(), key=lambda x: x[0])
+            
+            fases_nomes = [item[0] for item in fases_ordenadas]
+            fases_quantidades = [item[1] for item in fases_ordenadas]
 
             data_fases = {
                 'labels': fases_nomes + ['Total Pendentes'],
