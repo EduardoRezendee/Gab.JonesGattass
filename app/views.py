@@ -902,33 +902,19 @@ def get_fases_data(request):
     data = cache.get(cache_key)
 
     if not data:
-        total_pendentes = Processo.objects.filter(concluido=False).count()
-        
-        # OTIMIZAÇÃO: Consulta ultra-leve sem JOIN com a tabela gigante de Processos
-        processos_por_fase = (
-            ProcessoAndamento.objects.filter(
-                status__status__in=["Não iniciado", "Em andamento"]
-            )
-            .values('fase__fase')
-            .annotate(quantidade=Count('id'))
-            .order_by('fase__fase')
-        )
-
-        fases_nomes = [f['fase__fase'] for f in processos_por_fase]
-        fases_quantidades = [f['quantidade'] for f in processos_por_fase]
-
+        # PROTEÇÃO MÁXIMA: O site NUNCA mais vai calcular esse gráfico.
+        # Se o cache estiver vazio, retorna um gráfico vazio momentâneo.
+        # Apenas o 'robô' em segundo plano tem permissão para fazer essa conta pesada.
         data = {
-            'labels': fases_nomes + ['Total Pendentes'],
+            'labels': ['Carregando dados...'],
             'datasets': [
                 {
-                    'label': 'Por Fase',
-                    'data': fases_quantidades + [total_pendentes],
-                    'backgroundColor': ['#3B82F6'] * len(fases_nomes) + ['#EF4444']
+                    'label': 'Aguarde o processamento',
+                    'data': [0],
+                    'backgroundColor': ['#9CA3AF']
                 }
             ]
         }
-        # Cache longo (24h). O cronjob fará a atualização real a cada 30min.
-        cache.set(cache_key, data, 86400)
         
     return JsonResponse(data)
 
@@ -984,53 +970,17 @@ def get_ranking_mes_data(request):
     data = cache.get(cache_key)
 
     if not data:
-        hoje = timezone.now().date()
-        inicio_mes = hoje.replace(day=1)
-        
-        # OTIMIZAÇÃO: Pegar IDs dos assessores primeiro para evitar JOIN triplo
-        from django.contrib.auth.models import User
-        assessores_ids = User.objects.filter(profile__funcao="Assessor(a)").values_list('id', flat=True)
-
-        # OTIMIZAÇÃO: Buscar sem GROUP BY pesado, apenas dados e contagem em Python
-        concluidos_mes_queryset = Processo.objects.filter(
-            dt_conclusao__gte=inicio_mes,
-            concluido=True,
-            usuario_id__in=assessores_ids
-        ).values('usuario__first_name', 'usuario__last_name')
-        
-        from collections import Counter
-        contagem = Counter([f"{p['usuario__first_name']} {p['usuario__last_name']}".strip() for p in concluidos_mes_queryset])
-        ranking = sorted(contagem.items(), key=lambda x: x[1], reverse=True)
-        
-        labels = [r[0] for r in ranking]
-        data_vals = [r[1] for r in ranking]
-
-        # Gerar cores: primeiro (ouro), segundo (prata), terceiro (bronze), resto (azul padrão)
-        background_colors = []
-        for i in range(len(labels)):
-            if i == 0:
-                background_colors.append('#F59E0B') # Ouro
-            elif i == 1:
-                background_colors.append('#9CA3AF') # Prata
-            elif i == 2:
-                background_colors.append('#B45309') # Bronze
-            else:
-                background_colors.append('#3B82F6') # Azul
-
-        nome_mes = hoje.strftime("%B").capitalize()
-        
+        # PROTEÇÃO MÁXIMA: O site NUNCA mais vai calcular esse gráfico.
         data = {
-            'labels': labels,
+            'labels': ['Carregando dados...'],
             'datasets': [
                 {
-                    'label': f'Processos Concluídos em {nome_mes}',
-                    'data': data_vals,
-                    'backgroundColor': background_colors
+                    'label': 'Aguarde o processamento',
+                    'data': [0],
+                    'backgroundColor': ['#9CA3AF']
                 }
             ]
         }
-        # Cache longo (24h). O cronjob fará a atualização real a cada 30min.
-        cache.set(cache_key, data, 86400)
 
     return JsonResponse(data)
 
