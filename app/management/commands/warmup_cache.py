@@ -19,26 +19,45 @@ class Command(BaseCommand):
         try:
             total_pendentes = Processo.objects.filter(concluido=False).count()
             
-            # OTIMIZAÇÃO EXTREMA: SQL Puro (Raw SQL) para fazer a conta direto no motor C do PostgreSQL.
-            # Isso evita que o Python tente carregar milhões de linhas para a memória RAM (o que causa o travamento).
+            # OTIMIZAÇÃO SUPREMA: SQL em tabela única sem usar "JOIN".
+            # O JOIN obriga o PostgreSQL a cruzar tabelas e estoura a CPU/Disco.
+            # Vamos buscar os IDs das fases e contar tudo de forma simples.
             from django.db import connection
+            from processos.models import Status, Fase
             
-            query = """
-                SELECT f.fase, COUNT(pa.id)
-                FROM processos_processoandamento pa
-                INNER JOIN processos_status s ON pa.status_id = s.id
-                INNER JOIN processos_fase f ON pa.fase_id = f.id
-                WHERE s.status IN ('Não iniciado', 'Em andamento')
-                GROUP BY f.fase
-                ORDER BY f.fase;
-            """
+            # 1. Descobrir os IDs dos status alvo rapidamente
+            status_ids = list(Status.objects.filter(status__in=['Não iniciado', 'Em andamento']).values_list('id', flat=True))
             
-            with connection.cursor() as cursor:
-                cursor.execute(query)
-                resultados = cursor.fetchall()
+            if status_ids:
+                status_ids_str = ','.join(map(str, status_ids))
+                # 2. Fazer a conta diretão na tabela, sem JOIN nenhum!
+                query = f"""
+                    SELECT fase_id, COUNT(id)
+                    FROM processos_processoandamento
+                    WHERE status_id IN ({status_ids_str})
+                    GROUP BY fase_id
+                """
+                with connection.cursor() as cursor:
+                    cursor.execute(query)
+                    resultados_brutos = cursor.fetchall()
+            else:
+                resultados_brutos = []
                 
-            fases_nomes = [row[0] for row in resultados]
-            fases_quantidades = [row[1] for row in resultados]
+            # 3. Converter os IDs para os nomes das Fases na memória do Python
+            mapa_fases = dict(Fase.objects.values_list('id', 'fase'))
+            
+            fases_nomes = []
+            fases_quantidades = []
+            
+            for fase_id, qtd in resultados_brutos:
+                nome_fase = mapa_fases.get(fase_id, 'Desconhecida')
+                fases_nomes.append(nome_fase)
+                fases_quantidades.append(qtd)
+
+            # Ordenar para ficar bonito no gráfico
+            dados_ordenados = sorted(zip(fases_nomes, fases_quantidades), key=lambda x: x[0])
+            fases_nomes = [x[0] for x in dados_ordenados]
+            fases_quantidades = [x[1] for x in dados_ordenados]
 
             data_fases = {
                 'labels': fases_nomes + ['Total Pendentes'],
