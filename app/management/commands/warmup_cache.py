@@ -19,28 +19,26 @@ class Command(BaseCommand):
         try:
             total_pendentes = Processo.objects.filter(concluido=False).count()
             
-            # OTIMIZAÇÃO EXTREMA: Sem nenhum JOIN. Busca apenas strings e conta no Python
-            from processos.models import Status
-            from collections import Counter
-
-            # 1. Pega os IDs dos status alvo
-            status_alvo_ids = Status.objects.filter(
-                status__in=["Não iniciado", "Em andamento"]
-            ).values_list('id', flat=True)
-
-            # 2. Busca apenas o nome da fase diretamente (faz 1 único join simples ou retorna nulo se não otimizado, mas evita o GROUP BY e ORDER BY pesado do banco)
-            fases_raw = ProcessoAndamento.objects.filter(
-                status_id__in=status_alvo_ids
-            ).values_list('fase__fase', flat=True)
-
-            # 3. Conta na RAM do servidor usando C puro do Python (extremamente rápido)
-            contagem = Counter([f if f else "Sem Fase" for f in fases_raw])
+            # OTIMIZAÇÃO EXTREMA: SQL Puro (Raw SQL) para fazer a conta direto no motor C do PostgreSQL.
+            # Isso evita que o Python tente carregar milhões de linhas para a memória RAM (o que causa o travamento).
+            from django.db import connection
             
-            # 4. Ordena alfabeticamente
-            fases_ordenadas = sorted(contagem.items(), key=lambda x: x[0])
+            query = """
+                SELECT f.fase, COUNT(pa.id)
+                FROM processos_processoandamento pa
+                INNER JOIN processos_status s ON pa.status_id = s.id
+                INNER JOIN processos_fase f ON pa.fase_id = f.id
+                WHERE s.status IN ('Não iniciado', 'Em andamento')
+                GROUP BY f.fase
+                ORDER BY f.fase;
+            """
             
-            fases_nomes = [item[0] for item in fases_ordenadas]
-            fases_quantidades = [item[1] for item in fases_ordenadas]
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                resultados = cursor.fetchall()
+                
+            fases_nomes = [row[0] for row in resultados]
+            fases_quantidades = [row[1] for row in resultados]
 
             data_fases = {
                 'labels': fases_nomes + ['Total Pendentes'],
