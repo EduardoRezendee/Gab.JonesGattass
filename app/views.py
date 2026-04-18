@@ -930,8 +930,8 @@ def get_fases_data(request):
                 }
             ]
         }
-        # Cache por 1 hora
-        cache.set(cache_key, data, 3600)
+        # Cache longo (24h). O cronjob fará a atualização real a cada 30min.
+        cache.set(cache_key, data, 86400)
         
     return JsonResponse(data)
 
@@ -1032,8 +1032,8 @@ def get_ranking_mes_data(request):
                 }
             ]
         }
-        # Cache por 1 hora
-        cache.set(cache_key, data, 3600)
+        # Cache longo (24h). O cronjob fará a atualização real a cada 30min.
+        cache.set(cache_key, data, 86400)
 
     return JsonResponse(data)
 
