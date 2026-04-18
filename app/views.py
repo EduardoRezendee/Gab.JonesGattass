@@ -904,16 +904,13 @@ def get_fases_data(request):
     if not data:
         total_pendentes = Processo.objects.filter(concluido=False).count()
         
-        # OTIMIZAÇÃO: Buscando apenas processos não concluídos para não fazer JOIN pesado na tabela inteira
-        processos_abertos = Processo.objects.filter(concluido=False).values_list('id', flat=True)
-        
+        # OTIMIZAÇÃO: Consulta ultra-leve sem JOIN com a tabela gigante de Processos
         processos_por_fase = (
             ProcessoAndamento.objects.filter(
-                processo_id__in=processos_abertos,
                 status__status__in=["Não iniciado", "Em andamento"]
             )
             .values('fase__fase')
-            .annotate(quantidade=Count('id')) # Removido o distinct=True que é muito pesado no banco
+            .annotate(quantidade=Count('id'))
             .order_by('fase__fase')
         )
 
@@ -994,19 +991,19 @@ def get_ranking_mes_data(request):
         from django.contrib.auth.models import User
         assessores_ids = User.objects.filter(profile__funcao="Assessor(a)").values_list('id', flat=True)
 
-        concluidos_mes = (
-            Processo.objects.filter(
-                dt_conclusao__gte=inicio_mes,
-                concluido=True,
-                usuario_id__in=assessores_ids
-            )
-            .values('usuario__first_name', 'usuario__last_name')
-            .annotate(quantidade=Count('id'))
-            .order_by('-quantidade')
-        )
-
-        labels = [f"{c['usuario__first_name']} {c['usuario__last_name']}".strip() for c in concluidos_mes]
-        data_vals = [c['quantidade'] for c in concluidos_mes]
+        # OTIMIZAÇÃO: Buscar sem GROUP BY pesado, apenas dados e contagem em Python
+        concluidos_mes_queryset = Processo.objects.filter(
+            dt_conclusao__gte=inicio_mes,
+            concluido=True,
+            usuario_id__in=assessores_ids
+        ).values('usuario__first_name', 'usuario__last_name')
+        
+        from collections import Counter
+        contagem = Counter([f"{p['usuario__first_name']} {p['usuario__last_name']}".strip() for p in concluidos_mes_queryset])
+        ranking = sorted(contagem.items(), key=lambda x: x[1], reverse=True)
+        
+        labels = [r[0] for r in ranking]
+        data_vals = [r[1] for r in ranking]
 
         # Gerar cores: primeiro (ouro), segundo (prata), terceiro (bronze), resto (azul padrão)
         background_colors = []

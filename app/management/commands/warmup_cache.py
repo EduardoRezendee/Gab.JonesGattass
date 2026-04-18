@@ -18,11 +18,9 @@ class Command(BaseCommand):
         self.stdout.write("Calculando fases_data_grafico...")
         try:
             total_pendentes = Processo.objects.filter(concluido=False).count()
-            processos_abertos = Processo.objects.filter(concluido=False).values_list('id', flat=True)
-            
+            # ULTRA-LEVE: Apenas conta os andamentos abertos na tabela de andamento (sem cruzar com a tabela gigante de Processo)
             processos_por_fase = (
                 ProcessoAndamento.objects.filter(
-                    processo_id__in=processos_abertos,
                     status__status__in=["Não iniciado", "Em andamento"]
                 )
                 .values('fase__fase')
@@ -64,19 +62,21 @@ class Command(BaseCommand):
             
             assessores_ids = User.objects.filter(profile__funcao="Assessor(a)").values_list('id', flat=True)
 
-            concluidos_mes = (
-                Processo.objects.filter(
-                    dt_conclusao__gte=inicio_mes,
-                    concluido=True,
-                    usuario_id__in=assessores_ids
-                )
-                .values('usuario__first_name', 'usuario__last_name')
-                .annotate(quantidade=Count('id'))
-                .order_by('-quantidade')
-            )
-
-            labels = [f"{c['usuario__first_name']} {c['usuario__last_name']}".strip() for c in concluidos_mes]
-            data_vals = [c['quantidade'] for c in concluidos_mes]
+            # ULTRA-LEVE: Busca apenas os processos concluídos no mês e faz a contagem em Python, sem GROUP BY no banco
+            concluidos_mes_queryset = Processo.objects.filter(
+                dt_conclusao__gte=inicio_mes,
+                concluido=True,
+                usuario_id__in=assessores_ids
+            ).values('usuario__first_name', 'usuario__last_name')
+            
+            from collections import Counter
+            contagem = Counter([f"{p['usuario__first_name']} {p['usuario__last_name']}".strip() for p in concluidos_mes_queryset])
+            
+            # Ordenar por quantidade decrescente
+            ranking = sorted(contagem.items(), key=lambda x: x[1], reverse=True)
+            
+            labels = [r[0] for r in ranking]
+            data_vals = [r[1] for r in ranking]
 
             background_colors = []
             for i in range(len(labels)):
