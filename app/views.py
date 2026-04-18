@@ -919,44 +919,21 @@ def get_fases_data(request):
     return JsonResponse(data)
 
 def get_es_assessor_hoje_data(request):
-    hoje = timezone.now().date()
-    entradas_hoje = (
-        Processo.objects.filter(data_dist__date=hoje, usuario__isnull=False)
-        .values('usuario__first_name', 'usuario__last_name')
-        .annotate(quantidade=Count('id'))
-    )
-    saidas_hoje = (
-        Processo.objects.filter(dt_conclusao__date=hoje, concluido=True, usuario__isnull=False)
-        .values('usuario__first_name', 'usuario__last_name')
-        .annotate(quantidade=Count('id'))
-    )
+    cache_key = 'es_assessor_hoje_data_grafico'
+    data = cache.get(cache_key)
 
-    # Criar uma lista única de nomes de assessores a partir de entradas e saídas
-    assessores_nomes = list(set(
-        [f"{e['usuario__first_name']} {e['usuario__last_name']}".strip() for e in entradas_hoje] +
-        [f"{s['usuario__first_name']} {s['usuario__last_name']}".strip() for s in saidas_hoje]
-    ))
-
-    entradas_dict = {f"{e['usuario__first_name']} {e['usuario__last_name']}".strip(): e['quantidade'] for e in entradas_hoje}
-    saidas_dict = {f"{s['usuario__first_name']} {s['usuario__last_name']}".strip(): s['quantidade'] for s in saidas_hoje}
-    entradas_vals = [entradas_dict.get(nome, 0) for nome in assessores_nomes]
-    saidas_vals = [saidas_dict.get(nome, 0) for nome in assessores_nomes]
-
-    data = {
-        'labels': assessores_nomes,
-        'datasets': [
-            {
-                'label': 'Entradas',
-                'data': entradas_vals,
-                'backgroundColor': '#3B82F6'
-            },
-            {
-                'label': 'Saídas',
-                'data': saidas_vals,
-                'backgroundColor': '#F59E0B'
-            }
-        ]
-    }
+    if not data:
+        # PROTEÇÃO MÁXIMA: Evita o travamento do site se o cache não estiver pronto
+        data = {
+            'labels': ['Carregando dados...'],
+            'datasets': [
+                {
+                    'label': 'Aguarde o processamento',
+                    'data': [0],
+                    'backgroundColor': '#9CA3AF'
+                }
+            ]
+        }
     return JsonResponse(data)
 
 def get_ranking_mes_data(request):
@@ -986,27 +963,18 @@ def get_ranking_mes_data(request):
 
 def get_especies_data(request):
     cache_key_especies = 'processos_por_especie'
-    processos_por_especie = cache.get(cache_key_especies)
-    if not processos_por_especie:
-        processos_por_especie = (
-            Processo.objects.filter(concluido=False)
-            .values('especie__especie')
-            .annotate(quantidade=Count('id'))
-            .order_by('especie__especie')
-        )
-        cache.set(cache_key_especies, processos_por_especie, timeout=3600)
-
-    especies_nomes = [e['especie__especie'] if e['especie__especie'] else "Sem Espécie" for e in processos_por_especie]
-    especies_quantidades = [e['quantidade'] for e in processos_por_especie]
-
-    data = {
-        'labels': especies_nomes,
-        'datasets': [{
-            'label': 'Processos por Espécie',
-            'data': especies_quantidades,
-            'backgroundColor': '#10B981'
-        }]
-    }
+    data = cache.get(cache_key_especies)
+    
+    if not data:
+        # PROTEÇÃO MÁXIMA
+        data = {
+            'labels': ['Carregando dados...'],
+            'datasets': [{
+                'label': 'Aguarde o processamento',
+                'data': [0],
+                'backgroundColor': '#9CA3AF'
+            }]
+        }
     return JsonResponse(data)
 
 from django.shortcuts import render, redirect

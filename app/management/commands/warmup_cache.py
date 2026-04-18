@@ -135,4 +135,70 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Erro ao calcular ranking_mes_data_grafico: {str(e)}'))
 
+        # ----------------------------------------------------
+        # 3. ENTRADAS E SAÍDAS DE HOJE
+        # ----------------------------------------------------
+        self.stdout.write("Calculando es_assessor_hoje_data_grafico...")
+        try:
+            hoje = timezone.now().date()
+            entradas_hoje = (
+                Processo.objects.filter(data_dist__date=hoje, usuario__isnull=False)
+                .values('usuario__first_name', 'usuario__last_name')
+                .annotate(quantidade=Count('id'))
+            )
+            saidas_hoje = (
+                Processo.objects.filter(dt_conclusao__date=hoje, concluido=True, usuario__isnull=False)
+                .values('usuario__first_name', 'usuario__last_name')
+                .annotate(quantidade=Count('id'))
+            )
+
+            assessores_nomes = list(set(
+                [f"{e['usuario__first_name']} {e['usuario__last_name']}".strip() for e in entradas_hoje] +
+                [f"{s['usuario__first_name']} {s['usuario__last_name']}".strip() for s in saidas_hoje]
+            ))
+
+            entradas_dict = {f"{e['usuario__first_name']} {e['usuario__last_name']}".strip(): e['quantidade'] for e in entradas_hoje}
+            saidas_dict = {f"{s['usuario__first_name']} {s['usuario__last_name']}".strip(): s['quantidade'] for s in saidas_hoje}
+            entradas_vals = [entradas_dict.get(nome, 0) for nome in assessores_nomes]
+            saidas_vals = [saidas_dict.get(nome, 0) for nome in assessores_nomes]
+
+            data_es = {
+                'labels': assessores_nomes,
+                'datasets': [
+                    {'label': 'Entradas', 'data': entradas_vals, 'backgroundColor': '#3B82F6'},
+                    {'label': 'Saídas', 'data': saidas_vals, 'backgroundColor': '#F59E0B'}
+                ]
+            }
+            cache.set('es_assessor_hoje_data_grafico', data_es, 86400)
+            self.stdout.write(self.style.SUCCESS('es_assessor_hoje_data_grafico aquecido com sucesso.'))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Erro ao calcular es_assessor_hoje_data_grafico: {str(e)}'))
+
+        # ----------------------------------------------------
+        # 4. PROCESSOS POR ESPÉCIE
+        # ----------------------------------------------------
+        self.stdout.write("Calculando processos_por_especie...")
+        try:
+            processos_por_especie = (
+                Processo.objects.filter(concluido=False)
+                .values('especie__especie')
+                .annotate(quantidade=Count('id'))
+                .order_by('especie__especie')
+            )
+            especies_nomes = [e['especie__especie'] if e['especie__especie'] else "Sem Espécie" for e in processos_por_especie]
+            especies_quantidades = [e['quantidade'] for e in processos_por_especie]
+
+            data_especies = {
+                'labels': especies_nomes,
+                'datasets': [{
+                    'label': 'Processos por Espécie',
+                    'data': especies_quantidades,
+                    'backgroundColor': '#10B981'
+                }]
+            }
+            cache.set('processos_por_especie', data_especies, 86400)
+            self.stdout.write(self.style.SUCCESS('processos_por_especie aquecido com sucesso.'))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Erro ao calcular processos_por_especie: {str(e)}'))
+
         self.stdout.write(self.style.SUCCESS("Warmup concluído!"))
