@@ -51,6 +51,8 @@ class Command(BaseCommand):
             
             for fase_id, qtd in resultados_brutos:
                 nome_fase = mapa_fases.get(fase_id, 'Desconhecida')
+                if nome_fase in ['Processo Concluído', 'Processo Concluido']:
+                    continue
                 fases_nomes.append(nome_fase)
                 fases_quantidades.append(qtd)
 
