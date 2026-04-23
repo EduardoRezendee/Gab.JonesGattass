@@ -19,47 +19,27 @@ class Command(BaseCommand):
         try:
             total_pendentes = Processo.objects.filter(concluido=False).count()
             
-            # OTIMIZAÇÃO SUPREMA: SQL em tabela única sem usar "JOIN".
-            # O JOIN obriga o PostgreSQL a cruzar tabelas e estoura a CPU/Disco.
-            # Vamos buscar os IDs das fases e contar tudo de forma simples.
-            from django.db import connection
-            from processos.models import Status, Fase
-            
-            # 1. Descobrir os IDs dos status alvo rapidamente
-            status_ids = list(Status.objects.filter(status__in=['Não iniciado', 'Em andamento']).values_list('id', flat=True))
-            
-            if status_ids:
-                status_ids_str = ','.join(map(str, status_ids))
-                # 2. Fazer a conta diretão na tabela, sem JOIN nenhum!
-                query = f"""
-                    SELECT fase_id, COUNT(id)
-                    FROM processos_processoandamento
-                    WHERE status_id IN ({status_ids_str})
-                    GROUP BY fase_id
-                """
-                with connection.cursor() as cursor:
-                    cursor.execute(query)
-                    resultados_brutos = cursor.fetchall()
-            else:
-                resultados_brutos = []
-                
-            # 3. Converter os IDs para os nomes das Fases na memória do Python
-            mapa_fases = dict(Fase.objects.values_list('id', 'fase'))
+            # Usando ORM para garantir que apenas processos não concluídos sejam contados,
+            # e evitando duplicidade contando DISTINCT processo_id.
+            processos_por_fase = (
+                ProcessoAndamento.objects.filter(
+                    processo__concluido=False,
+                    status__status__in=["Não iniciado", "Em andamento"]
+                )
+                .values('fase__fase')
+                .annotate(quantidade=Count('processo', distinct=True))
+                .order_by('fase__fase')
+            )
             
             fases_nomes = []
             fases_quantidades = []
             
-            for fase_id, qtd in resultados_brutos:
-                nome_fase = mapa_fases.get(fase_id, 'Desconhecida')
+            for item in processos_por_fase:
+                nome_fase = item['fase__fase']
                 if nome_fase in ['Processo Concluído', 'Processo Concluido']:
                     continue
                 fases_nomes.append(nome_fase)
-                fases_quantidades.append(qtd)
-
-            # Ordenar para ficar bonito no gráfico
-            dados_ordenados = sorted(zip(fases_nomes, fases_quantidades), key=lambda x: x[0])
-            fases_nomes = [x[0] for x in dados_ordenados]
-            fases_quantidades = [x[1] for x in dados_ordenados]
+                fases_quantidades.append(item['quantidade'])
 
             data_fases = {
                 'labels': fases_nomes + ['Total Pendentes'],

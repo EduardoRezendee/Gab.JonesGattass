@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <style>
@@ -7,13 +8,14 @@
             size: A4;
             margin: 1.5cm;
         }
+
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             color: #1e293b;
             line-height: 1.4;
             background-color: #ffffff;
         }
-        
+
         /* Cabeçalho */
         .header {
             text-align: center;
@@ -21,11 +23,13 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+
         .logo {
             max-width: 100px;
             max-height: 100px;
             margin-bottom: 10px;
         }
+
         .title {
             font-size: 18pt;
             color: #083464;
@@ -33,6 +37,7 @@
             font-weight: bold;
             text-transform: uppercase;
         }
+
         .subtitle {
             font-size: 10pt;
             color: #475569;
@@ -56,7 +61,7 @@
             border: 1px solid #94a3b8;
             margin-bottom: 0px;
         }
-        
+
         .assessor-header {
             background-color: #083464;
             color: #ffffff;
@@ -75,6 +80,7 @@
             table-layout: fixed;
             margin-bottom: 0;
         }
+
         th {
             background-color: #f8fafc;
             color: #475569;
@@ -85,9 +91,11 @@
             border-bottom: 1px solid #94a3b8;
             border-right: 1px solid #cbd5e1;
         }
+
         th:last-child {
             border-right: none;
         }
+
         td {
             padding: 8px 15px;
             font-size: 9.5pt;
@@ -95,31 +103,41 @@
             border-right: 1px solid #cbd5e1;
             color: #1e293b;
         }
+
         td:last-child {
             border-right: none;
         }
-        
+
         /* Larguras */
-        .col-desc { width: 85%; }
-        .col-num { width: 15%; text-align: center; font-weight: bold; }
+        .col-desc {
+            width: 85%;
+        }
+
+        .col-num {
+            width: 15%;
+            text-align: center;
+            font-weight: bold;
+        }
 
         /* Zebra e Totais */
         tbody tr:nth-child(even) td {
             background-color: #f8fafc;
         }
-        
+
         .row-total td {
             background-color: #f1f5f9;
             font-weight: bold;
             color: #0f172a;
             border-top: 1.5pt solid #64748b;
         }
+
         .row-grand-total td {
             background-color: #083464;
             color: #ffffff;
             font-weight: bold;
             border-bottom: none;
         }
+
         .row-grand-total .col-num {
             color: #ffffff;
             font-size: 11pt;
@@ -130,6 +148,7 @@
             page-break-before: always;
             margin-bottom: 20px;
         }
+
         .grafico-title {
             font-size: 14pt;
             font-weight: bold;
@@ -140,12 +159,14 @@
             margin-bottom: 18px;
             text-align: center;
         }
+
         .grafico-subtitle {
             font-size: 9pt;
             color: #475569;
             text-align: center;
             margin-bottom: 22px;
         }
+
         .grafico-legenda {
             font-size: 8pt;
             color: #64748b;
@@ -154,6 +175,7 @@
             border-top: 1px solid #e2e8f0;
             padding-top: 10px;
         }
+
         .footer {
             text-align: center;
             font-size: 8pt;
@@ -167,7 +189,7 @@
 <body>
     <div class="header">
         {% if logo_path %}
-            <img src="{{ logo_path }}" width="120" class="logo">
+        <img src="{{ logo_path }}" width="120" class="logo">
         {% endif %}
         <h1 class="title">Relatório Gabinete</h1>
         <p class="subtitle">Gabinete Desembargador Jones Gattass Dias</p>
@@ -177,73 +199,147 @@
         <strong>Período:</strong> {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
     </div>
 
-    {% for item in dados_assessores %}
-    <div class="assessor-section">
-        
-        <div class="assessor-header">
-            {{ item.nome }}
+    <!-- SUMÁRIO EXECUTIVO -->
+    <div class="assessor-section" style="margin-bottom: 30px;">
+        <div class="assessor-header" style="background-color: #0f172a; border-bottom: 1px solid #0f172a;">
+            Sumário Gabinete
         </div>
-
         <table>
-            <thead>
-                <tr>
-                    <th class="col-desc">Indicadores de Acervo</th>
-                    <th class="col-num">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="row-total">
-                    <td>Total de Processos Pendentes (Acervo Atual)</td>
-                    <td class="col-num">{{ item.total_pendentes }}</td>
-                </tr>
-                <tr>
-                    <td>Processos em Elaboração</td>
-                    <td class="col-num">{{ item.em_elaboracao }}</td>
-                </tr>
-                <tr>
-                    <td>Processos em Revisão (Assessor)</td>
-                    <td class="col-num">{{ item.em_revisao }}</td>
-                </tr>
-                <tr>
-                    <td>Processos em Revisão Des. (Gabinete)</td>
-                    <td class="col-num">{{ item.em_revisao_des }}</td>
-                </tr>
-                <tr>
-                    <td>Processos em Devolvido</td>
-                    <td class="col-num">{{ item.em_devolvido }}</td>
-                </tr>
-                <tr>
-                    <td>Processos em L. PJE</td>
-                    <td class="col-num">{{ item.em_l_pje }}</td>
-                </tr>
-            </tbody>
-            
             <tbody>
                 <tr>
-                    <th class="col-desc" style="border-top: 2px solid #083464;">Indicadores de Desempenho</th>
-                    <th class="col-num" style="border-top: 2px solid #083464;">Quantidade</th>
+                    <td class="col-desc">Total de Processos Pendentes</td>
+                    <td class="col-num">{{ sumario_global.total_pendentes }}</td>
                 </tr>
                 <tr>
-                    <td>Total de Processos Vinculados à Meta</td>
-                    <td class="col-num">{{ item.total_processos_meta }}</td>
+                    <td class="col-desc" style="padding-left: 25px; color: #64748b; font-size: 8.5pt;">&bull; Processos
+                        em Elaboração</td>
+                    <td class="col-num" style="color: #64748b; font-size: 8.5pt;">{{ sumario_global.total_elaboracao }}
+                    </td>
                 </tr>
                 <tr>
-                    <td>Concluídos vinculados à Meta Semanal</td>
-                    <td class="col-num">{{ item.concluidos_na_meta }}</td>
+                    <td class="col-desc" style="padding-left: 25px; color: #64748b; font-size: 8.5pt;">&bull; Processos
+                        em Revisão</td>
+                    <td class="col-num" style="color: #64748b; font-size: 8.5pt;">{{ sumario_global.total_revisao }}
+                    </td>
                 </tr>
                 <tr>
-                    <td>Concluídos Extras (Fora da Meta)</td>
-                    <td class="col-num">{{ item.concluidos_fora_meta }}</td>
+                    <td class="col-desc" style="padding-left: 25px; color: #64748b; font-size: 8.5pt;">&bull; Processos
+                        em Revisão Des.</td>
+                    <td class="col-num" style="color: #64748b; font-size: 8.5pt;">{{ sumario_global.total_revisao_des }}
+                    </td>
                 </tr>
-                <tr class="row-grand-total">
-                    <td style="text-transform: uppercase;">Concluídos Total (Período)</td>
-                    <td class="col-num">{{ item.concluidos_periodo }}</td>
+                <tr>
+                    <td class="col-desc" style="padding-left: 25px; color: #64748b; font-size: 8.5pt;">&bull; Processos
+                        Devolvido</td>
+                    <td class="col-num" style="color: #64748b; font-size: 8.5pt;">{{ sumario_global.total_devolvido }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-desc" style="padding-left: 25px; color: #64748b; font-size: 8.5pt;">&bull; Processos
+                        em L. PJE</td>
+                    <td class="col-num" style="color: #64748b; font-size: 8.5pt;">{{ sumario_global.total_l_pje }}</td>
+                </tr>
+                <tr>
+                    <td class="col-desc">Total de Processos Concluídos (Período)</td>
+                    <td class="col-num">{{ sumario_global.total_concluidos }}</td>
+                </tr>
+                <tr>
+                    <td class="col-desc">Concluídos - Meta</td>
+                    <td class="col-num">{{ sumario_global.total_concluidos_na_meta }} ({{
+                        sumario_global.atingimento_global }}%)</td>
+                </tr>
+                <tr>
+                    <td class="col-desc">Maior Acervo Atual</td>
+                    <td class="col-num" style="color: #c2410c;">{{ sumario_global.gargalo_nome }} ({{
+                        sumario_global.gargalo_pendentes }})</td>
                 </tr>
             </tbody>
         </table>
     </div>
-    
-    <br><br><br>
+
+    {% for item in dados_assessores %}
+    <table style="page-break-inside: avoid; width: 100%; border: none; margin-bottom: 30px;">
+        <tr>
+            <td style="border: none; padding: 0;">
+                <div class="assessor-section">
+
+                    <div class="assessor-header">
+                        {{ item.nome }}
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-desc">Indicadores de Acervo</th>
+                                <th class="col-num">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="row-total">
+                                <td>Total de Processos Pendentes</td>
+                                <td class="col-num">{{ item.total_pendentes }}</td>
+                            </tr>
+                            <tr>
+                                <td>Processos em Elaboração</td>
+                                <td class="col-num">{{ item.em_elaboracao }}</td>
+                            </tr>
+                            <tr>
+                                <td>Processos em Revisão</td>
+                                <td class="col-num">{{ item.em_revisao }}</td>
+                            </tr>
+                            <tr>
+                                <td>Processos em Revisão Des.</td>
+                                <td class="col-num">{{ item.em_revisao_des }}</td>
+                            </tr>
+                            <tr>
+                                <td>Processos em Devolvido</td>
+                                <td class="col-num">{{ item.em_devolvido }}</td>
+                            </tr>
+                            <tr>
+                                <td>Processos em L. PJE</td>
+                                <td class="col-num">{{ item.em_l_pje }}</td>
+                            </tr>
+                            <tr style="background-color: #fffbeb;">
+                                <td>Tempo Médio em Gabinete</td>
+                                <td class="col-num">{{ item.idade_media_pendentes }} dias</td>
+                            </tr>
+                        </tbody>
+
+                        <tbody>
+                            <tr>
+                                <th class="col-desc" style="border-top: 2px solid #083464;">Indicadores de Desempenho
+                                </th>
+                                <th class="col-num" style="border-top: 2px solid #083464;">Quantidade</th>
+                            </tr>
+                            <tr>
+                                <td>Total de Processos Vinculados à Meta</td>
+                                <td class="col-num">{{ item.total_processos_meta }}</td>
+                            </tr>
+                            <tr>
+                                <td>Concluídos vinculados à Meta Semanal</td>
+                                <td class="col-num">{{ item.concluidos_na_meta }} ({{
+                                    item.percentual_meta|floatformat:"1" }}%)</td>
+                            </tr>
+                            <tr>
+                                <td>Concluídos Extras (Fora da Meta)</td>
+                                <td class="col-num">{{ item.concluidos_fora_meta }}</td>
+                            </tr>
+                            <tr class="row-grand-total">
+                                <td style="text-transform: uppercase;">Concluídos Total (Período)</td>
+                                <td class="col-num">
+                                    {{ item.concluidos_periodo }}
+                                    <span
+                                        style="font-size: 8pt; color: {% if item.variacao_mom > 0 %}#4ade80{% elif item.variacao_mom < 0 %}#f87171{% else %}#cbd5e1{% endif %}; font-weight: normal; margin-left: 5px;">
+                                        [{% if item.variacao_mom > 0 %}▲ +{% elif item.variacao_mom < 0 %}▼ {% else
+                                            %}={% endif %}{{ item.variacao_mom|floatformat:"1" }}%] </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
     {% endfor %}
 
     <!-- ========== GRÁFICO COMPARATIVO ========== -->
@@ -251,7 +347,7 @@
     <div class="grafico-section">
         <div class="grafico-title">Ranking de Desempenho — Processos Concluídos</div>
         <div class="grafico-subtitle">
-            Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }} 
+            Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
         </div>
 
         {% with max_val=dados_assessores.0.concluidos_periodo %}
@@ -259,7 +355,8 @@
             {% for item in dados_assessores %}
             <tr>
                 <!-- Label -->
-                <td style="width:28%; padding:3px 8px 3px 0; border:none; text-align:right; vertical-align:middle; font-size:8.5pt; font-weight:bold; color:#1e293b;">
+                <td
+                    style="width:28%; padding:3px 8px 3px 0; border:none; text-align:right; vertical-align:middle; font-size:8.5pt; font-weight:bold; color:#1e293b;">
                     {{ item.nome }}
                 </td>
                 <!-- Barra -->
@@ -267,39 +364,59 @@
                     <table style="border-collapse:collapse; width:100%; margin:0; table-layout:fixed;">
                         <tr>
                             {% if max_val > 0 %}
-                                {% if forloop.counter == 1 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E8B84B;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 2 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E74C3C;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 3 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#27AE60;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 4 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#2471A3;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 5 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#8E44AD;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 6 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#D35400;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 7 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#148F77;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 8 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#C0392B;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% elif forloop.counter == 9 %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#1A5276;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% else %}
-                                <td style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#626567;"></td>
-                                <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
-                                {% endif %}
+                            {% if forloop.counter == 1 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E8B84B;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 2 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E74C3C;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 3 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#27AE60;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 4 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#2471A3;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 5 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#8E44AD;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 6 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#D35400;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 7 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#148F77;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 8 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#C0392B;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% elif forloop.counter == 9 %}
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#1A5276;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% else %}
-                                <td style="width:100%; height:26px; padding:0; border:none; background-color:#f1f5f9;"></td>
+                            <td
+                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#626567;">
+                            </td>
+                            <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
+                            {% endif %}
+                            {% else %}
+                            <td style="width:100%; height:26px; padding:0; border:none; background-color:#f1f5f9;"></td>
                             {% endif %}
                         </tr>
                     </table>
@@ -337,4 +454,5 @@
         Emitido em: {{ today|date:"d/m/Y H:i" }} | Documento Gerado Eletronicamente — Sistema Gabgattass
     </div>
 </body>
+
 </html>

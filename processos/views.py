@@ -1701,38 +1701,31 @@ def calcular_dados_metas(metas, hoje):
 
 
 def calcular_progresso_meta(meta, hoje):
-    # Adicione .select_related('tipo') para performance
-    processos_meta = list(meta.processos.all().select_related('tipo'))
-    if not processos_meta:
+    processos_meta = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).select_related('tipo').annotate(
+        fase_atual=Subquery(
+            ProcessoAndamento.objects.filter(
+                processo=OuterRef('pk')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+    )
+    if not processos_meta.exists():
         return 0
 
     revisados_ids = set(
         ProcessoAndamento.objects.filter(
             processo__in=processos_meta,
-            fase__fase="Revisão Des",
+            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
         ).values_list('processo', flat=True).distinct()
     )
 
-    # CONTAGEM HÍBRIDA (Mínima alteração)
     concluidas = 0
+    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
     for p in processos_meta:
-        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+        if (p.id in revisados_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
             concluidas += 1
 
     progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
-    return progresso
-
-    # Contagem com a exceção para Monocráticas
-    concluidas = 0
-    for p in processos_meta:
-        # Se passou na revisão OU (se for Monocrática e estiver concluído no banco)
-        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
-            concluidas += 1
-
-    concluidas = sum(1 for p in processos_meta if p.id in revisados_ids)
-    progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
-    
     return progresso
 
 
@@ -1783,22 +1776,28 @@ def calcular_faixas_dias(meta, hoje):
 
 
 def calcular_processos_concluidos(meta, hoje):
-    processos_meta = list(meta.processos.all())
-    if not processos_meta:
+    processos_meta = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).select_related('tipo').annotate(
+        fase_atual=Subquery(
+            ProcessoAndamento.objects.filter(
+                processo=OuterRef('pk')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+    )
+    if not processos_meta.exists():
         return 0
 
     revisados_ids = set(
         ProcessoAndamento.objects.filter(
             processo__in=processos_meta,
-            fase__fase="Revisão Des",
+            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
             dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
         ).values_list('processo', flat=True).distinct()
     )
     
-    # Nova contagem mínima
     concluidos = 0
+    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
     for p in processos_meta:
-        if p.id in revisados_ids or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+        if (p.id in revisados_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
             concluidos += 1
             
     return concluidos
@@ -1876,22 +1875,28 @@ def api_meta_processos(request):
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão Des",
+                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
                 dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
             ).values_list('processo', flat=True)
         )
         
         processos_data = []
+        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+        concluidos_count = 0
         for processo in processos:
             dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
+            is_concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
             
+            if is_concluido:
+                concluidos_count += 1
+                
             processos_data.append({
                 'id': processo.id,
                 'numero_processo': processo.numero_processo,
                 'especie': processo.especie.especie if processo.especie else 'N/A',
                 'fase_atual': processo.fase_atual or 'N/A',
                 'dias_no_gabinete': dias_gabinete,
-                'concluido': processo.id in revisados_ids
+                'concluido': is_concluido
             })
         
         # Ordenar por status (concluídos primeiro) e depois por dias no gabinete
@@ -1900,7 +1905,7 @@ def api_meta_processos(request):
         return JsonResponse({
             'processos': processos_data,
             'total': len(processos_data),
-            'concluidos': len(revisados_ids)
+            'concluidos': concluidos_count
         })
         
     except Exception as e:
@@ -1911,7 +1916,7 @@ def api_meta_processos(request):
 @require_http_methods(["GET"])
 def exportar_metas_relatorio(request):
     """
-    Exporta relatório de metas em formato Excel
+    Exporta relatório de metas em formato PDF
     """
     try:
         # Buscar metas com filtros aplicados
@@ -1923,83 +1928,98 @@ def exportar_metas_relatorio(request):
         metas = aplicar_filtros(request, metas, timezone.localdate())
         metas_com_dados = calcular_dados_metas(metas, timezone.localdate())
         
-        # Criar workbook
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Metas Semanais"
-        
-        # Estilos
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
-        center_alignment = Alignment(horizontal="center", vertical="center")
-        
-        # Cabeçalhos
-        headers = [
-            "Usuário", "Período", "Meta", "Progresso (%)", 
-            "Processos Total", "Concluídos", "Pendentes",
-            "≤30 dias", "31-40 dias", "41-50 dias", ">50 dias", "Status"
-        ]
-        
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = center_alignment
-        
-        # Dados
-        for row, meta in enumerate(metas_com_dados, 2):
-            periodo = f"{meta.semana_inicio.strftime('%d/%m/%Y')} - {meta.semana_fim.strftime('%d/%m/%Y')}"
-            status_map = {
-                'atingida': 'Atingida',
-                'em_andamento': 'Em Andamento',
-                'atrasada': 'Atrasada',
-                'futura': 'Futura',
-                'quase_la': 'Quase Lá'
-            }
+        hoje = timezone.localdate()
+        for meta in metas_com_dados:
+            processos = meta.processos.select_related('especie', 'tipo').annotate(
+                fase_atual=Subquery(
+                    ProcessoAndamento.objects.filter(
+                        processo=OuterRef('pk')
+                    ).order_by('-dt_criacao').values('fase__fase')[:1]
+                )
+            )
             
-            dados = [
-                meta.usuario.get_full_name(),
-                periodo,
-                meta.meta_qtd,
-                meta.progresso,
-                meta.total_processos,
-                meta.processos_concluidos,
-                meta.processos_pendentes,
-                meta.range_le30,
-                meta.range_31_40,
-                meta.range_41_50,
-                meta.range_gt50,
-                status_map.get(meta.status_calculado, 'Desconhecido')
-            ]
+            revisados_ids = set(
+                ProcessoAndamento.objects.filter(
+                    processo__in=processos,
+                    fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
+                    dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
+                ).values_list('processo', flat=True)
+            )
             
-            for col, valor in enumerate(dados, 1):
-                cell = ws.cell(row=row, column=col, value=valor)
-                cell.alignment = center_alignment
+            processos_data = []
+            fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+            for processo in processos:
+                dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
+                concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
+                
+                if dias_gabinete <= 30: badge_class = "bg-success"
+                elif dias_gabinete <= 40: badge_class = "bg-primary"
+                elif dias_gabinete <= 50: badge_class = "bg-warning"
+                else: badge_class = "bg-danger"
+                
+                tipo_nome = processo.tipo.tipo if processo.tipo else ''
+                if not tipo_nome and processo.prioridade_urgente:
+                    tipo_nome = 'Urgentíssimo'
+                    
+                tipo_nome_lower = tipo_nome.lower()
+                if 'urgentíssimo' in tipo_nome_lower or 'urgente' in tipo_nome_lower:
+                    tipo_badge = 'bg-danger'
+                elif 'prioridade' in tipo_nome_lower:
+                    tipo_badge = 'bg-warning text-dark'
+                elif 'monocrática' in tipo_nome_lower:
+                    tipo_badge = 'bg-primary'
+                elif tipo_nome:
+                    tipo_badge = 'bg-secondary'
+                else:
+                    tipo_badge = ''
+
+                processos_data.append({
+                    'numero_processo': processo.numero_processo,
+                    'especie': processo.especie.especie if processo.especie else 'N/A',
+                    'fase_atual': processo.fase_atual or 'Não especificado',
+                    'dias_gabinete': dias_gabinete,
+                    'badge_class': badge_class,
+                    'concluido': concluido,
+                    'status_texto': 'Concluído' if concluido else 'Pendente',
+                    'status_class': 'success' if concluido else 'warning',
+                    'tipo_nome': tipo_nome,
+                    'tipo_badge': tipo_badge
+                })
+            processos_data.sort(key=lambda x: (not x['concluido'], -x['dias_gabinete']))
+            meta.processos_data = processos_data
         
-        # Ajustar largura das colunas
-        for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column_letter].width = adjusted_width
+        # Caminho da Logo específica (Logo.jpg em profile_photos)
+        import os
+        from django.conf import settings
+        logo_path = os.path.join(settings.MEDIA_ROOT, 'profile_photos', 'Logo.jpg')
+        if not os.path.exists(logo_path):
+            logo_path = os.path.join(settings.MEDIA_ROOT, 'banners', 'logo2.png')
+            if not os.path.exists(logo_path):
+                logo_path = None
         
-        # Salvar em BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+        context = {
+            'metas_com_dados': metas_com_dados,
+            'hoje': timezone.now(),
+            'today': timezone.now(),
+            'logo_path': logo_path,
+        }
         
-        # Resposta HTTP
-        response = HttpResponse(
-            output.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="metas_semanais_{timezone.localdate().strftime("%Y%m%d")}.xlsx"'
+        from django.template.loader import get_template
+        from xhtml2pdf import pisa
+        from io import BytesIO
+        
+        template = get_template('metas_semanais_pdf.html')
+        html = template.render(context)
+        result = BytesIO()
+        
+        pisa_status = pisa.CreatePDF(html, dest=result, encoding='utf-8')
+        
+        if pisa_status.err:
+            return HttpResponse('Erro ao gerar PDF', status=500)
+            
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f"metas_semanais_{timezone.localdate().strftime('%Y-%m-%d')}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         return response
         
@@ -2132,16 +2152,17 @@ def ver_todos_processos_meta(request):
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão Des",
+                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
                 dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
             ).values_list('processo', flat=True)
         )
         
         # Preparar dados dos processos
         processos_data = []
+        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
         for processo in processos:
             dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
-            concluido = (processo.id in revisados_ids) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
+            concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
             
             # Determinar cor do badge baseado nos dias
             if dias_gabinete <= 30:
@@ -2153,6 +2174,22 @@ def ver_todos_processos_meta(request):
             else:
                 badge_class = "bg-danger"
             
+            tipo_nome = processo.tipo.tipo if processo.tipo else ''
+            if not tipo_nome and processo.prioridade_urgente:
+                tipo_nome = 'Urgentíssimo'
+                
+            tipo_nome_lower = tipo_nome.lower()
+            if 'urgentíssimo' in tipo_nome_lower or 'urgente' in tipo_nome_lower:
+                tipo_badge = 'bg-danger'
+            elif 'prioridade' in tipo_nome_lower:
+                tipo_badge = 'bg-warning text-dark'
+            elif 'monocrática' in tipo_nome_lower:
+                tipo_badge = 'bg-primary'
+            elif tipo_nome:
+                tipo_badge = 'bg-secondary'
+            else:
+                tipo_badge = ''
+
             processos_data.append({
                 'numero_processo': processo.numero_processo,
                 'especie': processo.especie.especie if processo.especie else 'N/A',
@@ -2161,7 +2198,9 @@ def ver_todos_processos_meta(request):
                 'badge_class': badge_class,
                 'concluido': concluido,
                 'status_texto': 'Concluído' if concluido else 'Pendente',
-                'status_class': 'success' if concluido else 'warning'
+                'status_class': 'success' if concluido else 'warning',
+                'tipo_nome': tipo_nome,
+                'tipo_badge': tipo_badge
             })
         
         # Ordenar: concluídos primeiro, depois por dias no gabinete (decrescente)
@@ -2217,6 +2256,7 @@ def ver_todos_processos_meta(request):
                             <th>Espécie</th>
                             <th>Fase Atual</th>
                             <th>Dias no Gabinete</th>
+                            <th>Tipo</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -2231,6 +2271,9 @@ def ver_todos_processos_meta(request):
                     <td>{processo['fase_atual']}</td>
                     <td>
                         <span class="badge {processo['badge_class']}">{processo['dias_gabinete']} dias</span>
+                    </td>
+                    <td>
+                        {f'<span class="badge {processo["tipo_badge"]}">{processo["tipo_nome"]}</span>' if processo['tipo_nome'] else '-'}
                     </td>
                     <td>
                         <span class="badge bg-{processo['status_class']}">{processo['status_texto']}</span>
@@ -2287,16 +2330,26 @@ def api_detalhes_meta(request):
         hoje = timezone.localdate()
         
         # Calcular progresso
-        processos_meta = list(meta.processos.all())
-        if processos_meta:
+        processos_meta = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).annotate(
+            fase_atual=Subquery(
+                ProcessoAndamento.objects.filter(
+                    processo=OuterRef('pk')
+                ).order_by('-dt_criacao').values('fase__fase')[:1]
+            )
+        )
+        if processos_meta.exists():
             revisados_ids = set(
                 ProcessoAndamento.objects.filter(
                     processo__in=processos_meta,
-                    fase__fase="Revisão Des",
+                    fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
                     dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
                 ).values_list('processo', flat=True)
             )
-            concluidos = len(revisados_ids)
+            concluidos = 0
+            fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+            for p in processos_meta:
+                if (p.id in revisados_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+                    concluidos += 1
             progresso = round((concluidos / meta.meta_qtd * 100) if meta.meta_qtd > 0 else 0, 1)
         else:
             concluidos = 0
@@ -2384,7 +2437,7 @@ def minhas_metas(request):
         concluidos_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase="Revisão Des",
+                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
                 dt_criacao__date__range=(inicio_semana, fim_semana)
             ).values_list('processo', flat=True).distinct()
         )
@@ -2398,7 +2451,13 @@ def minhas_metas(request):
         )
         fases_atuais = {p.id: p.fase_atual for p in processos_com_fase}
 
-        concluidas = len(concluidos_ids)
+        concluidas = 0
+        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+        for p in processos:
+            fase_atual = fases_atuais.get(p.id, 'Não especificado')
+            if (p.id in concluidos_ids and fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+                concluidas += 1
+
         pendentes = max(0, total_meta - concluidas)
         progresso = round((concluidas / total_meta * 100) if total_meta > 0 else 0, 1)
 
@@ -2414,7 +2473,8 @@ def minhas_metas(request):
 
             # --- AQUI ESTAVA O ERRO: GARANTINDO QUE CONCLUIDO SEJA SEMPRE BOOL ---
             status_concluido = False
-            if p.id in concluidos_ids:
+            fase_atual = fases_atuais.get(p.id, 'Não especificado')
+            if p.id in concluidos_ids and fase_atual in fases_validas:
                 status_concluido = True
             elif p.tipo and p.tipo.tipo == "Monocrática" and p.concluido:
                 status_concluido = True
@@ -2443,7 +2503,7 @@ def minhas_metas(request):
         # Processos fora da meta
         processos_fora_ids = list(ProcessoAndamento.objects.filter(
             processo__usuario=user,
-            fase__fase="Revisão Des",
+            fase__fase="Revisão",
             dt_criacao__date__range=(inicio_semana, fim_semana)
         ).exclude(processo__in=[p.id for p in processos]).values_list('processo', flat=True).distinct())
 

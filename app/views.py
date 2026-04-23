@@ -553,16 +553,16 @@ def home(request):
             reverse=True
         )
 
-        # Nova Lista: Processos Enviados para Revisão Desa pelo Usuário Logado (apenas hoje)
+        # Nova Lista: Processos Enviados para Revisão pelo Usuário Logado (apenas hoje)
         processos_revisao_des = Processo.objects.filter(
             usuario=user,
-            andamentos__fase__fase="Revisão Des",
+            andamentos__fase__fase="Revisão",
             andamentos__dt_criacao__date=hoje
         ).distinct().select_related('especie', 'usuario').prefetch_related('andamentos', 'andamentos__fase', 'andamentos__status')
         for processo in processos_revisao_des:
             andamentos_lista = list(processo.andamentos.all())
             ultimo_andamento = max(andamentos_lista, key=lambda a: a.dt_criacao) if andamentos_lista else None
-            filtrados_des = [a for a in andamentos_lista if a.fase and a.fase.fase == "Revisão Des" and a.dt_criacao.date() == hoje.date()]
+            filtrados_des = [a for a in andamentos_lista if a.fase and a.fase.fase == "Revisão" and a.dt_criacao.date() == hoje.date()]
             andamento_revisao_des = max(filtrados_des, key=lambda a: a.dt_criacao) if filtrados_des else None
             if ultimo_andamento and andamento_revisao_des and processo.pk:
                 processos_revisao_des_detalhados.append({
@@ -787,6 +787,33 @@ def gerar_relatorio_consolidado(request):
 
         total_processos_na_meta = len(ids_processos_nas_metas)
         concluidos_fora_meta = max(0, concluidos_periodo - concluidos_na_meta)
+        
+        # --- NOVOS KPIs ---
+        # 1. Percentual da Meta
+        percentual_meta = round((concluidos_na_meta / total_meta_qtd * 100), 1) if total_meta_qtd > 0 else 0.0
+        
+        # 2. Idade Média do Acervo Pendente (SLA)
+        hoje_date = timezone.now().date()
+        dias_pendentes = [(hoje_date - p.antigo.date()).days for p in processos_pendentes if p.antigo]
+        idade_media_pendentes = round(sum(dias_pendentes) / len(dias_pendentes)) if dias_pendentes else 0
+        
+        # 3. MoM (Comparativo Temporal)
+        duracao_dias = (data_fim.date() - data_inicio.date()).days + 1
+        data_inicio_anterior = data_inicio - timedelta(days=duracao_dias)
+        data_fim_anterior = data_fim - timedelta(days=duracao_dias)
+        
+        concluidos_periodo_anterior = Processo.objects.filter(
+            usuario=assessor,
+            concluido=True,
+            dt_conclusao__range=(data_inicio_anterior, data_fim_anterior)
+        ).count()
+        
+        if concluidos_periodo_anterior > 0:
+            variacao_mom = round(((concluidos_periodo - concluidos_periodo_anterior) / concluidos_periodo_anterior) * 100, 1)
+        elif concluidos_periodo > 0:
+            variacao_mom = 100.0
+        else:
+            variacao_mom = 0.0
 
         dados_assessores.append({
             'nome': assessor.get_full_name() or assessor.username,
@@ -804,10 +831,38 @@ def gerar_relatorio_consolidado(request):
             'total_processos_meta': total_processos_na_meta,
             'concluidos_na_meta': concluidos_na_meta,
             'concluidos_fora_meta': concluidos_fora_meta,
+            # Novos KPIs
+            'percentual_meta': percentual_meta,
+            'idade_media_pendentes': idade_media_pendentes,
+            'variacao_mom': variacao_mom,
+            'concluidos_periodo_anterior': concluidos_periodo_anterior,
         })
 
     # Ordenar assessores do maior para o menor em processos concluídos
     dados_assessores.sort(key=lambda x: x['concluidos_periodo'], reverse=True)
+    
+    # --- SUMÁRIO GLOBAL ---
+    sumario_global = {
+        'total_pendentes': sum(a['total_pendentes'] for a in dados_assessores),
+        'total_concluidos': sum(a['concluidos_periodo'] for a in dados_assessores),
+        'total_meta_qtd': sum(a['meta_qtd'] for a in dados_assessores),
+        'total_concluidos_na_meta': sum(a['concluidos_na_meta'] for a in dados_assessores),
+        'total_elaboracao': sum(a['em_elaboracao'] for a in dados_assessores),
+        'total_revisao': sum(a['em_revisao'] for a in dados_assessores),
+        'total_revisao_des': sum(a['em_revisao_des'] for a in dados_assessores),
+        'total_devolvido': sum(a['em_devolvido'] for a in dados_assessores),
+        'total_l_pje': sum(a['em_l_pje'] for a in dados_assessores),
+        'gargalo_nome': 'Nenhum',
+        'gargalo_pendentes': 0
+    }
+    
+    sumario_global['atingimento_global'] = round((sumario_global['total_concluidos_na_meta'] / sumario_global['total_meta_qtd'] * 100), 1) if sumario_global['total_meta_qtd'] > 0 else 0.0
+    
+    if dados_assessores:
+        gargalo = max(dados_assessores, key=lambda x: x['total_pendentes'])
+        if gargalo['total_pendentes'] > 0:
+            sumario_global['gargalo_nome'] = gargalo['nome']
+            sumario_global['gargalo_pendentes'] = gargalo['total_pendentes']
 
     # Caminho da Logo específica (Logo.jpg em profile_photos)
     logo_path = os.path.join(settings.MEDIA_ROOT, 'profile_photos', 'Logo.jpg')
@@ -820,6 +875,7 @@ def gerar_relatorio_consolidado(request):
     # Preparar contexto para o PDF
     context = {
         'dados_assessores': dados_assessores,
+        'sumario_global': sumario_global,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
         'today': timezone.now(),

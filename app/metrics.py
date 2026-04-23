@@ -250,18 +250,66 @@ def get_user_weekly_productivity(user):
         .order_by('dia')
     )
     
-    # Processos concluídos por dia
-    concluídos_qs = (
-        Processo.objects.filter(usuario=user, concluido=True, dt_conclusao__gte=inicio_semana)
+    from processos.models import ProcessoAndamento
+    from django.db.models import Subquery, OuterRef
+    
+    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+    processos_validos_ids = set(
+        Processo.objects.annotate(
+            fase_atual=Subquery(
+                ProcessoAndamento.objects.filter(
+                    processo=OuterRef('pk')
+                ).order_by('-dt_criacao').values('fase__fase')[:1]
+            )
+        ).filter(fase_atual__in=fases_validas).values_list('id', flat=True)
+    )
+    
+    # Processos concluídos por dia (agora: Revisão + Monocráticas)
+    revisao_qs = (
+        ProcessoAndamento.objects.filter(
+            processo__usuario=user,
+            processo__id__in=processos_validos_ids,
+            fase__fase__in=fases_validas,
+            dt_criacao__date__gte=inicio_semana
+        )
+        .annotate(dia=TruncDay('dt_criacao'))
+        .values('dia')
+        .annotate(quantidade=Count('processo', distinct=True))
+    )
+    
+    monocraticas_qs = (
+        Processo.objects.filter(
+            usuario=user,
+            tipo__tipo="Monocrática",
+            concluido=True,
+            dt_conclusao__date__gte=inicio_semana
+        )
         .annotate(dia=TruncDay('dt_conclusao'))
         .values('dia')
         .annotate(quantidade=Count('id'))
-        .order_by('dia')
     )
 
     dias = [inicio_semana + timedelta(days=x) for x in range(7)]
-    distribuídos_dict = {d['dia']: d['quantidade'] for d in distribuídos_qs}
-    concluídos_dict = {d['dia']: d['quantidade'] for d in concluídos_qs}
+    
+    distribuídos_dict = {}
+    for d in distribuídos_qs:
+        dia_val = d['dia']
+        if isinstance(dia_val, datetime):
+            dia_val = dia_val.date()
+        distribuídos_dict[dia_val] = d['quantidade']
+        
+    concluídos_dict = {}
+    for d in revisao_qs:
+        dia_val = d['dia']
+        if isinstance(dia_val, datetime):
+            dia_val = dia_val.date()
+        concluídos_dict[dia_val] = concluídos_dict.get(dia_val, 0) + d['quantidade']
+        
+    for d in monocraticas_qs:
+        dia_val = d['dia']
+        if isinstance(dia_val, datetime):
+            dia_val = dia_val.date()
+        concluídos_dict[dia_val] = concluídos_dict.get(dia_val, 0) + d['quantidade']
 
     labels = [d.strftime("%d/%m") for d in dias]
     distribuídos_data = [distribuídos_dict.get(d, 0) for d in dias]
@@ -304,10 +352,26 @@ def get_user_daily_productivity(user):
         usuario=user, data_dist__date=hoje
     ).count()
 
-    # Processos concluídos hoje
-    concluídos_hoje = Processo.objects.filter(
-        usuario=user, concluido=True, dt_conclusao__date=hoje
-    ).count()
+    from django.db.models import Subquery, OuterRef
+    
+    # Processos concluídos hoje (agora: enviados para Revisão hoje + Monocráticas concluídas hoje)
+    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+    processos_hoje_qs = Processo.objects.filter(
+        Q(andamentos__fase__fase__in=fases_validas, andamentos__dt_criacao__date=hoje) | 
+        Q(tipo__tipo="Monocrática", concluido=True, dt_conclusao__date=hoje),
+        usuario=user
+    ).distinct().annotate(
+        fase_atual=Subquery(
+            ProcessoAndamento.objects.filter(
+                processo=OuterRef('pk')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+    )
+
+    concluídos_hoje = 0
+    for p in processos_hoje_qs:
+        if (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido) or (p.fase_atual in fases_validas):
+            concluídos_hoje += 1
 
     return {
         'labels': ['Distribuídos', 'Concluídos'],
@@ -340,26 +404,30 @@ def get_user_meta_semanal_metrics(user):
         return None
         
     total_meta = meta.meta_qtd
-    processos = meta.processos.all()
+    from django.db.models import Subquery, OuterRef
+    processos = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).annotate(
+        fase_atual=Subquery(
+            ProcessoAndamento.objects.filter(
+                processo=OuterRef('pk')
+            ).order_by('-dt_criacao').values('fase__fase')[:1]
+        )
+    )
     
-    # Processos that went to "Revisão Des"
+    # Processos that went to "Revisão"
     concluidos_ids = set(
         ProcessoAndamento.objects.filter(
             processo__in=processos,
-            fase__fase="Revisão Des",
+            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
             dt_criacao__date__range=(inicio_semana, fim_semana)
         ).values_list('processo', flat=True).distinct()
     )
     
-    # Plus "Monocráticas" that were concluded
-    monocraticas_ids = set(
-        processos.filter(
-            tipo__tipo="Monocrática",
-            concluido=True
-        ).values_list('id', flat=True)
-    )
-    
-    total_concluidas = len(concluidos_ids.union(monocraticas_ids))
+    total_concluidas = 0
+    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+    for p in processos:
+        if (p.id in concluidos_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
+            total_concluidas += 1
+            
     faltam = max(0, total_meta - total_concluidas)
     progresso = int((total_concluidas / total_meta * 100)) if total_meta > 0 else 0
     

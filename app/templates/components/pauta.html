@@ -962,12 +962,15 @@
 
     let nextDate = null;
     if (dates.length > 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const todayAt15 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 0, 0);
+      const dataReferencia = now >= todayAt15 ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      dataReferencia.setHours(0, 0, 0, 0);
+
       const ascDates = [...dates].reverse(); // Do mais antigo pro mais novo (futuro)
       nextDate = ascDates.find(d => {
         const [da, ma, ya] = d.split('/');
-        return new Date(ya, ma - 1, da) >= today;
+        return new Date(ya, ma - 1, da) >= dataReferencia;
       }) || dates[0]; // fallback para a mais recente se todas passadas
     }
 

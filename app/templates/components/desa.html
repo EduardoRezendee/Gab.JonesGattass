@@ -45,11 +45,16 @@
           return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
         });
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const todayAt15 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 0, 0);
+        
+        // Se passou das 15:00, o 'hoje' para fins de filtro já é amanhã
+        const dataReferencia = now >= todayAt15 ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        dataReferencia.setHours(0, 0, 0, 0);
+
         nextDate = dates.find(dtStr => {
           const [da, ma, ya] = dtStr.split('/');
-          return new Date(ya, ma - 1, da) >= today;
+          return new Date(ya, ma - 1, da) >= dataReferencia;
         }) || dates[dates.length - 1]; // Fallback para a mais recente se não houver futuras
       }
 
