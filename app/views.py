@@ -751,6 +751,9 @@ def gerar_relatorio_consolidado(request):
         total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
         
         FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+        # Fases que definem "minutado fora da meta": apenas processos enviados para Revisão
+        # (não inclui L.PJE / Processo Concluído, que são etapas posteriores)
+        FASE_REVISAO = "Revisão"
 
         # Concluídos no período = processos que passaram para fase de conclusão no período
         # (mantido para referência histórica e MoM)
@@ -795,11 +798,12 @@ def gerar_relatorio_consolidado(request):
 
         total_processos_na_meta = len(ids_processos_nas_metas)
 
-        # Minutados Extras (Fora da Meta) = processos concluídos no período (passaram por
-        # FASES_EXATAS) mas NÃO estão vinculados a nenhuma meta do assessor.
+        # Minutados Extras (Fora da Meta) = processos que passaram para fase "Revisão"
+        # no período estipulado, mas NÃO estão vinculados a nenhuma meta do assessor.
+        # Exclui processos em fases de conclusão (L.PJE, Processo Concluído) — apenas Revisão conta.
         concluidos_fora_meta = ProcessoAndamento.objects.filter(
             processo__usuario=assessor,
-            fase__fase__in=FASES_EXATAS,
+            fase__fase=FASE_REVISAO,
             dt_criacao__range=(data_inicio, data_fim)
         ).exclude(
             processo_id__in=ids_processos_nas_metas
@@ -859,8 +863,8 @@ def gerar_relatorio_consolidado(request):
             'concluidos_periodo_anterior': concluidos_periodo_anterior,
         })
 
-    # Ordenar assessores do maior para o menor em processos concluídos
-    dados_assessores.sort(key=lambda x: x['concluidos_periodo'], reverse=True)
+    # Ordenar assessores do maior para o menor em total minutados (meta + fora da meta)
+    dados_assessores.sort(key=lambda x: x['total_minutados_periodo'], reverse=True)
     
     # --- SUMÁRIO GLOBAL ---
     total_concluidos_na_meta_global = sum(a['concluidos_na_meta'] for a in dados_assessores)

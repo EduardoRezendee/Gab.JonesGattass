@@ -340,12 +340,12 @@
     <!-- ========== GRÁFICO COMPARATIVO ========== -->
     {% if dados_assessores %}
     <div class="grafico-section">
-        <div class="grafico-title">Ranking de Desempenho — Processos Concluídos</div>
+        <div class="grafico-title">Ranking de Desempenho</div>
         <div class="grafico-subtitle">
             Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
         </div>
 
-        {% with max_val=dados_assessores.0.concluidos_periodo %}
+        {% with max_val=dados_assessores.0.total_minutados_periodo %}
         <table style="border-collapse: collapse; width: 100%; table-layout: fixed; margin: 0;">
             {% for item in dados_assessores %}
             <tr>
@@ -361,52 +361,52 @@
                             {% if max_val > 0 %}
                             {% if forloop.counter == 1 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E8B84B;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E8B84B;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 2 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E74C3C;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#E74C3C;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 3 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#27AE60;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#27AE60;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 4 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#2471A3;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#2471A3;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 5 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#8E44AD;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#8E44AD;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 6 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#D35400;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#D35400;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 7 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#148F77;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#148F77;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 8 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#C0392B;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#C0392B;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% elif forloop.counter == 9 %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#1A5276;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#1A5276;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% else %}
                             <td
-                                style="width:{% widthratio item.concluidos_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#626567;">
+                                style="width:{% widthratio item.total_minutados_periodo max_val 100 %}%; height:26px; padding:0; border:none; background-color:#626567;">
                             </td>
                             <td style="padding:0; border:none; background-color:#f1f5f9; height:26px;"></td>
                             {% endif %}
@@ -428,7 +428,7 @@
                     {% elif forloop.counter == 8 %}color:#C0392B;
                     {% elif forloop.counter == 9 %}color:#1A5276;
                     {% else %}color:#626567;{% endif %}">
-                    {{ item.concluidos_periodo }}
+                    {{ item.total_minutados_periodo }}
                 </td>
             </tr>
             <!-- Espaçador entre barras -->
