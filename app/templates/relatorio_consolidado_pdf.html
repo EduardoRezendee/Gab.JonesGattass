@@ -323,7 +323,7 @@
                             <tr class="row-grand-total">
                                 <td style="text-transform: uppercase;">Minutados Total (Período)</td>
                                 <td class="col-num">
-                                    {{ item.concluidos_periodo }}
+                                    {{ item.total_minutados_periodo }}
                                     <span style="font-size: 8pt; color: {% if item.variacao_mom > 0 %}#4ade80{% elif item.variacao_mom < 0 %}#f87171{% else %}#cbd5e1{% endif %}; font-weight: normal; margin-left: 5px;">
                                         [{% if item.variacao_mom > 0 %}&#9650; +{% elif item.variacao_mom < 0 %}&#9660; {% else %}={% endif %}{{ item.variacao_mom }}%]
                                     </span>

@@ -410,7 +410,7 @@ MAPEAMENTO_TAG_USUARIO = {
     'Ass-Mirelli': 'mirellisilva',
     'Ass-Viviane': 'vivianelima',
     'Ass-Paulo': 'ass-paulo',
-    'Ass-Felipe': 'felipescaravelli'
+    'Ass-Ricardo': 'ricardo'
 }
 
 def importar_processos_view(request):
@@ -882,7 +882,11 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         if not processo_id or not processo_id.isdigit():
             raise Http404("Processo inválido ou não encontrado.")
         
-        return ProcessoAndamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status')
+        from django.db.models import F
+        return ProcessoAndamento.objects.filter(processo_id=processo_id).select_related('fase', 'usuario', 'status').order_by(
+            F('dt_conclusao').asc(nulls_last=True),
+            'dt_criacao'
+        )
 
     def get_context_data(self, **kwargs):
         """
@@ -2553,7 +2557,7 @@ def minhas_metas(request):
         concluidos_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__in=processos,
-                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
+                fase__fase__in=["Revisão", "Revisão Des", "L. PJE", "Processo Concluído"],
                 dt_criacao__date__range=(inicio_semana, fim_semana)
             ).values_list('processo', flat=True).distinct()
         )
@@ -2568,7 +2572,7 @@ def minhas_metas(request):
         fases_atuais = {p.id: p.fase_atual for p in processos_com_fase}
 
         concluidas = 0
-        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+        fases_validas = ["Revisão", "Revisão Des", "L. PJE", "Processo Concluído"]
         for p in processos:
             fase_atual = fases_atuais.get(p.id, 'Não especificado')
             if (p.id in concluidos_ids and fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):

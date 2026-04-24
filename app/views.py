@@ -751,9 +751,12 @@ def gerar_relatorio_consolidado(request):
         total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
         
         FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+        # Fases que definem "minutado fora da meta": apenas processos enviados para Revisão
+        # (não inclui L.PJE / Processo Concluído, que são etapas posteriores)
+        FASE_REVISAO = "Revisão"
 
         # Concluídos no período = processos que passaram para fase de conclusão no período
-        # (a partir do momento que entra em uma dessas fases, o trabalho do assessor está concluído)
+        # (mantido para referência histórica e MoM)
         concluidos_periodo_ids = set(
             ProcessoAndamento.objects.filter(
                 processo__usuario=assessor,
@@ -794,7 +797,20 @@ def gerar_relatorio_consolidado(request):
             concluidos_na_meta += len(concluidos_nesta_meta_ids)
 
         total_processos_na_meta = len(ids_processos_nas_metas)
-        concluidos_fora_meta = max(0, concluidos_periodo - concluidos_na_meta)
+
+        # Minutados Extras (Fora da Meta) = processos que passaram para fase "Revisão"
+        # no período estipulado, mas NÃO estão vinculados a nenhuma meta do assessor.
+        # Exclui processos em fases de conclusão (L.PJE, Processo Concluído) — apenas Revisão conta.
+        concluidos_fora_meta = ProcessoAndamento.objects.filter(
+            processo__usuario=assessor,
+            fase__fase=FASE_REVISAO,
+            dt_criacao__range=(data_inicio, data_fim)
+        ).exclude(
+            processo_id__in=ids_processos_nas_metas
+        ).values('processo_id').distinct().count()
+
+        # Total de Minutados = minutados dentro da meta + minutados fora da meta
+        total_minutados_periodo = concluidos_na_meta + concluidos_fora_meta
         
         # --- NOVOS KPIs ---
         # 1. Percentual da Meta
@@ -833,6 +849,7 @@ def gerar_relatorio_consolidado(request):
             'em_pje': em_pje,
             'em_l_pje': em_l_pje,
             'concluidos_periodo': concluidos_periodo,
+            'total_minutados_periodo': total_minutados_periodo,  # na_meta + fora_meta
             'total_historico': total_historico,
             # Novos campos de Metas
             'meta_qtd': total_meta_qtd,
@@ -850,11 +867,14 @@ def gerar_relatorio_consolidado(request):
     dados_assessores.sort(key=lambda x: x['concluidos_periodo'], reverse=True)
     
     # --- SUMÁRIO GLOBAL ---
+    total_concluidos_na_meta_global = sum(a['concluidos_na_meta'] for a in dados_assessores)
+    total_concluidos_fora_meta_global = sum(a['concluidos_fora_meta'] for a in dados_assessores)
     sumario_global = {
         'total_pendentes': sum(a['total_pendentes'] for a in dados_assessores),
-        'total_concluidos': sum(a['concluidos_periodo'] for a in dados_assessores),
+        # Total minutados = soma de minutados na meta + minutados fora da meta de todos os assessores
+        'total_concluidos': total_concluidos_na_meta_global + total_concluidos_fora_meta_global,
         'total_meta_qtd': sum(a['meta_qtd'] for a in dados_assessores),
-        'total_concluidos_na_meta': sum(a['concluidos_na_meta'] for a in dados_assessores),
+        'total_concluidos_na_meta': total_concluidos_na_meta_global,
         'total_elaboracao': sum(a['em_elaboracao'] for a in dados_assessores),
         'total_revisao': sum(a['em_revisao'] for a in dados_assessores),
         'total_revisao_des': sum(a['em_revisao_des'] for a in dados_assessores),
