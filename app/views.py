@@ -751,9 +751,6 @@ def gerar_relatorio_consolidado(request):
         total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
         
         FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
-        # Fases que definem "minutado fora da meta": apenas processos enviados para Revisão
-        # (não inclui L.PJE / Processo Concluído, que são etapas posteriores)
-        FASE_REVISAO = "Revisão"
 
         # Concluídos no período = processos que passaram para fase de conclusão no período
         # (mantido para referência histórica e MoM)
@@ -798,12 +795,11 @@ def gerar_relatorio_consolidado(request):
 
         total_processos_na_meta = len(ids_processos_nas_metas)
 
-        # Minutados Extras (Fora da Meta) = processos que passaram para fase "Revisão"
-        # no período estipulado, mas NÃO estão vinculados a nenhuma meta do assessor.
-        # Exclui processos em fases de conclusão (L.PJE, Processo Concluído) — apenas Revisão conta.
+        # Minutados Extras (Fora da Meta) = processos concluídos no período (passaram por
+        # FASES_EXATAS) mas NÃO estão vinculados a nenhuma meta do assessor.
         concluidos_fora_meta = ProcessoAndamento.objects.filter(
             processo__usuario=assessor,
-            fase__fase=FASE_REVISAO,
+            fase__fase__in=FASES_EXATAS,
             dt_criacao__range=(data_inicio, data_fim)
         ).exclude(
             processo_id__in=ids_processos_nas_metas
