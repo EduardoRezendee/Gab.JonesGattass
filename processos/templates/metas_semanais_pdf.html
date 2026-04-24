@@ -12,285 +12,420 @@
             color: #1e293b;
             line-height: 1.4;
             background-color: #ffffff;
+            font-size: 9pt;
         }
-        
-        /* Cabeçalho Global */
+
+        /* ── CABEÇALHO ─────────────────────────────────────── */
         .header {
             text-align: center;
             border-bottom: 2pt solid #083464;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
         }
-        .logo {
-            max-width: 40px;
-            max-height: 40px;
-            margin-bottom: 10px;
+        .logo { max-width: 50px; max-height: 50px; margin-bottom: 6px; }
+        .title { font-size: 17pt; color: #083464; margin: 0; font-weight: bold; text-transform: uppercase; }
+        .subtitle { font-size: 9pt; color: #475569; margin-top: 3px; }
+
+        /* ── DASHBOARD GLOBAL ──────────────────────────────── */
+        .dashboard-section {
+            border: 1.5pt solid #083464;
+            margin-bottom: 24px;
+            page-break-inside: avoid;
         }
-        .title {
-            font-size: 18pt;
-            color: #083464;
-            margin: 0;
+        .dashboard-header {
+            background-color: #083464;
+            color: #ffffff;
+            padding: 8px 14px;
+            font-size: 11pt;
             font-weight: bold;
             text-transform: uppercase;
         }
-        .subtitle {
-            font-size: 10pt;
-            color: #475569;
-            margin-top: 5px;
-        }
-
-        /* Card da Meta */
-        .card {
-            border: 1px solid #cbd5e1;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-            background-color: #ffffff;
-        }
-        
-        /* Cabeçalho do Card */
-        .card-header {
-            background-color: #f1f5f9;
-            padding: 10px 15px;
-            border-bottom: 1px solid #cbd5e1;
-        }
-        .assessor-name {
-            font-size: 14pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin: 0;
-        }
-        .periodo {
-            font-size: 10pt;
-            color: #64748b;
-            margin-top: 2px;
-            margin-bottom: 8px;
-        }
-        
-        /* Badges */
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            font-size: 9pt;
-            font-weight: bold;
-            border-radius: 12px;
-            color: #ffffff;
-        }
-        .badge-atingida { background-color: #10B981; }
-        .badge-em_andamento { background-color: #3B82F6; }
-        .badge-quase_la { background-color: #F59E0B; }
-        .badge-atrasada { background-color: #EF4444; }
-        .badge-futura { background-color: #64748b; }
-
-        /* Tabelas */
-        table {
+        .dashboard-kpis {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+        }
+        .dashboard-kpis th {
+            text-align: center;
+            padding: 7px 4px 4px;
+            font-size: 8pt;
+            color: #64748b;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+        }
+        .dashboard-kpis th:last-child { border-right: none; }
+        .dashboard-kpis td {
+            text-align: center;
+            padding: 12px 4px;
+            font-size: 18pt;
+            font-weight: bold;
+            border-right: 1px solid #e2e8f0;
+        }
+        .dashboard-kpis td:last-child { border-right: none; }
+        .kpi-processos  { color: #1e40af; }
+        .kpi-minutados  { color: #059669; }
+        .kpi-pendentes  { color: #d97706; }
+        .kpi-taxa       { color: #0891b2; }
+        .kpi-urg        { color: #dc2626; }
+        .kpi-metas      { color: #7c3aed; }
+
+        .dashboard-sub {
+            background-color: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+            padding: 7px 14px;
+            font-size: 8pt;
+            color: #334155;
+        }
+
+        /* ── CARD DO ASSESSOR ──────────────────────────────── */
+        /* Wrapper externo: unidade principal de controle de page-break para xhtml2pdf */
+        .card-wrapper {
+            page-break-inside: avoid;
+            page-break-before: auto;
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 22px;
+        }
+        .card-wrapper td.card-cell {
+            border: none;
+            padding: 0;
+            page-break-inside: avoid;
+        }
+        /* Div interno: reforço de page-break para engines que suportam em div */
+        .card {
+            display: block;
+            border: 1px solid #cbd5e1;
             margin-bottom: 0;
+            page-break-inside: avoid;
+        }
+        .card-header {
+            background-color: #f1f5f9;
+            padding: 9px 14px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .assessor-name { font-size: 13pt; font-weight: bold; color: #0f172a; margin: 0; }
+        .periodo { font-size: 8.5pt; color: #64748b; margin-top: 2px; margin-bottom: 6px; }
+        .meta-alvo { font-size: 8.5pt; color: #1e40af; font-weight: bold; }
+
+        /* Badges de status */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            font-size: 8.5pt;
+            font-weight: bold;
+            border-radius: 10px;
+            color: #ffffff;
+        }
+        .badge-atingida     { background-color: #059669; }
+        .badge-quase_la     { background-color: #d97706; }
+        .badge-em_andamento { background-color: #2563eb; }
+        .badge-atrasada     { background-color: #dc2626; }
+        .badge-futura       { background-color: #64748b; }
+
+        /* Métricas do card */
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
         .metrics-table th {
             text-align: center;
-            padding: 8px 5px;
-            font-size: 9pt;
+            padding: 6px 4px;
+            font-size: 8pt;
             color: #475569;
             border-bottom: 1px solid #e2e8f0;
             background-color: #ffffff;
         }
         .metrics-table td {
             text-align: center;
-            padding: 12px 5px;
-            font-size: 16pt;
+            padding: 10px 4px;
+            font-size: 15pt;
             font-weight: bold;
         }
-        
-        /* Cores das Métricas */
-        .val-total { color: #3B82F6; }
-        .val-concluidos { color: #10B981; }
-        .val-pendentes { color: #F59E0B; }
-        .val-progresso { color: #06b6d4; }
-        
-        /* Tabela de Distribuição */
-        .dist-table {
-            border-top: 1px solid #e2e8f0;
-            background-color: #f8fafc;
-        }
+        .val-total    { color: #2563eb; }
+        .val-min      { color: #059669; }
+        .val-pend     { color: #d97706; }
+        .val-prog     { color: #0891b2; }
+
+        /* Distribuição por dias */
+        .dist-table { border-top: 1px solid #e2e8f0; background-color: #f8fafc; }
         .dist-table th {
             text-align: left;
-            padding: 6px 15px;
-            font-size: 9pt;
+            padding: 5px 12px;
+            font-size: 8pt;
             color: #475569;
             background-color: #f1f5f9;
         }
         .dist-table td {
             text-align: center;
-            padding: 8px 5px;
-            font-size: 9.5pt;
+            padding: 6px 4px;
+            font-size: 8.5pt;
             color: #1e293b;
             border-right: 1px solid #e2e8f0;
         }
-        .dist-table td:last-child {
-            border-right: none;
-        }
+        .dist-table td:last-child { border-right: none; }
 
-        /* Tabela de Processos */
+        /* Separador de seção */
+        .section-label {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .section-label th {
+            text-align: left;
+            padding: 5px 10px;
+            font-size: 8pt;
+            font-weight: bold;
+            letter-spacing: 0.5pt;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .section-pendente th { background-color: #fef2f2; color: #991b1b; border-top: 2px solid #dc2626; }
+        .section-minutado th { background-color: #f0fdf4; color: #166534; border-top: 2px solid #059669; }
+
+        /* Tabela de processos */
         .process-table {
-            border-top: 1px solid #cbd5e1;
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
         .process-table th {
             text-align: left;
-            padding: 10px 10px;
-            font-size: 8.5pt;
+            padding: 7px 8px;
+            font-size: 8pt;
             color: #1e293b;
-            background-color: #f1f5f9;
-            border-bottom: 2px solid #cbd5e1;
-            border-right: none;
-            border-left: none;
+            background-color: #f8fafc;
+            border-bottom: 1.5px solid #cbd5e1;
         }
         .process-table td {
             text-align: left;
-            padding: 8px 10px;
-            font-size: 8pt;
+            padding: 6px 8px;
+            font-size: 7.5pt;
             color: #334155;
-            border-bottom: 1px solid #e2e8f0;
-            border-right: none;
-            border-left: none;
+            border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
         }
-        .process-row-concluido {
-            background-color: #f0fdf4;
-        }
-        
+        .row-urgentissimo { background-color: #fff1f2; }
+        .row-minutado     { background-color: #f0fdf4; color: #166534; }
+
         .badge-dias {
             display: inline-block;
-            padding: 4px 6px;
+            padding: 3px 6px;
             border-radius: 4px;
-            font-size: 7.5pt;
+            font-size: 7pt;
             font-weight: bold;
             color: #ffffff;
-            text-align: center;
         }
-        .bg-success { background-color: #10B981; }
-        .bg-primary { background-color: #3B82F6; }
-        .bg-warning { background-color: #F59E0B; color: #1e293b; }
-        .bg-danger { background-color: #EF4444; }
+        .bg-success   { background-color: #059669; }
+        .bg-primary   { background-color: #2563eb; }
+        .bg-warning   { background-color: #d97706; color: #1e293b; }
+        .bg-danger    { background-color: #dc2626; }
         .bg-secondary { background-color: #64748b; }
-        
+        .bg-urg       { background-color: #7f1d1d; }
+
         /* Footer */
         .footer {
             text-align: center;
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #64748b;
             border-top: 1px solid #cbd5e1;
-            padding-top: 15px;
-            margin-top: 30px;
+            padding-top: 12px;
+            margin-top: 28px;
         }
     </style>
 </head>
 <body>
+
+    <!-- CABEÇALHO -->
     <div class="header">
         {% if logo_path %}
-            <img src="{{ logo_path }}" class="logo" width="120">
+            <img src="{{ logo_path }}" class="logo" width="100">
         {% endif %}
-        <h1 class="title">Metas Semanais</h1>
-        <p class="subtitle">Gabinete Desembargador Jones Gattass Dias</p>
+        <h1 class="title">Relatório de Metas Semanais</h1>
+        <p class="subtitle">Gabinete Desembargador Jones Gattass Dias &nbsp;|&nbsp; Emitido em {{ today|date:"d/m/Y H:i" }}</p>
     </div>
 
+    <!-- ══ DASHBOARD EXECUTIVO GLOBAL ══════════════════════════════════ -->
+    {% if dashboard_global %}
+    <div class="dashboard-section">
+        <div class="dashboard-header">&#128200; Visão Geral do Gabinete</div>
+
+        <table class="dashboard-kpis">
+            <tr>
+                <th>Total na Meta</th>
+                <th>Minutados</th>
+                <th>Pendentes</th>
+                <th>Taxa de Cumprimento</th>
+                <th>Urgentíssimos</th>
+                <th>Metas Atingidas</th>
+            </tr>
+            <tr>
+                <td class="kpi-processos">{{ dashboard_global.total_processos }}</td>
+                <td class="kpi-minutados">{{ dashboard_global.total_minutados }}</td>
+                <td class="kpi-pendentes">{{ dashboard_global.total_pendentes }}</td>
+                <td class="kpi-taxa">{{ dashboard_global.taxa_cumprimento }}%</td>
+                <td class="kpi-urg">{{ dashboard_global.urgentissimos_minutados }}/{{ dashboard_global.urgentissimos_total }}</td>
+                <td class="kpi-metas">{{ dashboard_global.metas_atingidas }}/{{ dashboard_global.metas_total }}</td>
+            </tr>
+        </table>
+
+    </div>
+    {% endif %}
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- CARDS INDIVIDUAIS -->
     {% for meta in metas_com_dados %}
-    <div class="card">
+    <table class="card-wrapper">
+        <tr>
+            <td class="card-cell">
+                <div class="card">
+
+        <!-- Cabeçalho do card -->
         <div class="card-header">
-            <!-- Usamos tabelas para layout inline compatível com xhtml2pdf -->
-            <table style="border: none; margin: 0; padding: 0;">
+            <table style="border: none; margin: 0; padding: 0; width: 100%;">
                 <tr>
-                    <td style="border: none; padding: 0; width: 70%;">
+                    <td style="border: none; padding: 0; width: 65%;">
                         <div class="assessor-name">{{ meta.usuario.get_full_name|default:meta.usuario.username }}</div>
                         <div class="periodo">{{ meta.semana_inicio|date:"d/m/Y" }} a {{ meta.semana_fim|date:"d/m/Y" }}</div>
                     </td>
-                    <td style="border: none; padding: 0; text-align: right; vertical-align: middle; width: 30%;">
+                    <td style="border: none; padding: 0; text-align: right; vertical-align: middle; width: 35%;">
                         <span class="badge badge-{{ meta.status_calculado }}">
-                            {% if meta.status_calculado == 'atingida' %}Atingida
-                            {% elif meta.status_calculado == 'em_andamento' %}Em Andamento
-                            {% elif meta.status_calculado == 'atrasada' %}Não Atingida
-                            {% elif meta.status_calculado == 'futura' %}Futura
-                            {% elif meta.status_calculado == 'quase_la' %}Quase Lá
+                            {% if meta.status_calculado == 'atingida' %}&#10003; Atingida
+                            {% elif meta.status_calculado == 'quase_la' %}&#9650; Quase Lá ({{ meta.progresso }}%)
+                            {% elif meta.status_calculado == 'em_andamento' %}&#9654; Em Andamento
+                            {% elif meta.status_calculado == 'atrasada' %}&#10007; Não Atingida
+                            {% elif meta.status_calculado == 'futura' %}&#9711; Futura
                             {% else %}{{ meta.status_calculado|title }}{% endif %}
                         </span>
                     </td>
                 </tr>
             </table>
         </div>
-        
+
+        <!-- Métricas numéricas -->
         <table class="metrics-table">
             <tr>
-                <th>Total</th>
-                <th>Concluídos</th>
+                <th>Total na Meta</th>
+                <th>Minutados</th>
                 <th>Pendentes</th>
                 <th>Progresso</th>
             </tr>
             <tr>
                 <td class="val-total">{{ meta.total_processos }}</td>
-                <td class="val-concluidos">{{ meta.processos_concluidos }}</td>
-                <td class="val-pendentes">{{ meta.processos_pendentes }}</td>
-                <td class="val-progresso">{{ meta.progresso }}%</td>
+                <td class="val-min">{{ meta.processos_concluidos }}</td>
+                <td class="val-pend">{{ meta.processos_pendentes }}</td>
+                <td class="val-prog">{{ meta.progresso }}%</td>
             </tr>
         </table>
-        
-        <table class="dist-table">
+
+        <!-- Distribuição por dias no gabinete -->
+        <table class="dist-table" style="width: 100%; border-collapse: collapse; table-layout: fixed;">
             <tr>
-                <th colspan="4" style="border-bottom: 1px solid #e2e8f0;">Distribuição dos Processos (Dias no Gabinete)</th>
+                <th colspan="4">Distribuição do Acervo — Dias no Gabinete (processos pendentes do usuário)</th>
             </tr>
             <tr>
-                <td><strong>≤ 30 dias:</strong> {{ meta.range_le30 }}</td>
+                <td><strong>&#8804; 30 dias:</strong> {{ meta.range_le30 }}</td>
                 <td><strong>31 a 40 dias:</strong> {{ meta.range_31_40 }}</td>
                 <td><strong>41 a 50 dias:</strong> {{ meta.range_41_50 }}</td>
-                <td><strong>> 50 dias:</strong> {{ meta.range_gt50 }}</td>
+                <td><strong>&gt; 50 dias:</strong> {{ meta.range_gt50 }}</td>
             </tr>
         </table>
-        
+
+        <!-- Tabela de processos da meta -->
         {% if meta.processos_data %}
+
+        <!-- Seção: PENDENTES -->
+        {% with pendentes=meta.processos_data %}
+        {% if pendentes %}
+        <table class="section-label">
+            <tr><th class="section-pendente">&#9650; PENDENTES — Foco da semana seguinte</th></tr>
+        </table>
         <table class="process-table">
             <thead>
                 <tr>
-                    <th style="width: 22%;">Processo</th>
-                    <th style="width: 15%;">Espécie</th>
+                    <th style="width: 24%;">Processo</th>
+                    <th style="width: 14%;">Espécie</th>
                     <th style="width: 22%;">Fase Atual</th>
-                    <th style="width: 15%;">Dias no Gabinete</th>
+                    <th style="width: 14%;">Dias Gab.</th>
                     <th style="width: 14%;">Tipo</th>
                     <th style="width: 12%;">Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for processo in meta.processos_data %}
-                <tr class="{% if processo.concluido %}process-row-concluido{% endif %}">
-                    <td><strong>{{ processo.numero_processo }}</strong></td>
+                {% if not processo.concluido %}
+                <tr class="{% if processo.is_urgentissimo %}row-urgentissimo{% endif %}">
+                    <td><strong>{{ processo.numero_processo }}</strong>{% if processo.is_urgentissimo %} &#9888;{% endif %}</td>
                     <td>{{ processo.especie }}</td>
                     <td>{{ processo.fase_atual }}</td>
-                    <td><span class="badge-dias {{ processo.badge_class }}">{{ processo.dias_gabinete }} dias</span></td>
+                    <td><span class="badge-dias {{ processo.badge_class }}">{{ processo.dias_gabinete }}d</span></td>
                     <td>
                         {% if processo.tipo_nome %}
                         <span class="badge-dias {{ processo.tipo_badge }}">{{ processo.tipo_nome }}</span>
                         {% else %}-{% endif %}
                     </td>
-                    <td>
-                        <span class="badge-dias {% if processo.concluido %}bg-success{% else %}bg-warning{% endif %}">{{ processo.status_texto }}</span>
-                    </td>
+                    <td><span class="badge-dias bg-warning">Pendente</span></td>
                 </tr>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>
         {% endif %}
+        {% endwith %}
+
+        <!-- Seção: MINUTADOS -->
+        {% with tem_minutados=meta.processos_concluidos %}
+        {% if tem_minutados %}
+        <table class="section-label">
+            <tr><th class="section-minutado">&#10003; MINUTADOS — Concluídos no período da meta</th></tr>
+        </table>
+        <table class="process-table">
+            <thead>
+                <tr>
+                    <th style="width: 24%;">Processo</th>
+                    <th style="width: 14%;">Espécie</th>
+                    <th style="width: 22%;">Fase Atual</th>
+                    <th style="width: 14%;">Dias Gab.</th>
+                    <th style="width: 14%;">Tipo</th>
+                    <th style="width: 12%;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for processo in meta.processos_data %}
+                {% if processo.concluido %}
+                <tr class="row-minutado">
+                    <td><strong>{{ processo.numero_processo }}</strong></td>
+                    <td>{{ processo.especie }}</td>
+                    <td>{{ processo.fase_atual }}</td>
+                    <td><span class="badge-dias {{ processo.badge_class }}">{{ processo.dias_gabinete }}d</span></td>
+                    <td>
+                        {% if processo.tipo_nome %}
+                        <span class="badge-dias {{ processo.tipo_badge }}">{{ processo.tipo_nome }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td><span class="badge-dias bg-success">Minutado</span></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endwith %}
+
+        {% endif %}
     </div>
-    
-    <!-- Espaçamento entre os responsáveis -->
-    <br><br><br><br>
-    
+            </td>
+        </tr>
+    </table>
     {% empty %}
     <div style="text-align: center; padding: 50px; color: #64748b; border: 1px dashed #cbd5e1;">
         Nenhuma meta encontrada para os filtros selecionados.
     </div>
     {% endfor %}
 
+
     <div class="footer">
-        Emitido em: {{ today|date:"d/m/Y H:i" }} | Documento Gerado Eletronicamente — Sistema Gabgattass
+        Emitido em: {{ today|date:"d/m/Y H:i" }} &nbsp;|&nbsp; Documento Gerado Eletronicamente — Sistema Gabgattass
     </div>
 </body>
 </html>

@@ -55,8 +55,6 @@ urlpatterns = [
     path('agenda/importar/', agenda_importar_bookings, name='agenda_importar'),
     path('agenda/webhook/bookings/', agenda_webhook_bookings, name='agenda_webhook_bookings'),
 
-    # Chatbot API Route
-    path('api/chat-ia/', views.chat_ia_view, name='chat_ia'),
 
     # Alteração de senha
     path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change.html'), name='password_change'),

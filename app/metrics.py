@@ -404,29 +404,22 @@ def get_user_meta_semanal_metrics(user):
         return None
         
     total_meta = meta.meta_qtd
-    from django.db.models import Subquery, OuterRef
-    processos = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).annotate(
-        fase_atual=Subquery(
-            ProcessoAndamento.objects.filter(
-                processo=OuterRef('pk')
-            ).order_by('-dt_criacao').values('fase__fase')[:1]
-        )
-    )
+    processos_ids = list(meta.processos.values_list('id', flat=True))
+    processos = Processo.objects.filter(id__in=processos_ids)
     
-    # Processos that went to "Revisão"
+    FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+    
+    # Processo concluído pelo assessor = passou pela fase de conclusão na semana da meta
+    # (independente de onde está hoje — pode já estar em Revisão Des, Concluído, etc.)
     concluidos_ids = set(
         ProcessoAndamento.objects.filter(
             processo__in=processos,
-            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
+            fase__fase__in=FASES_EXATAS,
             dt_criacao__date__range=(inicio_semana, fim_semana)
-        ).values_list('processo', flat=True).distinct()
+        ).values_list('processo_id', flat=True).distinct()
     )
     
-    total_concluidas = 0
-    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
-    for p in processos:
-        if (p.id in concluidos_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
-            total_concluidas += 1
+    total_concluidas = len(concluidos_ids)
             
     faltam = max(0, total_meta - total_concluidas)
     progresso = int((total_concluidas / total_meta * 100)) if total_meta > 0 else 0

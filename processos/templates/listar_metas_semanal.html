@@ -1387,7 +1387,7 @@ async function exportarRelatorio() {
     // Cria link para download
     const a = document.createElement('a');
     a.href = url;
-    a.download = `metas_semanais_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.download = `metas_semanais_${new Date().toISOString().split('T')[0]}.pdf`;
     a.click();
     
     showToast('Relatório exportado com sucesso!', 'success');

@@ -750,12 +750,18 @@ def gerar_relatorio_consolidado(request):
         # O total exibido agora é a soma exata das categorias detalhadas
         total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
         
-        # Concluídos no período (Votando para a lógica do Processo que funciona no dashboard)
-        concluidos_periodo = Processo.objects.filter(
-            usuario=assessor,
-            concluido=True,
-            dt_conclusao__range=(data_inicio, data_fim)
-        ).count()
+        FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
+        # Concluídos no período = processos que passaram para fase de conclusão no período
+        # (a partir do momento que entra em uma dessas fases, o trabalho do assessor está concluído)
+        concluidos_periodo_ids = set(
+            ProcessoAndamento.objects.filter(
+                processo__usuario=assessor,
+                fase__fase__in=FASES_EXATAS,
+                dt_criacao__range=(data_inicio, data_fim)
+            ).values_list('processo_id', flat=True).distinct()
+        )
+        concluidos_periodo = len(concluidos_periodo_ids)
         
         # Total Histórico
         total_historico = Processo.objects.filter(usuario=assessor, concluido=True).count()
@@ -777,12 +783,14 @@ def gerar_relatorio_consolidado(request):
             procs_meta = meta.processos.all()
             ids_processos_nas_metas.update(procs_meta.values_list('id', flat=True))
             
-            # Concluídos desta meta (baseado na conclusão do processo)
-            concluidos_nesta_meta_ids = procs_meta.filter(
-                concluido=True,
-                dt_conclusao__range=(data_inicio, data_fim)
-            ).values_list('id', flat=True).distinct()
-            
+            # Concluídos desta meta = exata mesma regra usada na dashboard (dentro da semana da meta, e fases exatas)
+            concluidos_nesta_meta_ids = set(
+                ProcessoAndamento.objects.filter(
+                    fase__fase__in=FASES_EXATAS,
+                    processo__in=procs_meta,
+                    dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+                ).values_list('processo_id', flat=True).distinct()
+            )
             concluidos_na_meta += len(concluidos_nesta_meta_ids)
 
         total_processos_na_meta = len(ids_processos_nas_metas)
@@ -797,16 +805,16 @@ def gerar_relatorio_consolidado(request):
         dias_pendentes = [(hoje_date - p.antigo.date()).days for p in processos_pendentes if p.antigo]
         idade_media_pendentes = round(sum(dias_pendentes) / len(dias_pendentes)) if dias_pendentes else 0
         
-        # 3. MoM (Comparativo Temporal)
+        # 3. MoM (Comparativo Temporal) — mesmo critério: passou para Revisão
         duracao_dias = (data_fim.date() - data_inicio.date()).days + 1
         data_inicio_anterior = data_inicio - timedelta(days=duracao_dias)
         data_fim_anterior = data_fim - timedelta(days=duracao_dias)
         
-        concluidos_periodo_anterior = Processo.objects.filter(
-            usuario=assessor,
-            concluido=True,
-            dt_conclusao__range=(data_inicio_anterior, data_fim_anterior)
-        ).count()
+        concluidos_periodo_anterior = ProcessoAndamento.objects.filter(
+            processo__usuario=assessor,
+            fase__fase__in=FASES_EXATAS,
+            dt_criacao__range=(data_inicio_anterior, data_fim_anterior)
+        ).values('processo_id').distinct().count()
         
         if concluidos_periodo_anterior > 0:
             variacao_mom = round(((concluidos_periodo - concluidos_periodo_anterior) / concluidos_periodo_anterior) * 100, 1)
@@ -1150,7 +1158,7 @@ def get_revisoes_semana_data(request):
     data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
 
     enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão Des",
+        fase__fase="Revisão",
         dt_criacao__range=(data_inicio, data_fim),
         processo__usuario__isnull=False  # Evita processos sem usuário
     ).values(
@@ -1195,68 +1203,6 @@ def get_revisoes_semana_data(request):
     }
     return JsonResponse(response_data)
 
-import json
-import os
-from openai import OpenAI
-from django.conf import settings
-from decouple import config
-from django.views.decorators.csrf import csrf_exempt
-
-@login_required
-def chat_ia_view(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            question = data.get('question', '')
-            
-            if not question:
-                return JsonResponse({'response': 'Por favor, faça uma pergunta válida.'})
-
-            # Conectar à API da OpenAI
-            api_key = config('OPENAI_API_KEY', default='')
-            if not api_key or 'sk-cole' in api_key:
-                return JsonResponse({'response': 'A chave OPENAI_API_KEY não foi configurada corretamente. Verifique o seu .env.'})
-                
-            assistant_id = config('OPENAI_ASSISTANT_ID', default='')
-            if not assistant_id:
-                return JsonResponse({'response': 'O código do Assistente (OPENAI_ASSISTANT_ID) não foi adicionado ao arquivo .env ainda.'})
-                
-            client = OpenAI(api_key=api_key)
-            
-            # 1. Cria uma "Sala de Conversa" no lado da OpenAI e manda a Pergunta do Assessor
-            thread = client.beta.threads.create()
-            client.beta.threads.messages.create(
-                thread_id=thread.id,
-                role="user",
-                content=question
-            )
-            
-            # 2. Acorda o "Assistente de Gabinete" e manda ele consultar os 5 mil PDFs e responder
-            run = client.beta.threads.runs.create_and_poll(
-                thread_id=thread.id,
-                assistant_id=assistant_id
-            )
-            
-            # 3. Pega a resposta final
-            if run.status == 'completed':
-                messages = client.beta.threads.messages.list(
-                    thread_id=thread.id
-                )
-                resposta_ia = messages.data[0].content[0].text.value
-                
-                # Opcional: A OpenAI costuma adicionar referências feias [^1^] ou 【4:0†source】. Limpa via Regex.
-                import re
-                resposta_limpa = re.sub(r'【.*?】|\[\^.*?\^\]', '', resposta_ia)
-                
-                return JsonResponse({'response': resposta_limpa})
-            else:
-                detalhe_erro = run.last_error.message if hasattr(run, 'last_error') and run.last_error else run.status
-                return JsonResponse({'response': f'A OpenAI bloqueou a resposta. Motivo: {detalhe_erro}'})
-            
-        except Exception as e:
-            return JsonResponse({'response': f'Erro no processamento da IA: {str(e)}'})
-    
-    return JsonResponse({'error': 'Apenas requisições POST são permitidas'}, status=400)
 
 
 # ─── AGENDA DO DESEMBARGADOR ──────────────────────────────────────────────────

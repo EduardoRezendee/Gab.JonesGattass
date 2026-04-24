@@ -1701,29 +1701,40 @@ def calcular_dados_metas(metas, hoje):
 
 
 def calcular_progresso_meta(meta, hoje):
-    processos_meta = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).select_related('tipo').annotate(
-        fase_atual=Subquery(
-            ProcessoAndamento.objects.filter(
-                processo=OuterRef('pk')
-            ).order_by('-dt_criacao').values('fase__fase')[:1]
-        )
-    )
-    if not processos_meta.exists():
+    from django.db.models import Subquery, OuterRef
+    FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
+    processos_meta_ids = list(meta.processos.values_list('id', flat=True))
+    if not processos_meta_ids:
         return 0
 
-    revisados_ids = set(
+    # 1. Base Histórica
+    minutados_periodo = set(
         ProcessoAndamento.objects.filter(
-            processo__in=processos_meta,
-            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
-            dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-        ).values_list('processo', flat=True).distinct()
+            fase__fase__in=FASES_EXATAS,
+            processo_id__in=processos_meta_ids,
+            dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+        ).values_list('processo_id', flat=True).distinct()
     )
 
-    concluidas = 0
-    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
-    for p in processos_meta:
-        if (p.id in revisados_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
-            concluidas += 1
+    if meta.semana_fim >= hoje:
+        # 2. Base Atual
+        ultima_fase_sub = ProcessoAndamento.objects.filter(
+            processo=OuterRef('pk')
+        ).order_by('-dt_criacao').values('fase__fase')[:1]
+
+        minutados_fase = set(
+            Processo.objects.filter(
+                id__in=processos_meta_ids
+            ).annotate(
+                fase_atual=Subquery(ultima_fase_sub)
+            ).filter(
+                fase_atual__in=FASES_EXATAS
+            ).values_list('id', flat=True)
+        )
+        concluidas = len(minutados_periodo | minutados_fase)
+    else:
+        concluidas = len(minutados_periodo)
 
     progresso = round(min((concluidas / meta.meta_qtd * 100) if meta.meta_qtd else 0, 100), 1)
     return progresso
@@ -1776,31 +1787,40 @@ def calcular_faixas_dias(meta, hoje):
 
 
 def calcular_processos_concluidos(meta, hoje):
-    processos_meta = Processo.objects.filter(id__in=[p.id for p in meta.processos.all()]).select_related('tipo').annotate(
-        fase_atual=Subquery(
-            ProcessoAndamento.objects.filter(
-                processo=OuterRef('pk')
-            ).order_by('-dt_criacao').values('fase__fase')[:1]
-        )
-    )
-    if not processos_meta.exists():
+    from django.db.models import Subquery, OuterRef
+    FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
+    processos_meta_ids = list(meta.processos.values_list('id', flat=True))
+    if not processos_meta_ids:
         return 0
 
-    revisados_ids = set(
+    # 1. Base Histórica
+    minutados_periodo = set(
         ProcessoAndamento.objects.filter(
-            processo__in=processos_meta,
-            fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
-            dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-        ).values_list('processo', flat=True).distinct()
+            fase__fase__in=FASES_EXATAS,
+            processo_id__in=processos_meta_ids,
+            dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+        ).values_list('processo_id', flat=True).distinct()
     )
-    
-    concluidos = 0
-    fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
-    for p in processos_meta:
-        if (p.id in revisados_ids and p.fase_atual in fases_validas) or (p.tipo and p.tipo.tipo == "Monocrática" and p.concluido):
-            concluidos += 1
-            
-    return concluidos
+
+    if meta.semana_fim >= hoje:
+        # 2. Base Atual
+        ultima_fase_sub = ProcessoAndamento.objects.filter(
+            processo=OuterRef('pk')
+        ).order_by('-dt_criacao').values('fase__fase')[:1]
+
+        minutados_fase = set(
+            Processo.objects.filter(
+                id__in=processos_meta_ids
+            ).annotate(
+                fase_atual=Subquery(ultima_fase_sub)
+            ).filter(
+                fase_atual__in=FASES_EXATAS
+            ).values_list('id', flat=True)
+        )
+        return len(minutados_periodo | minutados_fase)
+
+    return len(minutados_periodo)
 
 @login_required
 @require_http_methods(["GET"])
@@ -1871,25 +1891,35 @@ def api_meta_processos(request):
             )
         )
         
-        # Verificar quais estão concluídos na semana da meta
+        FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
+        # Verificar quais estavam concluídos DENTRO do período da meta
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
+                fase__fase__in=FASES_EXATAS,
                 processo__in=processos,
-                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
-                dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-            ).values_list('processo', flat=True)
+                dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+            ).values_list('processo_id', flat=True).distinct()
         )
         
+        is_meta_ativa = meta.semana_fim >= hoje
         processos_data = []
-        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
         concluidos_count = 0
         for processo in processos:
             dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
-            is_concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
             
+            is_concluido = processo.id in revisados_ids
+            
+            # Se a meta for da semana atual, considera a fase atual também
+            if not is_concluido and is_meta_ativa:
+                fase_raw = (processo.fase_atual or '')
+                fase_limpa = fase_raw.strip()
+                if fase_limpa in FASES_EXATAS:
+                    is_concluido = True
+
             if is_concluido:
                 concluidos_count += 1
-                
+
             processos_data.append({
                 'id': processo.id,
                 'numero_processo': processo.numero_processo,
@@ -1898,9 +1928,10 @@ def api_meta_processos(request):
                 'dias_no_gabinete': dias_gabinete,
                 'concluido': is_concluido
             })
-        
-        # Ordenar por status (concluídos primeiro) e depois por dias no gabinete
+
+        # Ordenar: concluídos primeiro, depois por dias no gabinete
         processos_data.sort(key=lambda x: (not x['concluido'], -x['dias_no_gabinete']))
+
         
         return JsonResponse({
             'processos': processos_data,
@@ -1924,11 +1955,25 @@ def exportar_metas_relatorio(request):
             metas = MetaSemanal.objects.all()
         else:
             metas = MetaSemanal.objects.filter(usuario=request.user)
-        
+
         metas = aplicar_filtros(request, metas, timezone.localdate())
         metas_com_dados = calcular_dados_metas(metas, timezone.localdate())
-        
+
         hoje = timezone.localdate()
+
+        # Normalização de tipos com erros de digitação conhecidos
+        TIPO_NORMALIZACAO = {
+            'monocrátical': 'Monocrática',
+            'monocratical': 'Monocrática',
+            'urgentissimo': 'Urgentíssimo',
+        }
+
+        # Fases válidas para exibição — evita mistura de colunas
+        FASES_VALIDAS_DISPLAY = {
+            "Elaboração", "Revisão", "Revisão Des", "Correção",
+            "Devolvido", "L. PJE", "PJE", "Processo Concluído", "Correção"
+        }
+
         for meta in metas_com_dados:
             processos = meta.processos.select_related('especie', 'tipo').annotate(
                 fase_atual=Subquery(
@@ -1937,35 +1982,48 @@ def exportar_metas_relatorio(request):
                     ).order_by('-dt_criacao').values('fase__fase')[:1]
                 )
             )
-            
+
+            FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
+            # Minutados = tiveram andamento de conclusão DENTRO do período da meta
             revisados_ids = set(
                 ProcessoAndamento.objects.filter(
+                    fase__fase__in=FASES_EXATAS,
                     processo__in=processos,
-                    fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
-                    dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-                ).values_list('processo', flat=True)
+                    dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+                ).values_list('processo_id', flat=True).distinct()
             )
-            
+
+            is_meta_ativa = meta.semana_fim >= hoje
             processos_data = []
-            fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
+
             for processo in processos:
                 dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
-                concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
                 
-                if dias_gabinete <= 30: badge_class = "bg-success"
+                concluido = processo.id in revisados_ids
+                fase_raw = (processo.fase_atual or '')
+                
+                if not concluido and is_meta_ativa:
+                    fase_limpa = fase_raw.strip()
+                    if fase_limpa in FASES_EXATAS:
+                        concluido = True
+
+                if dias_gabinete <= 30:   badge_class = "bg-success"
                 elif dias_gabinete <= 40: badge_class = "bg-primary"
                 elif dias_gabinete <= 50: badge_class = "bg-warning"
-                else: badge_class = "bg-danger"
-                
-                tipo_nome = processo.tipo.tipo if processo.tipo else ''
-                if not tipo_nome and processo.prioridade_urgente:
+                else:                     badge_class = "bg-danger"
+
+                # Sanitização do tipo
+                tipo_nome_raw = (processo.tipo.tipo if processo.tipo else '') or ''
+                tipo_nome = TIPO_NORMALIZACAO.get(tipo_nome_raw.lower().strip(), tipo_nome_raw)
+                if not tipo_nome and getattr(processo, 'prioridade_urgente', False):
                     tipo_nome = 'Urgentíssimo'
-                    
+
                 tipo_nome_lower = tipo_nome.lower()
                 if 'urgentíssimo' in tipo_nome_lower or 'urgente' in tipo_nome_lower:
                     tipo_badge = 'bg-danger'
                 elif 'prioridade' in tipo_nome_lower:
-                    tipo_badge = 'bg-warning text-dark'
+                    tipo_badge = 'bg-warning'
                 elif 'monocrática' in tipo_nome_lower:
                     tipo_badge = 'bg-primary'
                 elif tipo_nome:
@@ -1973,22 +2031,67 @@ def exportar_metas_relatorio(request):
                 else:
                     tipo_badge = ''
 
+                # Sanitização da fase — evita mistura de colunas (fase_raw já definido acima)
+                fase_exibir = fase_raw if fase_raw in FASES_VALIDAS_DISPLAY else (fase_raw or 'Não especificado')
+
+                is_urgentissimo = 'urgentíssimo' in tipo_nome_lower or 'urgente' in tipo_nome_lower
+
                 processos_data.append({
                     'numero_processo': processo.numero_processo,
                     'especie': processo.especie.especie if processo.especie else 'N/A',
-                    'fase_atual': processo.fase_atual or 'Não especificado',
+                    'fase_atual': fase_exibir,
                     'dias_gabinete': dias_gabinete,
                     'badge_class': badge_class,
                     'concluido': concluido,
-                    'status_texto': 'Concluído' if concluido else 'Pendente',
-                    'status_class': 'success' if concluido else 'warning',
+                    'status_texto': 'Minutado' if concluido else 'Pendente',
                     'tipo_nome': tipo_nome,
-                    'tipo_badge': tipo_badge
+                    'tipo_badge': tipo_badge,
+                    'is_urgentissimo': is_urgentissimo,
                 })
-            processos_data.sort(key=lambda x: (not x['concluido'], -x['dias_gabinete']))
+
+            # Pendentes primeiro (urgentíssimos no topo) → concluídos ao final
+            processos_data.sort(key=lambda x: (
+                x['concluido'],            # False (pendente) vem antes de True (minutado)
+                not x['is_urgentissimo'],  # Entre pendentes: urgentíssimos primeiro
+                -x['dias_gabinete'],       # Depois: mais antigos primeiro
+            ))
+
             meta.processos_data = processos_data
-        
-        # Caminho da Logo específica (Logo.jpg em profile_photos)
+            meta.meta_qtd_exibir = meta.meta_qtd
+
+        # ── DASHBOARD EXECUTIVO GLOBAL ─────────────────────────────────────
+        total_processos_gab = sum(m.total_processos for m in metas_com_dados)
+        total_minutados_gab = sum(m.processos_concluidos for m in metas_com_dados)
+        total_pendentes_gab = sum(m.processos_pendentes for m in metas_com_dados)
+        total_meta_qtd_gab  = sum(m.meta_qtd for m in metas_com_dados)
+
+        taxa_cumprimento = round(
+            (total_minutados_gab / total_meta_qtd_gab * 100), 1
+        ) if total_meta_qtd_gab > 0 else 0.0
+
+        urg_total = urg_minutados = 0
+        for meta in metas_com_dados:
+            for p in (meta.processos_data or []):
+                if p['is_urgentissimo']:
+                    urg_total += 1
+                    if p['concluido']:
+                        urg_minutados += 1
+
+        metas_atingidas = sum(1 for m in metas_com_dados if m.progresso >= 100)
+        metas_total = len(metas_com_dados)
+
+        dashboard_global = {
+            'total_processos': total_processos_gab,
+            'total_minutados': total_minutados_gab,
+            'total_pendentes': total_pendentes_gab,
+            'taxa_cumprimento': taxa_cumprimento,
+            'urgentissimos_total': urg_total,
+            'urgentissimos_minutados': urg_minutados,
+            'metas_atingidas': metas_atingidas,
+            'metas_total': metas_total,
+        }
+        # ───────────────────────────────────────────────────────────────────
+
         import os
         from django.conf import settings
         logo_path = os.path.join(settings.MEDIA_ROOT, 'profile_photos', 'Logo.jpg')
@@ -1996,33 +2099,34 @@ def exportar_metas_relatorio(request):
             logo_path = os.path.join(settings.MEDIA_ROOT, 'banners', 'logo2.png')
             if not os.path.exists(logo_path):
                 logo_path = None
-        
+
         context = {
             'metas_com_dados': metas_com_dados,
+            'dashboard_global': dashboard_global,
             'hoje': timezone.now(),
             'today': timezone.now(),
             'logo_path': logo_path,
         }
-        
+
         from django.template.loader import get_template
         from xhtml2pdf import pisa
         from io import BytesIO
-        
+
         template = get_template('metas_semanais_pdf.html')
         html = template.render(context)
         result = BytesIO()
-        
+
         pisa_status = pisa.CreatePDF(html, dest=result, encoding='utf-8')
-        
+
         if pisa_status.err:
             return HttpResponse('Erro ao gerar PDF', status=500)
-            
+
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         filename = f"metas_semanais_{timezone.localdate().strftime('%Y-%m-%d')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        
+
         return response
-        
+
     except Exception as e:
         return JsonResponse({'error': f'Erro ao gerar relatório: {str(e)}'}, status=500)
 
@@ -2148,21 +2252,33 @@ def ver_todos_processos_meta(request):
             )
         )
         
+        FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
+
         # Verificar quais processos foram revisados no período da meta
         revisados_ids = set(
             ProcessoAndamento.objects.filter(
+                fase__fase__in=FASES_EXATAS,
                 processo__in=processos,
-                fase__fase__in=["Revisão", "Revisão Des", "Processo Concluído"],
-                dt_criacao__range=(meta.semana_inicio, meta.semana_fim)
-            ).values_list('processo', flat=True)
+                dt_criacao__date__range=(meta.semana_inicio, meta.semana_fim)
+            ).values_list('processo_id', flat=True)
         )
         
         # Preparar dados dos processos
+        is_meta_ativa = meta.semana_fim >= hoje
         processos_data = []
-        fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]
         for processo in processos:
             dias_gabinete = (hoje - processo.antigo.date()).days if processo.antigo else 0
-            concluido = (processo.id in revisados_ids and processo.fase_atual in fases_validas) or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
+            
+            is_concluido = processo.id in revisados_ids
+            
+            # Se a meta for da semana atual, considera a fase atual também
+            if not is_concluido and is_meta_ativa:
+                fase_raw = (processo.fase_atual or '')
+                fase_limpa = fase_raw.strip()
+                if fase_limpa in FASES_EXATAS:
+                    is_concluido = True
+            
+            concluido = is_concluido or (processo.tipo and processo.tipo.tipo == "Monocrática" and processo.concluido)
             
             # Determinar cor do badge baseado nos dias
             if dias_gabinete <= 30:
