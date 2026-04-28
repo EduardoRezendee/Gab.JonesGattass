@@ -188,52 +188,45 @@
               </button>
             </div>
 
-            <!-- Botão Toggle para Prioridade (Importante) -->
-            <button type="submit" name="prioridade"
-              value="{% if request.GET.prioridade == 'sim' %}nao{% else %}sim{% endif %}" class="btn btn-sm shadow-sm"
+            <!-- Campo oculto para manter o estado do filtro de tipo -->
+            {% if request.GET.tipo %}
+            <input type="hidden" name="tipo" value="{{ request.GET.tipo }}">
+            {% endif %}
+
+            <!-- Botões Toggle para Tipos -->
+            {% for t in tipos %}
+            <button type="submit" name="tipo"
+              value="{% if request.GET.tipo == t.tipo %}{% else %}{{ t.tipo }}{% endif %}" class="btn btn-sm shadow-sm"
               style="
                       border-radius: 20px;
-                      border: 1px solid #dc3545;
-                      background-color: {% if request.GET.prioridade == 'sim' %}#dc3545{% else %}transparent{% endif %};
-                      color: {% if request.GET.prioridade == 'sim' %}white{% else %}#dc3545{% endif %};
+                      border: 1px solid 
+                        {% if t.tipo == 'Prioridade' %}#F59E0B
+                        {% elif t.tipo == 'Urgentíssimo' %}#EA580C
+                        {% elif t.tipo == 'Monocrática' %}#0dcaf0
+                        {% elif t.tipo == '2ª Correção' or t.tipo == 'Redistribuído' %}#10B981
+                        {% else %}#083464{% endif %};
+                      background-color: 
+                        {% if request.GET.tipo == t.tipo %}
+                          {% if t.tipo == 'Prioridade' %}#F59E0B
+                          {% elif t.tipo == 'Urgentíssimo' %}#EA580C
+                          {% elif t.tipo == 'Monocrática' %}#0dcaf0
+                          {% elif t.tipo == '2ª Correção' or t.tipo == 'Redistribuído' %}#10B981
+                          {% else %}#083464{% endif %}
+                        {% else %}transparent{% endif %};
+                      color: 
+                        {% if request.GET.tipo == t.tipo %}
+                          {% if t.tipo == 'Prioridade' or t.tipo == 'Monocrática' %}#000000{% else %}white{% endif %}
+                        {% else %}
+                          {% if t.tipo == 'Prioridade' %}#D97706
+                          {% elif t.tipo == 'Urgentíssimo' %}#EA580C
+                          {% elif t.tipo == 'Monocrática' %}#0891b2
+                          {% elif t.tipo == '2ª Correção' or t.tipo == 'Redistribuído' %}#059669
+                          {% else %}#083464{% endif %}
+                        {% endif %};
                     ">
-              Importante
+              {{ t.tipo }}
             </button>
-
-            <!-- Botão Toggle para Despacho -->
-            <button type="submit" name="despacho"
-              value="{% if request.GET.despacho == 'sim' %}nao{% else %}sim{% endif %}" class="btn btn-sm shadow-sm"
-              style="
-                      border-radius: 20px;
-                      border: 1px solid #17a2b8;
-                      background-color: {% if request.GET.despacho == 'sim' %}#17a2b8{% else %}transparent{% endif %};
-                      color: {% if request.GET.despacho == 'sim' %}white{% else %}#17a2b8{% endif %};
-                    ">
-              Despacho
-            </button>
-
-            <!-- Filtro para Tipo -->
-            <div class="input-group input-group-sm" style="max-width: 200px;">
-              <select name="tipo" class="form-select shadow-sm form-select-sm"
-                style="border-radius: 4px; border-color: #083464; color: #1F2937;">
-                <option value="">Tipo: Todos</option>
-                {% for t in tipos %}
-                <option value="{{ t.tipo }}" {% if request.GET.tipo == t.tipo %}selected{% endif %}>{{ t.tipo }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <!-- Botão para Aplicar Filtro -->
-            <button type="submit" name="action" value="aplicar_filtro" class="btn btn-sm shadow-sm"
-              style="background-color: #083464; color: white; border-radius: 20px;">
-              Aplicar
-            </button>
-
-            <!-- Botão "Limpar" para remover todos os filtros -->
-            <a href="{% url 'home' %}" class="btn btn-sm btn-outline-secondary shadow-sm"
-              style="border-radius: 20px; border-color: #083464;">
-              Limpar
-            </a>
+            {% endfor %}
           </form>
         </div>
 
@@ -253,12 +246,70 @@
           {% endfor %}
         </ul>
 
+        <!-- Botão: Concluir Todos em Lote (visível somente na aba L.PJE) -->
+        <div id="btnConcluirLoteWrapper" class="d-flex justify-content-end mb-3" style="display:none !important;">
+          {% for fase, processos in fases %}
+            {% if fase == 'L. PJE' and processos %}
+            <button type="button" id="btnAbrirModalLote"
+              class="btn shadow-sm d-flex align-items-center gap-2 px-4 py-2"
+              data-bs-toggle="modal" data-bs-target="#modalConcluirLote"
+              style="background: linear-gradient(135deg, #017013, #0a5e10); color: white; border: none; border-radius: 25px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(1,112,19,0.35); transition: all 0.3s ease;">
+              <i class="bi bi-check2-all" style="font-size: 1.1rem;"></i>
+              Concluir Todos em L.PJE
+              <span class="badge ms-1" style="background: rgba(255,255,255,0.25); color: white; border-radius: 12px;">{{ processos|length }}</span>
+            </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <!-- Modal de Confirmação: Concluir em Lote -->
+        <div class="modal fade" id="modalConcluirLote" tabindex="-1" aria-labelledby="modalConcluirLoteLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden;">
+              <div class="modal-header" style="background: linear-gradient(135deg, #017013, #0a5e10); color: white; border-bottom: none; padding: 1.25rem 1.5rem;">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check2-all" style="font-size: 1.6rem;"></i>
+                  <div>
+                    <h5 class="modal-title fw-bold mb-0" id="modalConcluirLoteLabel" style="font-size: 1.05rem; color: white;">Concluir todos os processos em L.PJE?</h5>
+                    <small style="opacity: 0.85; font-size: 0.8rem; color: white;">Esta ação não pode ser desfeita</small>
+                  </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body" style="background-color: #f8fafc; padding: 1.5rem;">
+                <p class="mb-2" style="color: #1F2937; font-size: 0.97rem; line-height: 1.6;">
+                  Você está prestes a <strong>concluir</strong> todos os seus processos que estão na fase <strong>L.PJE</strong>.
+                </p>
+                <div class="rounded p-3" style="background: linear-gradient(135deg, #e8fde8, #d4edda); border-left: 4px solid #017013;">
+                  <p class="mb-0" style="color: #0a5e10; font-size: 0.88rem; line-height: 1.7;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Todos os processos em <strong>L.PJE</strong> serão marcados como <strong>Processo Concluído</strong> e removidos da sua lista.
+                  </p>
+                </div>
+              </div>
+              <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f8fafc; padding: 1rem 1.5rem; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-dismiss="modal" style="border-radius: 20px; padding: 0.35rem 1rem;">
+                  Cancelar
+                </button>
+                <form method="post" action="{% url 'concluir_em_lote' %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn shadow-sm d-flex align-items-center gap-2"
+                    style="background: linear-gradient(135deg, #017013, #0a5e10); color: white; border: none; border-radius: 20px; padding: 0.35rem 1.2rem; font-weight: 600;">
+                    <i class="bi bi-check2-all"></i> Confirmar
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Conteúdo das Abas -->
         <div class="tab-content" id="faseTabContent">
           {% for fase, processos in fases %}
           <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="pane-{{ fase|slugify }}"
             role="tabpanel" aria-labelledby="tab-{{ fase|slugify }}" style="background-color: #ffffff00;">
             <div class="list-group">
+
               {% for processo in processos %}
               <div id="processo-{{ processo.pk }}"
                 class="list-group-item list-group-item-action shadow-sm rounded mb-3 p-3 position-relative"
@@ -1040,7 +1091,53 @@ function abrirIAModal(andamentoId) {
 }
 </script>
 
+<!-- Script: Mostrar botão 'Concluir em Lote' somente na aba L.PJE -->
+<script>
+(function () {
+  const wrapper = document.getElementById('btnConcluirLoteWrapper');
+  if (!wrapper) return;
+
+  const LPJE_PANE_ID = 'pane-l-pje';
+
+  function atualizarBotaoLote() {
+    const lpjePane = document.getElementById(LPJE_PANE_ID);
+    if (!lpjePane) return;
+
+    const ativo = lpjePane.classList.contains('active') && lpjePane.classList.contains('show');
+    if (ativo) {
+      wrapper.style.removeProperty('display');
+      wrapper.style.display = 'flex';
+    } else {
+      wrapper.style.display = 'none';
+    }
+  }
+
+  // Inicializa na carga
+  atualizarBotaoLote();
+
+  // Escuta mudanças de aba
+  const tabEls = document.querySelectorAll('#faseTabs button[data-bs-toggle="tab"]');
+  tabEls.forEach(function(tab) {
+    tab.addEventListener('shown.bs.tab', function () {
+      atualizarBotaoLote();
+    });
+  });
+
+  // Efeito hover no botão
+  const btn = document.getElementById('btnAbrirModalLote');
+  if (btn) {
+    btn.addEventListener('mouseenter', function() {
+      btn.style.transform = 'translateY(-2px)';
+      btn.style.boxShadow = '0 6px 18px rgba(1,112,19,0.45)';
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.style.transform = '';
+      btn.style.boxShadow = '0 4px 12px rgba(1,112,19,0.35)';
+    });
+  }
+})();
+</script>
 
 
 
-
+

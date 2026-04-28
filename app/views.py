@@ -673,7 +673,7 @@ def home(request):
         'active_tab': active_tab,
         'temas': Tema.objects.all(),
         'today': hoje,
-        'tipos': Tipo.objects.all(),
+        'tipos': sorted(Tipo.objects.all(), key=lambda t: 1 if t.tipo == 'Monocrática' else 0),
         'revisoes_hoje': revisoes_hoje,
         'concluidos_revisao_hoje': concluidos_revisao_hoje,
         'total_pendentes': total_pendentes,
@@ -1112,8 +1112,9 @@ def get_revisoes_hoje_data(request):
     data_inicio = local_data_inicio.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
     data_fim = local_data_fim.astimezone(dt_timezone.utc)  # Usar dt_timezone.utc
 
+    # Conta processos enviados para fase "Revisão" hoje (momento em que o assessor finaliza o trabalho)
     enviados_por_assessor = ProcessoAndamento.objects.filter(
-        fase__fase="Revisão Des",
+        fase__fase="Revisão",
         dt_criacao__range=(data_inicio, data_fim),
         processo__usuario__isnull=False
     ).values(
@@ -1152,8 +1153,21 @@ def get_revisoes_hoje_data(request):
     response_data = {
         'labels': labels,
         'datasets': [
-            {'label': f'Enviados para Revisão Des ({data.strftime("%d/%m/%Y")})', 'data': data_enviados, 'photo_urls': photo_urls},
-            {'label': 'Meta', 'data': data_meta}
+            {
+                'label': f'Enviados para Revisão ({data.strftime("%d/%m/%Y")})',
+                'data': data_enviados,
+                'photo_urls': photo_urls,
+                'backgroundColor': '#89CFF0',  # azul claro
+                'borderColor': '#5B9BD5',
+                'borderWidth': 1,
+            },
+            {
+                'label': 'Meta',
+                'data': data_meta,
+                'backgroundColor': '#FFB6C1',  # rosa claro
+                'borderColor': '#FF69B4',
+                'borderWidth': 1,
+            }
         ]
     }
     return JsonResponse(response_data)

@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.utils.timezone import make_aware
 import openpyxl
 from django.http import HttpResponse
@@ -1167,6 +1168,64 @@ class AndamentoConcluirProcessoView(LoginRequiredMixin, UpdateView):
 
         return redirect(url)
 
+
+@login_required
+@require_POST
+def concluir_em_lote(request):
+    """
+    Conclui em lote todos os processos do usuário logado que estão na fase 'L. PJE'.
+    Reutiliza a mesma lógica de AndamentoConcluirProcessoView.
+    """
+    from django.utils.timezone import now as tz_now
+
+    # Busca todos os andamentos ativos na fase L. PJE do usuário logado
+    andamentos_lpje = ProcessoAndamento.objects.filter(
+        usuario=request.user,
+        fase__fase='L. PJE',
+        status__status__in=['Não iniciado', 'Em andamento'],
+        processo__concluido=False,
+    ).select_related('processo', 'fase', 'status')
+
+    status_concluido = Status.objects.get(status='Concluído')
+    fase_concluido, _ = Fase.objects.get_or_create(fase='Processo Concluído')
+
+    total = 0
+    for andamento in andamentos_lpje:
+        # Finaliza o andamento atual
+        andamento.dt_conclusao = tz_now()
+        andamento.status = status_concluido
+        andamento.save()
+
+        # Marca o processo como concluído
+        processo = andamento.processo
+        processo.concluido = True
+        processo.dt_atualizacao = tz_now()
+        processo.dt_conclusao = tz_now()
+        processo.save()
+
+        # Cria andamento de "Processo Concluído"
+        ProcessoAndamento.objects.create(
+            processo=processo,
+            andamento='Processo concluído',
+            fase=fase_concluido,
+            usuario=request.user,
+            status=status_concluido,
+            dt_inicio=tz_now(),
+            dt_conclusao=tz_now(),
+            link_doc=andamento.link_doc,
+        )
+
+        # Remove do "Meu Dia"
+        TarefaDoDia.objects.filter(usuario=request.user, processo=processo).delete()
+
+        total += 1
+
+    if total > 0:
+        messages.success(request, f'{total} processo{"s" if total > 1 else ""} concluído{"s" if total > 1 else ""} com sucesso!')
+    else:
+        messages.warning(request, 'Nenhum processo em L.PJE encontrado para concluir.')
+
+    return redirect('home')
 
 
 def process_metrics_view(request):
