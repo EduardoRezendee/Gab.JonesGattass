@@ -40,12 +40,24 @@
           </a>
       </li>
       {% endif %}
+
+      {% if user.profile.funcao == "Chefe de Gabinete" or user.profile.funcao == "Desembargador" %}
+      <!-- Gestão de Férias e Plantões visível somente para chefia -->
+      <li class="nav-item">
+          <a href="{% url 'gestao_ferias_plantoes' %}" class="nav-link {% if '/gestao/ferias-plantoes/' in request.path %}active{% endif %} position-relative">
+              <i class="bi bi-calendar2-week fs-4"></i>
+              <span class="nav-text">Férias e Plantões</span>
+          </a>
+      </li>
+      {% endif %}
+    
       <li class="nav-item">
 
           <a href="{% url 'process_metrics' %}" class="nav-link">
               <i class="bi bi-bar-chart fs-4"></i> Painel de Processos
           </a>
-      </li>  
+      </li> 
+
       <li class="nav-item">
         <a href="{% url 'home2' %}" class="nav-link {% if request.path == '/home2/' %}active{% endif %}">
             <i class="bi bi-lightning-charge fs-4"></i> <span class="nav-text">Prompts GPT</span>
@@ -57,6 +69,7 @@
             <i class="bi bi-exclamation-triangle fs-4"></i> <span class="nav-text">Notebook LM</span>
         </a>
       </li>
+
 
     <!-- Perfil e Configurações -->
     <li class="nav-item mt-auto">

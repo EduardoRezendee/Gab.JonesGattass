@@ -68,4 +68,19 @@ urlpatterns = [
     path('avisos/<int:pk>/', views.aviso_detalhe, name='aviso_detalhe'),
     path('avisos/salvar/', views.aviso_salvar, name='aviso_salvar'),
     path('avisos/<int:pk>/deletar/', views.aviso_deletar, name='aviso_deletar'),
+
+    # ── Gestão de Férias e Plantões ────────────────────────────────
+    path('gestao/ferias-plantoes/', views.gestao_ferias_plantoes, name='gestao_ferias_plantoes'),
+    path('gestao/ferias/json/', views.ferias_json, name='ferias_json'),
+    path('gestao/plantoes/json/', views.plantoes_json, name='plantoes_json'),
+    path('gestao/ferias/criar/', views.ferias_criar, name='ferias_criar'),
+    path('gestao/ferias/<int:pk>/editar/', views.ferias_editar, name='ferias_editar'),
+    path('gestao/ferias/<int:pk>/deletar/', views.ferias_deletar, name='ferias_deletar'),
+    path('gestao/plantoes/criar/', views.plantao_criar, name='plantao_criar'),
+    path('gestao/plantoes/<int:pk>/editar/', views.plantao_editar, name='plantao_editar'),
+    path('gestao/plantoes/<int:pk>/deletar/', views.plantao_deletar, name='plantao_deletar'),
+    path('gestao/plantoes/<int:pk>/ciencia/', views.plantao_confirmar_ciencia, name='plantao_confirmar_ciencia'),
+    path('gestao/ferias/<int:pk>/ciencia/', views.ferias_confirmar_ciencia, name='ferias_confirmar_ciencia'),
+    path('gestao/notificacoes/json/', views.notificacoes_json, name='notificacoes_json'),
+    path('gestao/notificacoes/<int:pk>/lida/', views.notificacao_marcar_lida, name='notificacao_marcar_lida'),
 ]

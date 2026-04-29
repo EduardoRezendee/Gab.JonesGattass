@@ -308,4 +308,187 @@ class Compromisso(models.Model):
 
     def __str__(self):
         return f"{self.titulo} — {self.data:%d/%m/%Y} {self.hora_inicio:%H:%M}"
+
+
+# ══════════════════════════════════════════════════════════════════
+#  MÓDULO: GESTÃO DE FÉRIAS E PLANTÕES
+# ══════════════════════════════════════════════════════════════════
+
+class NotificacaoInterna(models.Model):
+    TIPO_CHOICES = [
+        ('plantao', 'Plantão'),
+        ('ferias', 'Férias'),
+        ('geral', 'Geral'),
+    ]
+    destinatario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='notificacoes_internas'
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='geral')
+    titulo = models.CharField(max_length=200)
+    mensagem = models.TextField()
+    lida = models.BooleanField(default=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    link = models.CharField(max_length=300, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+        verbose_name = 'Notificação Interna'
+        verbose_name_plural = 'Notificações Internas'
+
+    def __str__(self):
+        return f"[{self.get_tipo_display()}] {self.titulo} → {self.destinatario.get_full_name()}"
+
+
+class Ferias(models.Model):
+    STATUS_CHOICES = [
+        ('pendente', 'Pendente'),
+        ('aprovado', 'Aprovado'),
+        ('em_andamento', 'Em Andamento'),
+        ('cancelado', 'Cancelado'),
+    ]
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='ferias'
+    )
+    data_inicio = models.DateField(verbose_name='Data de Início')
+    data_fim = models.DateField(verbose_name='Data de Fim')
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='pendente', verbose_name='Status'
+    )
+    observacoes = models.TextField(blank=True, verbose_name='Observações')
+    criado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ferias_criadas'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Férias'
+        verbose_name_plural = 'Férias'
+        ordering = ['data_inicio']
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        # 1. Data início deve ser anterior à data fim
+        if self.data_inicio and self.data_fim:
+            if self.data_inicio > self.data_fim:
+                raise ValidationError({'data_fim': 'A data de fim deve ser posterior à data de início.'})
+
+            # 2. Verificar sobreposição de férias para o mesmo assessor
+            qs_proprio = Ferias.objects.filter(
+                usuario=self.usuario,
+                status__in=['pendente', 'aprovado', 'em_andamento'],
+                data_inicio__lte=self.data_fim,
+                data_fim__gte=self.data_inicio,
+            )
+            if self.pk:
+                qs_proprio = qs_proprio.exclude(pk=self.pk)
+            if qs_proprio.exists():
+                raise ValidationError(
+                    'Este assessor já possui férias cadastradas que se sobrepõem ao intervalo informado.'
+                )
+
+            # 3. Regra global: apenas 1 assessor em férias por vez.
+            #    Verificar se QUALQUER outro assessor tem férias ativas no mesmo período.
+            qs_global = Ferias.objects.filter(
+                status__in=['pendente', 'aprovado', 'em_andamento'],
+                data_inicio__lte=self.data_fim,
+                data_fim__gte=self.data_inicio,
+            ).exclude(usuario=self.usuario)
+            if self.pk:
+                qs_global = qs_global.exclude(pk=self.pk)
+            if qs_global.exists():
+                conflito = qs_global.select_related('usuario').first()
+                raise ValidationError(
+                    f'Conflito de período: {conflito.usuario.get_full_name()} já está com férias de '
+                    f'{conflito.data_inicio.strftime("%d/%m/%Y")} a '
+                    f'{conflito.data_fim.strftime("%d/%m/%Y")}. '
+                    f'Apenas um assessor pode estar de férias por vez.'
+                )
+
+    def save(self, *args, **kwargs):
+        skip = kwargs.pop('skip_validation', False)
+        if not skip:
+            self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Férias de {self.usuario.get_full_name()} ({self.data_inicio} → {self.data_fim})"
+
+
+class Plantao(models.Model):
+    STATUS_CHOICES = [
+        ('pendente', 'Pendente'),
+        ('confirmado', 'Confirmado'),
+        ('em_andamento', 'Em Andamento'),
+        ('cancelado', 'Cancelado'),
+    ]
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='plantoes'
+    )
+    data_inicio = models.DateField(verbose_name='Data de Início')
+    data_fim = models.DateField(verbose_name='Data de Fim')
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='pendente', verbose_name='Status'
+    )
+    observacoes = models.TextField(blank=True, verbose_name='Observações')
+    criado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='plantoes_criados'
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Plantão'
+        verbose_name_plural = 'Plantões'
+        ordering = ['data_inicio']
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        # 1. Data início deve ser anterior à data fim
+        if self.data_inicio and self.data_fim:
+            if self.data_inicio > self.data_fim:
+                raise ValidationError({'data_fim': 'A data de fim deve ser posterior à data de início.'})
+
+            # 2. Assessor não pode estar em férias aprovadas no período do plantão
+            ferias_conflitantes = Ferias.objects.filter(
+                usuario=self.usuario,
+                status__in=['aprovado', 'em_andamento'],
+                data_inicio__lte=self.data_fim,
+                data_fim__gte=self.data_inicio,
+            )
+            if ferias_conflitantes.exists():
+                ferias = ferias_conflitantes.first()
+                raise ValidationError(
+                    f'Conflito: {self.usuario.get_full_name()} está em férias aprovadas '
+                    f'de {ferias.data_inicio:%d/%m/%Y} a {ferias.data_fim:%d/%m/%Y} '
+                    f'neste período.'
+                )
+
+            # 3. Verificar sobreposição de plantões para o mesmo usuário
+            qs = Plantao.objects.filter(
+                usuario=self.usuario,
+                status__in=['pendente', 'confirmado', 'em_andamento'],
+                data_inicio__lte=self.data_fim,
+                data_fim__gte=self.data_inicio,
+            )
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError(
+                    'Já existe um plantão cadastrado para este assessor '
+                    'que se sobrepõe ao intervalo informado.'
+                )
+
+    def save(self, *args, **kwargs):
+        skip = kwargs.pop('skip_validation', False)
+        if not skip:
+            self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Plantão de {self.usuario.get_full_name()} ({self.data_inicio} → {self.data_fim})"
 

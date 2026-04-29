@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Resultado, Tipo, Camara, Fase, Especie, Status, Processo, ProcessoAndamento, HistoricoAndamento, Tema
+from .models import (
+    Resultado, Tipo, Camara, Fase, Especie, Status,
+    Processo, ProcessoAndamento, HistoricoAndamento, Tema,
+    Ferias, Plantao, NotificacaoInterna,
+)
 
 
 
@@ -72,3 +76,33 @@ class HistoricoAndamentoAdmin(admin.ModelAdmin):
     list_filter = ('fase_anterior', 'fase_atual', 'usuario')
     search_fields = ('andamento__processo__numero_processo',)
 
+
+# ──────────────────────────────────────────────────────────────────
+#  MÓDULO: GESTÃO DE FÉRIAS E PLANTÕES
+# ──────────────────────────────────────────────────────────────────
+
+@admin.register(Ferias)
+class FeriasAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'data_inicio', 'data_fim', 'status', 'criado_por', 'criado_em')
+    list_filter = ('status',)
+    search_fields = ('usuario__first_name', 'usuario__last_name')
+    date_hierarchy = 'data_inicio'
+    raw_id_fields = ('usuario', 'criado_por')
+
+
+@admin.register(Plantao)
+class PlantaoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'data_inicio', 'data_fim', 'status', 'criado_por', 'criado_em')
+    list_filter = ('status',)
+    search_fields = ('usuario__first_name', 'usuario__last_name')
+    date_hierarchy = 'data_inicio'
+    raw_id_fields = ('usuario', 'criado_por')
+
+
+@admin.register(NotificacaoInterna)
+class NotificacaoInternaAdmin(admin.ModelAdmin):
+    list_display = ('destinatario', 'tipo', 'titulo', 'lida', 'criado_em')
+    list_filter = ('tipo', 'lida')
+    search_fields = ('destinatario__first_name', 'destinatario__last_name', 'titulo')
+    date_hierarchy = 'criado_em'
+    raw_id_fields = ('destinatario',)

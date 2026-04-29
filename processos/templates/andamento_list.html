@@ -134,7 +134,7 @@
 
     <!-- Kanban de Fases -->
     <div class="row g-4">
-        {% with fases_orderadas="Elaboração|Revisão|Revisão Des|Devolvido|L. PJE" %}
+        {% with fases_orderadas="Elaboração|Revisão|Correção|Revisão Des|Devolvido|L. PJE" %}
         {% for fase_nome in fases_orderadas|split:"|" %}
         {% for item in andamentos_por_fase %}
         {% if item.fase.fase == fase_nome and item.fase.fase != "Processo Concluído" %}
@@ -269,31 +269,42 @@
                                                         {% endif %}
 
                                                         {% if andamento.fase.fase == "Revisão" %}
-                                                        <!--
                                                         <li>
-                                                            <form method="post" action="">
+                                                            <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="Correção">
+                                                                <input type="hidden" name="origem" value="andamento_list">
                                                                 <button class="dropdown-item" type="submit">Enviar para Correção</button>
                                                             </form>
                                                         </li>
-                                                        -->
-
                                                         <li>
-                                                            <form method="post"
-                                                                action="{% url 'andamento_enviar' andamento.pk %}">
+                                                            <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
                                                                 {% csrf_token %}
-                                                                <input type="hidden" name="nova_fase"
-                                                                    value="Revisão Des">
-                                                                <input type="hidden" name="origem"
-                                                                    value="andamento_list">
-                                                                <button class="dropdown-item" type="submit">Enviar para
-                                                                    Revisão Des</button>
+                                                                <input type="hidden" name="nova_fase" value="Revisão Des">
+                                                                <input type="hidden" name="origem" value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
                                                             </form>
                                                         </li>
                                                         {% endif %}
 
-                                                        <!--
-                                                        se precisar habilitar Correção no futuro, descomentar abaixo
-                                                        -->
+                                                        {% if andamento.fase.fase == "Correção" %}
+                                                        <!--<li>
+                                                            <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="Revisão">
+                                                                <input type="hidden" name="origem" value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para Revisão</button>
+                                                            </form>
+                                                        </li>-->
+                                                        <li>
+                                                            <form method="post" action="{% url 'andamento_enviar' andamento.pk %}">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="nova_fase" value="Revisão Des">
+                                                                <input type="hidden" name="origem" value="andamento_list">
+                                                                <button class="dropdown-item" type="submit">Enviar para Revisão Des</button>
+                                                            </form>
+                                                        </li>
+                                                        {% endif %}
 
 
                                                         {% if andamento.fase.fase == "Revisão Des" %}

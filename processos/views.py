@@ -3273,3 +3273,340 @@ def analisar_minuta_ia(request, processo_id):
             return JsonResponse({'status': 'error', 'message': f'Erro na IA: {str(e)}'}, status=500)
     
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
+
+
+# ══════════════════════════════════════════════════════════════════
+#  MÓDULO: GESTÃO DE FÉRIAS E PLANTÕES
+# ══════════════════════════════════════════════════════════════════
+
+from .models import Ferias, Plantao, NotificacaoInterna
+import json
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+
+def _is_chefe_gabinete(user):
+    """Verifica se o usuário tem perfil de Chefe de Gabinete."""
+    try:
+        return user.profile.funcao == 'Chefe de Gabinete'
+    except Exception:
+        return user.is_staff
+
+
+# ── View principal ────────────────────────────────────────────────
+
+@login_required
+def gestao_ferias_plantoes(request):
+    """Renderiza a página do Gráfico de Gantt de Férias e Plantões."""
+    usuarios = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    is_chefe = _is_chefe_gabinete(request.user)
+    return render(request, 'processos/gestao_ferias_plantoes.html', {
+        'usuarios': usuarios,
+        'is_chefe': is_chefe,
+    })
+
+
+# ── APIs JSON para o Gantt ────────────────────────────────────────
+
+@login_required
+def ferias_json(request):
+    """Retorna férias em formato JSON para vis-timeline."""
+    hoje = timezone.localdate()
+    
+    # Atualiza automaticamente para 'em_andamento' caso a data tenha chegado
+    Ferias.objects.filter(
+        status='aprovado',
+        data_inicio__lte=hoje,
+        data_fim__gte=hoje
+    ).update(status='em_andamento')
+
+    ferias_qs = Ferias.objects.all().select_related('usuario')
+
+    COR_STATUS = {
+        'pendente':    {'background': '#f59e0b', 'border': '#d97706'},
+        'aprovado':    {'background': '#10b981', 'border': '#059669'},
+        'em_andamento':{'background': '#3b82f6', 'border': '#2563eb'},
+        'cancelado':   {'background': '#9ca3af', 'border': '#6b7280'},
+    }
+
+    items = []
+    groups = {}
+    for f in ferias_qs:
+        uid = f.usuario_id
+        if uid not in groups:
+            groups[uid] = {
+                'id': f'u{uid}',
+                'content': f.usuario.get_full_name() or f.usuario.username,
+            }
+        cor = COR_STATUS.get(f.status, COR_STATUS['pendente'])
+        data_label = f'{f.data_inicio.strftime("%d/%m/%Y")} – {f.data_fim.strftime("%d/%m/%Y")}'
+        items.append({
+            'id': f'ferias-{f.pk}',
+            'group': f'u{uid}',
+            'content': f'<span title="{f.get_status_display()}">🏖 {data_label}</span>',
+            'start': f.data_inicio.isoformat(),
+            'end': f.data_fim.isoformat(),
+            'style': f'background-color:{cor["background"]};border-color:{cor["border"]};color:#fff;border-radius:4px;font-size:0.8rem;padding:2px 6px;',
+            'type': 'range',
+            'pk': f.pk,
+            'status': f.status,
+            'status_label': f.get_status_display(),
+            'observacoes': f.observacoes,
+            'usuario_id': uid,
+            'usuario_nome': f.usuario.get_full_name(),
+            'data_label': data_label,
+        })
+
+    return JsonResponse({'groups': list(groups.values()), 'items': items})
+
+
+@login_required
+def plantoes_json(request):
+    """Retorna plantões em formato JSON para vis-timeline."""
+    hoje = timezone.localdate()
+    
+    # Atualiza automaticamente para 'em_andamento' caso a data tenha chegado
+    Plantao.objects.filter(
+        status='confirmado',
+        data_inicio__lte=hoje,
+        data_fim__gte=hoje
+    ).update(status='em_andamento')
+
+    plantoes_qs = Plantao.objects.all().select_related('usuario')
+
+    COR_STATUS = {
+        'pendente':    {'background': '#f59e0b', 'border': '#d97706'},
+        'confirmado':  {'background': '#10b981', 'border': '#059669'},
+        'em_andamento':{'background': '#3b82f6', 'border': '#2563eb'},
+        'cancelado':   {'background': '#9ca3af', 'border': '#6b7280'},
+    }
+
+    items = []
+    groups = {}
+    meu_id = request.user.pk
+
+    for p in plantoes_qs:
+        uid = p.usuario_id
+        if uid not in groups:
+            groups[uid] = {
+                'id': f'u{uid}',
+                'content': p.usuario.get_full_name() or p.usuario.username,
+            }
+        cor = COR_STATUS.get(p.status, COR_STATUS['pendente'])
+        pode_confirmar = (uid == meu_id and p.status == 'pendente')
+        data_label = f'{p.data_inicio.strftime("%d/%m/%Y")} – {p.data_fim.strftime("%d/%m/%Y")}'
+        items.append({
+            'id': f'plantao-{p.pk}',
+            'group': f'u{uid}',
+            'content': f'<span title="{p.get_status_display()}">⚖️ {data_label}</span>',
+            'start': p.data_inicio.isoformat(),
+            'end': p.data_fim.isoformat(),
+            'style': f'background-color:{cor["background"]};border-color:{cor["border"]};color:#fff;border-radius:4px;font-size:0.8rem;padding:2px 6px;',
+            'type': 'range',
+            'pk': p.pk,
+            'status': p.status,
+            'status_label': p.get_status_display(),
+            'observacoes': p.observacoes,
+            'usuario_id': uid,
+            'usuario_nome': p.usuario.get_full_name(),
+            'data_label': data_label,
+            'pode_confirmar': pode_confirmar,
+        })
+
+    return JsonResponse({'groups': list(groups.values()), 'items': items})
+
+
+# ── CRUD Férias ───────────────────────────────────────────────────
+
+@login_required
+@require_http_methods(["POST"])
+def ferias_criar(request):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    try:
+        data = json.loads(request.body)
+        usuario = get_object_or_404(User, pk=data['usuario_id'])
+        ferias = Ferias(
+            usuario=usuario,
+            data_inicio=data['data_inicio'],
+            data_fim=data['data_fim'],
+            status=data.get('status', 'pendente'),
+            observacoes=data.get('observacoes', ''),
+            criado_por=request.user,
+        )
+        ferias.full_clean()
+        ferias.save(skip_validation=True)
+        return JsonResponse({'success': True, 'message': 'Férias registradas com sucesso!', 'pk': ferias.pk})
+    except DjangoValidationError as e:
+        erros = e.message_dict if hasattr(e, 'message_dict') else {'erro': e.messages}
+        return JsonResponse({'success': False, 'message': erros}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def ferias_editar(request, pk):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    ferias = get_object_or_404(Ferias, pk=pk)
+    try:
+        data = json.loads(request.body)
+        ferias.data_inicio = data.get('data_inicio', ferias.data_inicio)
+        ferias.data_fim = data.get('data_fim', ferias.data_fim)
+        ferias.status = data.get('status', ferias.status)
+        ferias.observacoes = data.get('observacoes', ferias.observacoes)
+        ferias.full_clean()
+        ferias.save(skip_validation=True)
+        return JsonResponse({'success': True, 'message': 'Férias atualizadas com sucesso!'})
+    except DjangoValidationError as e:
+        erros = e.message_dict if hasattr(e, 'message_dict') else {'erro': e.messages}
+        return JsonResponse({'success': False, 'message': erros}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def ferias_deletar(request, pk):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    ferias = get_object_or_404(Ferias, pk=pk)
+    ferias.delete()
+    return JsonResponse({'success': True, 'message': 'Férias excluídas.'})
+
+
+# ── CRUD Plantão ──────────────────────────────────────────────────
+
+@login_required
+@require_http_methods(["POST"])
+def plantao_criar(request):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    try:
+        data = json.loads(request.body)
+        usuario = get_object_or_404(User, pk=data['usuario_id'])
+        plantao = Plantao(
+            usuario=usuario,
+            data_inicio=data['data_inicio'],
+            data_fim=data['data_fim'],
+            status=data.get('status', 'pendente'),
+            observacoes=data.get('observacoes', ''),
+            criado_por=request.user,
+        )
+        plantao.full_clean()
+        plantao.save(skip_validation=True)
+        return JsonResponse({'success': True, 'message': 'Plantão escalado com sucesso!', 'pk': plantao.pk})
+    except DjangoValidationError as e:
+        erros = e.message_dict if hasattr(e, 'message_dict') else {'erro': e.messages}
+        return JsonResponse({'success': False, 'message': erros}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def plantao_editar(request, pk):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    plantao = get_object_or_404(Plantao, pk=pk)
+    try:
+        data = json.loads(request.body)
+        plantao.data_inicio = data.get('data_inicio', plantao.data_inicio)
+        plantao.data_fim = data.get('data_fim', plantao.data_fim)
+        plantao.status = data.get('status', plantao.status)
+        plantao.observacoes = data.get('observacoes', plantao.observacoes)
+        plantao.full_clean()
+        plantao.save(skip_validation=True)
+        return JsonResponse({'success': True, 'message': 'Plantão atualizado com sucesso!'})
+    except DjangoValidationError as e:
+        erros = e.message_dict if hasattr(e, 'message_dict') else {'erro': e.messages}
+        return JsonResponse({'success': False, 'message': erros}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def plantao_deletar(request, pk):
+    if not _is_chefe_gabinete(request.user):
+        return JsonResponse({'success': False, 'message': 'Acesso restrito ao Chefe de Gabinete.'}, status=403)
+    plantao = get_object_or_404(Plantao, pk=pk)
+    plantao.delete()
+    return JsonResponse({'success': True, 'message': 'Plantão excluído.'})
+
+
+# ── Confirmação de Ciência (assessor) ────────────────────────────
+
+@login_required
+@require_http_methods(["POST"])
+def plantao_confirmar_ciencia(request, pk):
+    """O próprio assessor confirma ciência do plantão. Status: pendente → confirmado."""
+    plantao = get_object_or_404(Plantao, pk=pk)
+
+    if plantao.usuario != request.user:
+        return JsonResponse(
+            {'success': False, 'message': 'Você só pode confirmar ciência dos seus próprios plantões.'},
+            status=403
+        )
+    if plantao.status != 'pendente':
+        return JsonResponse(
+            {'success': False, 'message': f'Este plantão já está com status "{plantao.get_status_display()}".'},
+            status=400
+        )
+
+    Plantao.objects.filter(pk=pk).update(status='confirmado')
+    NotificacaoInterna.objects.filter(
+        destinatario=request.user, tipo='plantao', lida=False, link='/gestao/ferias-plantoes/',
+    ).update(lida=True)
+    return JsonResponse({'success': True, 'message': 'Ciência confirmada! Status atualizado para Confirmado.'})
+
+
+@login_required
+@require_http_methods(["POST"])
+def ferias_confirmar_ciencia(request, pk):
+    """O próprio assessor confirma ciência das suas férias. Status: pendente → aprovado."""
+    ferias = get_object_or_404(Ferias, pk=pk)
+
+    if ferias.usuario != request.user:
+        return JsonResponse(
+            {'success': False, 'message': 'Você só pode confirmar ciência das suas próprias férias.'},
+            status=403
+        )
+    if ferias.status not in ('pendente', 'em_andamento'):
+        return JsonResponse(
+            {'success': False, 'message': f'Estas férias já estão com status "{ferias.get_status_display()}".'},
+            status=400
+        )
+
+    Ferias.objects.filter(pk=pk).update(status='aprovado')
+    NotificacaoInterna.objects.filter(
+        destinatario=request.user, tipo='ferias', lida=False, link='/gestao/ferias-plantoes/',
+    ).update(lida=True)
+    return JsonResponse({'success': True, 'message': 'Ciência das férias confirmada! Status: Aprovado.'})
+
+
+# ── Notificações ──────────────────────────────────────────────────
+
+@login_required
+def notificacoes_json(request):
+    """Retorna notificações não lidas do usuário atual (para badge/polling)."""
+    notifs = NotificacaoInterna.objects.filter(
+        destinatario=request.user, lida=False
+    ).values('id', 'tipo', 'titulo', 'mensagem', 'link', 'criado_em')
+
+    resultado = []
+    for n in notifs:
+        n['criado_em'] = n['criado_em'].strftime('%d/%m/%Y %H:%M')
+        resultado.append(n)
+
+    return JsonResponse({'count': len(resultado), 'notificacoes': resultado})
+
+
+@login_required
+@require_http_methods(["POST"])
+def notificacao_marcar_lida(request, pk):
+    """Marca uma notificação como lida."""
+    notif = get_object_or_404(NotificacaoInterna, pk=pk, destinatario=request.user)
+    notif.lida = True
+    notif.save(update_fields=['lida'])
+    return JsonResponse({'success': True})
