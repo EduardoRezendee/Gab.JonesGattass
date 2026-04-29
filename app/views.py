@@ -14,7 +14,7 @@ from django.http import JsonResponse
 from django.db.models import Count
 from datetime import datetime, timedelta, timezone as dt_timezone
 from processos.models import ProcessoAndamento, User
-from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value, Max, OuterRef, Subquery
+from django.db.models import F, ExpressionWrapper, DateField, DurationField, IntegerField, CharField, Value, Max, OuterRef, Subquery, Min
 from django.db.models.functions import Cast
 from collections import defaultdict
 from processos.models import ProcessoAndamento
@@ -751,21 +751,7 @@ def gerar_relatorio_consolidado(request):
         total_pendentes_exibido = em_elaboracao + em_revisao + em_revisao_des + em_devolvido + em_l_pje
         
         FASES_EXATAS = ["Revisão", "Revisão Des", "L. PJE", "L.PJE", "Processo Concluído"]
-        # Fases que definem "minutado fora da meta": apenas processos enviados para Revisão
-        # (não inclui L.PJE / Processo Concluído, que são etapas posteriores)
-        FASE_REVISAO = "Revisão"
 
-        # Concluídos no período = processos que passaram para fase de conclusão no período
-        # (mantido para referência histórica e MoM)
-        concluidos_periodo_ids = set(
-            ProcessoAndamento.objects.filter(
-                processo__usuario=assessor,
-                fase__fase__in=FASES_EXATAS,
-                dt_criacao__range=(data_inicio, data_fim)
-            ).values_list('processo_id', flat=True).distinct()
-        )
-        concluidos_periodo = len(concluidos_periodo_ids)
-        
         # Total Histórico
         total_historico = Processo.objects.filter(usuario=assessor, concluido=True).count()
         
@@ -777,40 +763,36 @@ def gerar_relatorio_consolidado(request):
         )
         
         total_meta_qtd = 0
-        total_processos_na_meta = 0
-        concluidos_na_meta = 0
         ids_processos_nas_metas = set()
 
         for meta in metas_periodo:
             total_meta_qtd += meta.meta_qtd
-            procs_meta = meta.processos.all()
-            ids_processos_nas_metas.update(procs_meta.values_list('id', flat=True))
-            
-            # Concluídos desta meta = exata mesma regra usada na dashboard (dentro da semana da meta, e fases exatas)
-            concluidos_nesta_meta_ids = set(
-                ProcessoAndamento.objects.filter(
-                    fase__fase__in=FASES_EXATAS,
-                    processo__in=procs_meta,
-                    dt_criacao__range=(data_inicio, data_fim)
-                ).values_list('processo_id', flat=True).distinct()
-            )
-            concluidos_na_meta += len(concluidos_nesta_meta_ids)
+            ids_processos_nas_metas.update(meta.processos.values_list('id', flat=True))
 
         total_processos_na_meta = len(ids_processos_nas_metas)
 
-        # Minutados Extras (Fora da Meta) = processos que passaram para fase "Revisão"
-        # no período estipulado, mas NÃO estão vinculados a nenhuma meta do assessor.
-        # Exclui processos em fases de conclusão (L.PJE, Processo Concluído) — apenas Revisão conta.
-        concluidos_fora_meta = ProcessoAndamento.objects.filter(
+        # 1. Lógica First-Touch: Descobrimos a data da PRIMEIRA VEZ que cada processo entrou em fase de conclusão
+        primeiros_andamentos = ProcessoAndamento.objects.filter(
             processo__usuario=assessor,
-            fase__fase=FASE_REVISAO,
-            dt_criacao__range=(data_inicio, data_fim)
-        ).exclude(
-            processo_id__in=ids_processos_nas_metas
-        ).values('processo_id').distinct().count()
+            fase__fase__in=FASES_EXATAS
+        ).values('processo_id').annotate(
+            data_primeiro_minutado=Min('dt_criacao')
+        )
 
-        # Total de Minutados = minutados dentro da meta + minutados fora da meta
-        total_minutados_periodo = concluidos_na_meta + concluidos_fora_meta
+        # 2. Filtramos apenas os processos cuja "primeira vez" caiu dentro do período do relatório
+        ids_minutados_no_periodo = primeiros_andamentos.filter(
+            data_primeiro_minutado__range=(data_inicio, data_fim)
+        ).values_list('processo_id', flat=True)
+
+        minutados_set = set(ids_minutados_no_periodo)
+
+        # 3. Separação entre Meta e Extra
+        concluidos_na_meta = len(minutados_set.intersection(ids_processos_nas_metas))
+        concluidos_fora_meta = len(minutados_set) - concluidos_na_meta
+
+        # Total de Minutados no período (A soma perfeita: Dias Únicos == Período)
+        total_minutados_periodo = len(minutados_set)
+        concluidos_periodo = total_minutados_periodo
         
         # --- NOVOS KPIs ---
         # 1. Percentual da Meta
@@ -826,11 +808,9 @@ def gerar_relatorio_consolidado(request):
         data_inicio_anterior = data_inicio - timedelta(days=duracao_dias)
         data_fim_anterior = data_fim - timedelta(days=duracao_dias)
         
-        concluidos_periodo_anterior = ProcessoAndamento.objects.filter(
-            processo__usuario=assessor,
-            fase__fase__in=FASES_EXATAS,
-            dt_criacao__range=(data_inicio_anterior, data_fim_anterior)
-        ).values('processo_id').distinct().count()
+        concluidos_periodo_anterior = primeiros_andamentos.filter(
+            data_primeiro_minutado__range=(data_inicio_anterior, data_fim_anterior)
+        ).count()
         
         if concluidos_periodo_anterior > 0:
             variacao_mom = round(((concluidos_periodo - concluidos_periodo_anterior) / concluidos_periodo_anterior) * 100, 1)
