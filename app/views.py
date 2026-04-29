@@ -759,7 +759,7 @@ def gerar_relatorio_consolidado(request):
         # (mantido para referência histórica e MoM)
         concluidos_periodo_ids = set(
             ProcessoAndamento.objects.filter(
-                usuario=assessor,
+                processo__usuario=assessor,
                 fase__fase__in=FASES_EXATAS,
                 dt_criacao__range=(data_inicio, data_fim)
             ).values_list('processo_id', flat=True).distinct()
@@ -802,7 +802,7 @@ def gerar_relatorio_consolidado(request):
         # no período estipulado, mas NÃO estão vinculados a nenhuma meta do assessor.
         # Exclui processos em fases de conclusão (L.PJE, Processo Concluído) — apenas Revisão conta.
         concluidos_fora_meta = ProcessoAndamento.objects.filter(
-            usuario=assessor,
+            processo__usuario=assessor,
             fase__fase=FASE_REVISAO,
             dt_criacao__range=(data_inicio, data_fim)
         ).exclude(
@@ -827,7 +827,7 @@ def gerar_relatorio_consolidado(request):
         data_fim_anterior = data_fim - timedelta(days=duracao_dias)
         
         concluidos_periodo_anterior = ProcessoAndamento.objects.filter(
-            usuario=assessor,
+            processo__usuario=assessor,
             fase__fase__in=FASES_EXATAS,
             dt_criacao__range=(data_inicio_anterior, data_fim_anterior)
         ).values('processo_id').distinct().count()
@@ -1116,22 +1116,22 @@ def get_revisoes_hoje_data(request):
     enviados_por_assessor = ProcessoAndamento.objects.filter(
         fase__fase="Revisão",
         dt_criacao__range=(data_inicio, data_fim),
-        usuario__isnull=False
+        processo__usuario__isnull=False
     ).values(
-        'usuario__id',
-        'usuario__first_name',
-        'usuario__last_name'
+        'processo__usuario__id',
+        'processo__usuario__first_name',
+        'processo__usuario__last_name'
     ).annotate(
         enviados_des=Count('processo', distinct=True)
-    ).order_by('usuario__first_name', 'usuario__last_name')
+    ).order_by('processo__usuario__first_name', 'processo__usuario__last_name')
 
     meta = 5
     labels, data_enviados, photo_urls = [], [], []
 
     for assessor in enviados_por_assessor:
-        user_id = assessor['usuario__id']
-        first_name = assessor['usuario__first_name'] or 'Sem Nome'
-        last_name = assessor['usuario__last_name'] or ''
+        user_id = assessor['processo__usuario__id']
+        first_name = assessor['processo__usuario__first_name'] or 'Sem Nome'
+        last_name = assessor['processo__usuario__last_name'] or ''
         enviados = assessor['enviados_des']
 
         labels.append(f"{first_name} {last_name}")
@@ -1194,21 +1194,21 @@ def get_revisoes_semana_data(request):
     enviados_por_assessor = ProcessoAndamento.objects.filter(
         fase__fase="Revisão",
         dt_criacao__range=(data_inicio, data_fim),
-        usuario__isnull=False  # Evita processos sem usuário
+        processo__usuario__isnull=False  # Evita processos sem usuário
     ).values(
-        'usuario__id',
-        'usuario__first_name',
-        'usuario__last_name'
+        'processo__usuario__id',
+        'processo__usuario__first_name',
+        'processo__usuario__last_name'
     ).annotate(
         enviados_des=Count('processo', distinct=True)
-    ).order_by('usuario__first_name')
+    ).order_by('processo__usuario__first_name')
 
     labels, data_enviados, photo_urls, medias_diarias = [], [], [], []
 
     for item in enviados_por_assessor:
-        user_id = item['usuario__id']
-        first_name = item['usuario__first_name'] or 'Sem Nome'
-        last_name = item['usuario__last_name'] or ''
+        user_id = item['processo__usuario__id']
+        first_name = item['processo__usuario__first_name'] or 'Sem Nome'
+        last_name = item['processo__usuario__last_name'] or ''
         enviados = item['enviados_des']
 
         media_dia = enviados / 4  # média considerando 5 dias úteis (segunda a sexta)
