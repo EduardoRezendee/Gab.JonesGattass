@@ -238,6 +238,7 @@ class ProcessoPauta(models.Model):
     tema_manual = models.CharField(max_length=200, blank=True, null=True, verbose_name='Tema (Manual)')
     especie_manual = models.CharField(max_length=200, blank=True, null=True, verbose_name='Espécie (Manual)')
     link_documento_manual = models.URLField(blank=True, null=True, verbose_name='Link do Documento (Manual)')
+    link_memorial = models.URLField(blank=True, null=True, verbose_name='Link do Memorial')
     
     importado_em = models.DateTimeField(auto_now_add=True)
 

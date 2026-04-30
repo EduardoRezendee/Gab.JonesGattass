@@ -82,6 +82,8 @@ def home(request):
     numero_de_processos_em_revisao_des = 0
     fase_filtro = None
     numero_processo = request.GET.get('numero_processo', '').strip()
+    tags_revisao_des_hoje = []
+    total_revisao_des_hoje = 0
 
 
     # Métricas diárias
@@ -432,7 +434,40 @@ def home(request):
 
         # Quantitativo total
         total_atrasados = processos_mais_30.count()
-        
+
+        # ── Tags de processos enviados para Revisão Des hoje ──
+        local_tz = timezone.get_current_timezone()
+        hoje_inicio = timezone.make_aware(
+            datetime(hoje.year, hoje.month, hoje.day, 0, 0, 0), local_tz
+        )
+        hoje_fim = timezone.make_aware(
+            datetime(hoje.year, hoje.month, hoje.day, 23, 59, 59), local_tz
+        )
+
+        processos_revisao_des_hoje = (
+            ProcessoAndamento.objects
+            .filter(
+                fase__fase="Revisão Des",
+                dt_criacao__range=(hoje_inicio, hoje_fim),
+            )
+            .select_related('processo')
+            .values_list('processo__tags_materia', flat=True)
+        )
+
+        tags_contagem = {}
+        for raw_tags in processos_revisao_des_hoje:
+            if not raw_tags:
+                continue
+            for tag in [t.strip() for t in raw_tags.split(',') if t.strip()]:
+                tags_contagem[tag] = tags_contagem.get(tag, 0) + 1
+
+        # Lista ordenada por quantidade decrescente
+        tags_revisao_des_hoje = sorted(
+            [{'tag': t, 'quantidade': q} for t, q in tags_contagem.items()],
+            key=lambda x: -x['quantidade']
+        )
+        total_revisao_des_hoje = sum(tags_contagem.values())
+
 
 
     # VISÃO DO ASSESSOR/USUÁRIO COMUM
@@ -689,6 +724,8 @@ def home(request):
         'fase_ativa_desa': fase_filtro,
         'avisos_nao_lidos_count': Aviso.objects.filter(ativo=True).exclude(leitores=user).count(),
         'assessores_lista': User.objects.filter(profile__funcao="Assessor(a)").order_by('first_name'),
+        'tags_revisao_des_hoje': tags_revisao_des_hoje,
+        'total_revisao_des_hoje': total_revisao_des_hoje,
     }
 
     if not is_revisor and not is_desembargador and not is_chefe:

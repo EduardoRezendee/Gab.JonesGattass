@@ -1132,7 +1132,7 @@
           const icn = e.cancelado ? '❌' : (e.presencial ? '🏢' : '💻');
           html += `<div class="month-event-chip" style="background:${e.cor};${dec}" onclick="event.stopPropagation();agendaAbrirEvento(${e.id})">${e.hora_inicio} ${icn} ${escHtml(e.titulo)}</div>`;
         });
-        if (dayEvts.length > max) html += `<div style="font-size:0.8rem;color:#6b7280;margin-top:2px;">+${dayEvts.length - max} mais</div>`;
+        if (dayEvts.length > max) html += `<div style="font-size:1.0rem;color:#b90b0bff;margin-top:2px;">+${dayEvts.length - max} mais</div>`;
         html += '</div>';
 
         dia.setDate(dia.getDate() + 1);

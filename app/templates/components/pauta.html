@@ -633,8 +633,12 @@
           <input type="text" id="manual-tema" class="form-control" placeholder="Ex: Tributário">
         </div>
         <div class="col-12 col-md-3">
-          <label for="manual-link-documento">Link Doc <small class="text-muted">(Opcional)</small></label>
+          <label for="manual-link-documento">Link Processo <small class="text-muted">(Opcional)</small></label>
           <input type="url" id="manual-link-documento" class="form-control" placeholder="https://...">
+        </div>
+        <div class="col-12 col-md-3">
+          <label for="manual-link-memorial">Link do Memorial <small class="text-muted">(Opcional)</small></label>
+          <input type="url" id="manual-link-memorial" class="form-control" placeholder="https://...">
         </div>
       </div>
     </div>
@@ -817,9 +821,13 @@
             <label class="form-label fw-semibold">Tema</label>
             <input type="text" id="edit-tema" class="form-control" placeholder="Ex: Tributário">
           </div>
-          <div class="col-12 col-sm-8">
-            <label class="form-label fw-semibold">Link do Documento</label>
+          <div class="col-12 col-sm-6">
+            <label class="form-label fw-semibold">Link Processo</label>
             <input type="url" id="edit-link" class="form-control" placeholder="https://...">
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label fw-semibold">Link do Memorial</label>
+            <input type="url" id="edit-memorial" class="form-control" placeholder="https://...">
           </div>
           <div class="col-12 col-sm-4">
             <label class="form-label fw-semibold">Tipo de Sessão</label>
@@ -904,7 +912,13 @@
 
     const docBtn = item.link_documento
       ? `<a href="${item.link_documento}" target="_blank" class="btn-documento" title="Abrir Documento Original">
-           <i class="bi bi-box-arrow-up-right"></i> Link doc
+           <i class="bi bi-box-arrow-up-right"></i> Processo
+         </a>`
+      : ``;
+
+    const memorialBtn = item.link_memorial
+      ? `<a href="${item.link_memorial}" target="_blank" class="btn-documento" style="background-color: #ef4444; margin-bottom: 4px;" title="Abrir Memorial">
+           <i class="bi bi-file-earmark-pdf"></i> Memorial
          </a>`
       : ``;
 
@@ -935,7 +949,10 @@
             ${sessionBadge}
             ${linkBadge}
           </div>
-          ${docBtn}
+          <div class="d-flex flex-column align-items-end">
+            ${memorialBtn}
+            ${docBtn}
+          </div>
         </div>
       </div>`;
   }
@@ -1104,6 +1121,7 @@
     document.getElementById('edit-especie').value = item.especie !== '—' ? (item.especie || '') : '';
     document.getElementById('edit-tema').value = item.tema !== '—' ? (item.tema || '') : '';
     document.getElementById('edit-link').value = item.link_documento || '';
+    document.getElementById('edit-memorial').value = item.link_memorial || '';
     document.getElementById('edit-tipo').value = item.tipo_sessao || 'presencial';
 
     let modalEl = document.getElementById('pautaEditModal');
@@ -1118,6 +1136,7 @@
       especie: document.getElementById('edit-especie').value.trim(),
       tema: document.getElementById('edit-tema').value.trim(),
       link_documento: document.getElementById('edit-link').value.trim(),
+      link_memorial: document.getElementById('edit-memorial').value.trim(),
       tipo_sessao: document.getElementById('edit-tipo').value,
     };
     fetch(`/pauta/editar/${id}/`, {
@@ -1235,6 +1254,7 @@
     const especie = document.getElementById('manual-especie')?.value.trim() || '';
     const tema = document.getElementById('manual-tema')?.value.trim() || '';
     const linkDocumento = document.getElementById('manual-link-documento')?.value.trim() || '';
+    const linkMemorial = document.getElementById('manual-link-memorial')?.value.trim() || '';
 
     if (!numero || !dataSessao) { showToast('Preencha o número e a data.', 'error'); return; }
 
@@ -1245,7 +1265,8 @@
       responsavel: responsavel,
       especie: especie,
       tema: tema,
-      link_documento: linkDocumento
+      link_documento: linkDocumento,
+      link_memorial: linkMemorial
     };
 
     const btn = e.currentTarget;
@@ -1271,6 +1292,7 @@
           if (document.getElementById('manual-especie')) document.getElementById('manual-especie').value = '';
           if (document.getElementById('manual-tema')) document.getElementById('manual-tema').value = '';
           if (document.getElementById('manual-link-documento')) document.getElementById('manual-link-documento').value = '';
+          if (document.getElementById('manual-link-memorial')) document.getElementById('manual-link-memorial').value = '';
           loadPauta();
         }
         else { showToast(d.message, 'error'); }

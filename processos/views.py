@@ -2921,6 +2921,7 @@ def adicionar_pauta_manual(request):
             tema = body.get('tema', '').strip()
             especie = body.get('especie', '').strip()
             link_documento = body.get('link_documento', '').strip()
+            link_memorial = body.get('link_memorial', '').strip()
         except Exception:
             return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
     else:
@@ -2931,6 +2932,7 @@ def adicionar_pauta_manual(request):
         tema = request.POST.get('tema', '').strip()
         especie = request.POST.get('especie', '').strip()
         link_documento = request.POST.get('link_documento', '').strip()
+        link_memorial = request.POST.get('link_memorial', '').strip()
 
     if not numero or not data_str:
         return JsonResponse({'success': False, 'message': 'Número do processo e data são obrigatórios.'}, status=400)
@@ -2956,6 +2958,7 @@ def adicionar_pauta_manual(request):
         tema_manual=tema or None,
         especie_manual=especie or None,
         link_documento_manual=link_documento or None,
+        link_memorial=link_memorial or None,
     )
     
 
@@ -2971,6 +2974,7 @@ def adicionar_pauta_manual(request):
             'especie': item.especie_manual or (processo_db.especie.especie if processo_db and processo_db.especie else '—'),
             'tema': item.tema_manual or (processo_db.tema.nome if processo_db and processo_db.tema else '—'),
             'link_documento': item.link_documento_manual,
+            'link_memorial': item.link_memorial,
             'vinculado': processo_db is not None,
         }
     })
@@ -3007,6 +3011,7 @@ def pauta_json(request):
             'tema': tema_final,
             'vinculado': p is not None,
             'link_documento': link_doc_final,
+            'link_memorial': item.link_memorial,
         }
 
     itens_serializados = [serializar(i) for i in itens]
@@ -3080,6 +3085,7 @@ def editar_pauta_item(request, item_id):
     item.especie_manual = body.get('especie', '').strip() or None
     item.tema_manual = body.get('tema', '').strip() or None
     item.link_documento_manual = body.get('link_documento', '').strip() or None
+    item.link_memorial = body.get('link_memorial', '').strip() or None
     item.save()
 
     return JsonResponse({'success': True})

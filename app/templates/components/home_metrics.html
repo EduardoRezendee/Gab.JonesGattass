@@ -351,7 +351,49 @@
         </div>
       </div>
     </div>
-    
+
+
+    <!-- ── Tags enviadas para Revisão Des hoje ── -->
+    <div class="mt-4 mb-2">
+      <div class="card shadow-sm" style="border-left: 4px solid #083464; border-radius: 10px;">
+        <div class="card-body py-3 px-4">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <h6 class="fw-bold mb-0" style="color: #083464; font-size: 1rem;">
+              <i class="bi bi-tags-fill me-2" style="color: #083464;"></i>
+              Processos enviados para Revisão Des hoje
+              <span class="text-muted fw-normal" style="font-size: 0.85rem;">
+                ({{ today|date:"d/m/Y" }})
+              </span>
+            </h6>
+            {% if total_revisao_des_hoje > 0 %}
+            <span class="badge rounded-pill px-3 py-1" style="background:#083464; color:white; font-size:0.9rem;">
+              {{ total_revisao_des_hoje }} processo{{ total_revisao_des_hoje|pluralize:"s" }} no total
+            </span>
+            {% endif %}
+          </div>
+
+          {% if tags_revisao_des_hoje %}
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            {% for item in tags_revisao_des_hoje %}
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm"
+                 style="background: #f0f4ff; border: 1.5px solid #c7d7f5;">
+              <span class="fw-semibold" style="color: #1e3a8a; font-size: 0.9rem;">{{ item.tag }}</span>
+              <span class="badge rounded-pill fw-bold"
+                    style="background: #083464; color: white; font-size: 0.85rem; min-width: 28px;">
+                {{ item.quantidade }}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            Nenhum processo enviado para Revisão Des hoje ainda.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
     <!-- Seção dos 10 Processos Mais Antigos -->
     <div class="mt-5">
