@@ -2983,13 +2983,20 @@ def adicionar_pauta_manual(request):
 @login_required
 def pauta_json(request):
     """Retorna JSON com listas separadas de presenciais e virtuais."""
-    itens = ProcessoPauta.objects.select_related('processo_vinculado', 'processo_vinculado__usuario', 'processo_vinculado__especie').order_by('data_sessao')
+    itens = ProcessoPauta.objects.select_related(
+        'processo_vinculado',
+        'processo_vinculado__usuario',
+        'processo_vinculado__especie',
+        'processo_vinculado__tema',
+    ).prefetch_related(
+        'processo_vinculado__andamentos'
+    ).order_by('data_sessao')
 
     def serializar(item):
         p = item.processo_vinculado
         link_doc = None
         if p:
-            # Busca o andamento mais recente que contenha um link de documento válido
+            # Usa o cache do prefetch — sem query adicional por processo
             andamentos_validos = [a for a in p.andamentos.all() if a.link_doc and str(a.link_doc).strip()]
             if andamentos_validos:
                 andamento_com_link = max(andamentos_validos, key=lambda x: x.dt_criacao)
