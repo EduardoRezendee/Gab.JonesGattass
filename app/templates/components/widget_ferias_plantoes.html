@@ -1,0 +1,160 @@
+{% load app_filters %}
+<!-- ════════════════════════════════════════════════════════════
+     WIDGET: FÉRIAS E PLANTÕES (somente leitura para assessores e chefe)
+     ════════════════════════════════════════════════════════════ -->
+<div id="widget-ferias-plantoes" class="mb-4 mt-3"></div>
+
+<script>
+(function() {
+  const CSRF_FP = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+  function parseMsgErro(msg) {
+    if (typeof msg === 'object' && msg !== null) {
+      const vals = Object.values(msg).flat();
+      return vals.join(' ');
+    }
+    return String(msg);
+  }
+
+  function toastFP(txt, tipo='success') {
+    let c = document.getElementById('toast-container');
+    if (!c) { c = document.createElement('div'); c.id='toast-container';
+      c.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+      document.body.appendChild(c); }
+    const d = document.createElement('div');
+    d.style.cssText = `background:#1e293b;color:#fff;padding:12px 18px;border-radius:8px;font-size:.85rem;
+      box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:340px;animation:slideInFP .3s ease;
+      border-left:4px solid ${tipo==='success'?'#10b981':'#ef4444'};`;
+    d.textContent = txt;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 5000);
+  }
+
+  function postFP(url) {
+    return fetch(url, { method:'POST', headers:{'X-CSRFToken': CSRF_FP, 'Content-Type':'application/json'} })
+      .then(r => r.json());
+  }
+
+  function carregarWidgetFP() {
+    Promise.all([
+      fetch('/gestao/notificacoes/json/').then(r=>r.json()),
+      fetch('/gestao/ferias/json/').then(r=>r.json()),
+      fetch('/gestao/plantoes/json/').then(r=>r.json()),
+    ]).then(([notifs, ferias, plantoes]) => {
+      const meuId = {{ request.user.pk }};
+      const hoje  = new Date().toISOString().split('T')[0];
+
+      const minhasNotifs = notifs.notificacoes || [];
+      const minhasFerias = ferias.items.filter(i => i.usuario_id === meuId && i.end >= hoje);
+      const meusPlantoes = plantoes.items.filter(i => i.usuario_id === meuId && i.end >= hoje);
+
+      let html = '';
+
+      if (minhasNotifs.length > 0) {
+        html += `<div style="background:linear-gradient(135deg,#083464,#0f5296);border-radius:12px;padding:16px 20px;margin-bottom:16px;color:#fff;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <i class="bi bi-bell-fill" style="font-size:1.3rem;color:#fbbf24;"></i>
+            <strong style="font-size:1rem;">Você tem ${minhasNotifs.length} notificação${minhasNotifs.length>1?'s':''} pendente${minhasNotifs.length>1?'s':''}</strong>
+          </div>`;
+        minhasNotifs.forEach(n => {
+          const isPl = n.tipo === 'plantao';
+          const isFer = n.tipo === 'ferias';
+          html += `<div style="background:rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:600;font-size:.9rem;">${n.titulo}</div>
+              <div style="font-size:.82rem;opacity:.85;margin-top:2px;">${n.mensagem}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+          if (isPl) {
+            const meuPl = meusPlantoes.find(p => p.status === 'pendente');
+            if (meuPl) {
+              html += `<button onclick="confirmarCienciaFP('plantao',${meuPl.pk},${n.id})"
+                style="background:#10b981;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:.82rem;">
+                ✅ Confirmar Ciência do Plantão</button>`;
+            }
+          }
+          if (isFer) {
+            const minhaFer = minhasFerias.find(f => f.status === 'pendente');
+            if (minhaFer) {
+              html += `<button onclick="confirmarCienciaFP('ferias',${minhaFer.pk},${n.id})"
+                style="background:#10b981;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:.82rem;">
+                ✅ Confirmar Ciência das Férias</button>`;
+            }
+          }
+          html += `<button onclick="marcarLidaFP(${n.id})"
+            style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:.82rem;">
+            Dispensar</button>`;
+          html += `</div></div>`;
+        });
+        html += `</div>`;
+      }
+
+      if (minhasFerias.length > 0 || meusPlantoes.length > 0) {
+        html += `<div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:16px 20px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#083464;font-weight:700;font-size:.95rem;">
+            <i class="bi bi-calendar2-week"></i> Minha Agenda de Férias e Plantões
+          </div>`;
+
+        if (minhasFerias.length > 0) {
+          html += `<div style="margin-bottom:10px;"><small style="color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">🏖 Férias</small>`;
+          minhasFerias.forEach(f => {
+            const cores = {pendente:'#f59e0b',aprovado:'#10b981',em_andamento:'#3b82f6',cancelado:'#9ca3af'};
+            const perAquis = f.periodo_aquisicao ? ` <span style="color:#64748b;font-weight:normal;margin-left:4px;">(Ref: ${f.periodo_aquisicao})</span>` : '';
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="background:${cores[f.status]||'#083464'};color:#fff;border-radius:6px;padding:4px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">${f.status_label}</span>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:4px 12px;border-radius:6px;font-size:.85rem;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-calendar-event text-primary"></i> ${f.data_label}${perAquis}
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        if (meusPlantoes.length > 0) {
+          html += `<div><small style="color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">⚖ Plantões</small>`;
+          meusPlantoes.forEach(p => {
+            const cores = {pendente:'#f59e0b',confirmado:'#10b981',realizado:'#3b82f6',cancelado:'#9ca3af'};
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="background:${cores[p.status]||'#083464'};color:#fff;border-radius:6px;padding:4px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">${p.status_label}</span>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:4px 12px;border-radius:6px;font-size:.85rem;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-calendar-event text-primary"></i> ${p.data_label}
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+
+      document.getElementById('widget-ferias-plantoes').innerHTML = html;
+    }).catch(() => {});
+  }
+
+  window.confirmarCienciaFP = function(tipo, pk, notifId) {
+    const url = tipo === 'plantao' ? `/gestao/plantoes/${pk}/ciencia/` : `/gestao/ferias/${pk}/ciencia/`;
+    postFP(url).then(r => {
+      if (r.success) {
+        toastFP(r.message, 'success');
+        fetch(`/gestao/notificacoes/${notifId}/lida/`, {method:'POST', headers:{'X-CSRFToken':CSRF_FP}});
+        setTimeout(carregarWidgetFP, 500);
+      } else {
+        toastFP(parseMsgErro(r.message), 'error');
+      }
+    });
+  };
+
+  window.marcarLidaFP = function(id) {
+    fetch(`/gestao/notificacoes/${id}/lida/`, {method:'POST', headers:{'X-CSRFToken':CSRF_FP}})
+      .then(() => carregarWidgetFP());
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    carregarWidgetFP();
+    setInterval(carregarWidgetFP, 30000);
+  });
+
+  const style = document.createElement('style');
+  style.textContent = '@keyframes slideInFP{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
+  document.head.appendChild(style);
+})();
+</script>

@@ -353,6 +353,7 @@ def get_user_daily_productivity(user):
     ).count()
 
     from django.db.models import Subquery, OuterRef
+    from processos.models import ProcessoAndamento
     
     # Processos concluídos hoje (agora: enviados para Revisão hoje + Monocráticas concluídas hoje)
     fases_validas = ["Revisão", "Revisão Des", "Processo Concluído"]

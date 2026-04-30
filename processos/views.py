@@ -3357,6 +3357,7 @@ def ferias_json(request):
             'status': f.status,
             'status_label': f.get_status_display(),
             'observacoes': f.observacoes,
+            'periodo_aquisicao': f.periodo_aquisicao,
             'usuario_id': uid,
             'usuario_nome': f.usuario.get_full_name(),
             'data_label': data_label,
@@ -3431,12 +3432,28 @@ def ferias_criar(request):
     try:
         data = json.loads(request.body)
         usuario = get_object_or_404(User, pk=data['usuario_id'])
+        
+        confirmado = data.get('confirmado', False)
+        if not confirmado:
+            qs_global = Ferias.objects.filter(
+                status__in=['pendente', 'aprovado', 'em_andamento'],
+                data_inicio__lte=data['data_fim'],
+                data_fim__gte=data['data_inicio'],
+            ).exclude(usuario=usuario)
+            if qs_global.exists():
+                conflito = qs_global.select_related('usuario').first()
+                msg = (f"Atenção: {conflito.usuario.get_full_name()} já está com férias agendadas de "
+                       f"{conflito.data_inicio.strftime('%d/%m/%Y')} a "
+                       f"{conflito.data_fim.strftime('%d/%m/%Y')}. Deseja prosseguir com o agendamento mesmo assim?")
+                return JsonResponse({'success': False, 'conflito': True, 'message': msg})
+
         ferias = Ferias(
             usuario=usuario,
             data_inicio=data['data_inicio'],
             data_fim=data['data_fim'],
             status=data.get('status', 'pendente'),
             observacoes=data.get('observacoes', ''),
+            periodo_aquisicao=data.get('periodo_aquisicao', ''),
             criado_por=request.user,
         )
         ferias.full_clean()
@@ -3457,10 +3474,28 @@ def ferias_editar(request, pk):
     ferias = get_object_or_404(Ferias, pk=pk)
     try:
         data = json.loads(request.body)
+        
+        confirmado = data.get('confirmado', False)
+        if not confirmado:
+            data_inicio = data.get('data_inicio', ferias.data_inicio)
+            data_fim = data.get('data_fim', ferias.data_fim)
+            qs_global = Ferias.objects.filter(
+                status__in=['pendente', 'aprovado', 'em_andamento'],
+                data_inicio__lte=data_fim,
+                data_fim__gte=data_inicio,
+            ).exclude(usuario=ferias.usuario).exclude(pk=pk)
+            if qs_global.exists():
+                conflito = qs_global.select_related('usuario').first()
+                msg = (f"Atenção: {conflito.usuario.get_full_name()} já está com férias agendadas de "
+                       f"{conflito.data_inicio.strftime('%d/%m/%Y')} a "
+                       f"{conflito.data_fim.strftime('%d/%m/%Y')}. Deseja prosseguir com a edição mesmo assim?")
+                return JsonResponse({'success': False, 'conflito': True, 'message': msg})
+
         ferias.data_inicio = data.get('data_inicio', ferias.data_inicio)
         ferias.data_fim = data.get('data_fim', ferias.data_fim)
         ferias.status = data.get('status', ferias.status)
         ferias.observacoes = data.get('observacoes', ferias.observacoes)
+        ferias.periodo_aquisicao = data.get('periodo_aquisicao', ferias.periodo_aquisicao)
         ferias.full_clean()
         ferias.save(skip_validation=True)
         return JsonResponse({'success': True, 'message': 'Férias atualizadas com sucesso!'})

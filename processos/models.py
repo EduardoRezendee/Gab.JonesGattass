@@ -354,6 +354,9 @@ class Ferias(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='pendente', verbose_name='Status'
     )
+    periodo_aquisicao = models.CharField(
+        max_length=20, blank=True, null=True, verbose_name='Período de Aquisição'
+    )
     observacoes = models.TextField(blank=True, verbose_name='Observações')
     criado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
@@ -387,24 +390,6 @@ class Ferias(models.Model):
             if qs_proprio.exists():
                 raise ValidationError(
                     'Este assessor já possui férias cadastradas que se sobrepõem ao intervalo informado.'
-                )
-
-            # 3. Regra global: apenas 1 assessor em férias por vez.
-            #    Verificar se QUALQUER outro assessor tem férias ativas no mesmo período.
-            qs_global = Ferias.objects.filter(
-                status__in=['pendente', 'aprovado', 'em_andamento'],
-                data_inicio__lte=self.data_fim,
-                data_fim__gte=self.data_inicio,
-            ).exclude(usuario=self.usuario)
-            if self.pk:
-                qs_global = qs_global.exclude(pk=self.pk)
-            if qs_global.exists():
-                conflito = qs_global.select_related('usuario').first()
-                raise ValidationError(
-                    f'Conflito de período: {conflito.usuario.get_full_name()} já está com férias de '
-                    f'{conflito.data_inicio.strftime("%d/%m/%Y")} a '
-                    f'{conflito.data_fim.strftime("%d/%m/%Y")}. '
-                    f'Apenas um assessor pode estar de férias por vez.'
                 )
 
     def save(self, *args, **kwargs):

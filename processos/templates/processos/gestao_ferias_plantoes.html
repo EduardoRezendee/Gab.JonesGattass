@@ -213,14 +213,20 @@
             <input type="date" id="f-fim" class="form-control">
           </div>
         </div>
-        <div class="mt-3">
-          <label class="form-label fw-semibold">Status</label>
-          <select id="f-status" class="form-select">
-            <option value="pendente">Pendente</option>
-            <option value="aprovado">Aprovado</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
+        <div class="row g-3 mt-1">
+          <div class="col-6">
+            <label class="form-label fw-semibold">Período de Aquisição</label>
+            <input type="text" id="f-periodo-aquisicao" class="form-control" placeholder="Ex: 2023 ou 2023/2024">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select id="f-status" class="form-select">
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="em_andamento">Em Andamento</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
         </div>
         <div class="mt-3">
           <label class="form-label fw-semibold">Observações</label>
@@ -454,6 +460,7 @@ function mostrarDetalheFerias(item) {
       <tr><th>Assessor</th><td>${item.usuario_nome}</td></tr>
       <tr><th>Início</th><td>${formatarData(item.start)}</td></tr>
       <tr><th>Fim</th><td>${formatarData(item.end)}</td></tr>
+      <tr><th>Período Aquis.</th><td>${item.periodo_aquisicao || '—'}</td></tr>
       <tr><th>Status</th><td><span class="status-badge st-${item.status}">${item.status_label}</span></td></tr>
       <tr><th>Obs.</th><td>${item.observacoes || '—'}</td></tr>
     </table>`;
@@ -461,7 +468,7 @@ function mostrarDetalheFerias(item) {
   footer.innerHTML = '<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>';
   if (IS_CHEFE) {
     footer.innerHTML += `
-      <button class="btn-acao btn-edit ms-2" onclick="editarFerias(${item.pk}, '${item.start}','${item.end}','${item.status}')">
+      <button class="btn-acao btn-edit ms-2" onclick="editarFerias(${item.pk}, '${item.start}','${item.end}','${item.status}', '${item.periodo_aquisicao || ''}')">
         <i class="bi bi-pencil"></i> Editar
       </button>
       <button class="btn-acao btn-delete ms-2" onclick="deletarFerias(${item.pk})">
@@ -501,22 +508,23 @@ function mostrarDetalhePlantao(item) {
 }
 
 // ── CRUD Férias ───────────────────────────────────────────────────
-function abrirModalFerias(pk=null, inicio='', fim='', status='pendente', obs='') {
+function abrirModalFerias(pk=null, inicio='', fim='', status='pendente', obs='', periodo_aquisicao='') {
   if(pk) document.getElementById('modalFerias').dataset.editPk = pk;
   else   delete document.getElementById('modalFerias').dataset.editPk;
   document.getElementById('f-inicio').value = inicio;
   document.getElementById('f-fim').value    = fim;
   document.getElementById('f-status').value = status;
   document.getElementById('f-obs').value    = obs;
+  document.getElementById('f-periodo-aquisicao').value = periodo_aquisicao;
   new bootstrap.Modal(document.getElementById('modalFerias')).show();
 }
 
-function editarFerias(pk, inicio, fim, status) {
+function editarFerias(pk, inicio, fim, status, periodo_aquisicao) {
   bootstrap.Modal.getInstance(document.getElementById('modalDetalhe'))?.hide();
-  setTimeout(() => abrirModalFerias(pk, inicio.split('T')[0], fim.split('T')[0], status), 300);
+  setTimeout(() => abrirModalFerias(pk, inicio.split('T')[0], fim.split('T')[0], status, '', periodo_aquisicao), 300);
 }
 
-function salvarFerias() {
+function salvarFerias(confirmado = false) {
   const modal = document.getElementById('modalFerias');
   const pk    = modal.dataset.editPk;
   const body  = {
@@ -525,12 +533,18 @@ function salvarFerias() {
     data_fim:    document.getElementById('f-fim').value,
     status:      document.getElementById('f-status').value,
     observacoes: document.getElementById('f-obs').value,
+    periodo_aquisicao: document.getElementById('f-periodo-aquisicao').value,
+    confirmado:  confirmado
   };
   const url = pk ? `/gestao/ferias/${pk}/editar/` : '/gestao/ferias/criar/';
   csrfPost(url, body).then(r => {
     if(r.success) {
       toast(r.message); bootstrap.Modal.getInstance(modal).hide();
       carregarFerias();
+    } else if (r.conflito) {
+      if (confirm(r.message)) {
+        salvarFerias(true);
+      }
     } else {
       toast(parseMsgErro(r.message), 'error');
     }
