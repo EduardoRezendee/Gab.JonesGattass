@@ -162,7 +162,7 @@ def home(request):
                     'data_envio_revisao': ultimo_andamento.dt_criacao,
                     'tema': processo.tema.nome if processo.tema else None,
                     'tags_materia': processo.tags_materia or '',
-                    'comentarios': [{'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()} for c in comentarios],
+                    'comentarios': [{'id': c.id, 'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario} for c in comentarios],
                     'tem_comentario': total_comentarios > 0,
                     'total_comentarios': total_comentarios,
                     'tem_analise_ia': any('**Análise Prévia da IA:**' in c.texto for c in comentarios),
@@ -255,7 +255,7 @@ def home(request):
                     'sigla_especie': processo.especie.sigla if processo.especie else "",
                     'tipo': tipo_nome,
                     'comentarios': [
-                        {'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()}
+                        {'id': c.id, 'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario}
                         for c in comentarios
                     ],
                     'revisoes_des': revisoes_des_count,
@@ -495,7 +495,7 @@ def home(request):
                         'dias_no_gabinete': processo.dias_no_gabinete() or 0,
                         'usuario_processo': processo.usuario.get_full_name() if processo.usuario else "Não atribuído",
                         'comentarios': [
-                            {'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario.get_full_name()}
+                            {'id': c.id, 'texto': c.texto, 'data_criacao': c.data_criacao, 'usuario': c.usuario}
                             for c in comentarios_dict.get(processo.pk, [])],
                         'tem_comentario': total_comentarios > 0,
                         'total_comentarios': total_comentarios,

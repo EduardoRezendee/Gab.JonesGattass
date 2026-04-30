@@ -925,11 +925,17 @@ class AndamentoListView(LoginRequiredMixin, ListView):
         # DEBUG: Verifique se os valores estão sendo carregados corretamente
         print(f"Tipo Selecionado: {processo.tipo}, Resultado Selecionado: {processo.resultado}")
 
+        ultimo_andamento = processo.andamentos.filter(
+            status__status__in=["Não iniciado", "Em andamento"]
+        ).order_by('dt_criacao').last()
+        fase_atual_str = ultimo_andamento.fase.fase if ultimo_andamento and ultimo_andamento.fase else "Sem Fase"
+
         # Atualiza o contexto com os dados do processo, andamentos e formulário
         context.update({
             'processo': processo,
             'andamentos_por_fase': andamentos_por_fase,
             'form': form,
+            'fase_atual_str': fase_atual_str,
         })
         return context
 

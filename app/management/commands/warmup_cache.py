@@ -31,15 +31,23 @@ class Command(BaseCommand):
                 .order_by('fase__fase')
             )
             
-            fases_nomes = []
-            fases_quantidades = []
+            # Define as fases base que sempre devem aparecer
+            fases_dict = {
+                'Elaboração': 0,
+                'Revisão': 0,
+                'Correção': 0,
+                'Revisão Des': 0,
+                'Devolvido': 0
+            }
             
             for item in processos_por_fase:
                 nome_fase = item['fase__fase']
                 if nome_fase in ['Processo Concluído', 'Processo Concluido']:
                     continue
-                fases_nomes.append(nome_fase)
-                fases_quantidades.append(item['quantidade'])
+                fases_dict[nome_fase] = item['quantidade']
+                
+            fases_nomes = list(fases_dict.keys())
+            fases_quantidades = list(fases_dict.values())
 
             data_fases = {
                 'labels': fases_nomes + ['Total Pendentes'],
